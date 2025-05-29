@@ -27,7 +27,12 @@ class VoiceController {
   bool _isInitialized = false;
   final _stateController = StreamController<VoiceState>.broadcast();
 
+  final _textController = StreamController<String>.broadcast();
+  final _responseController = StreamController<String>.broadcast();
+
   Stream<VoiceState> get stateStream => _stateController.stream;
+  Stream<String> get onTextRecognized => _textController.stream;
+  Stream<String> get onGptResponse => _responseController.stream;
   bool get isInitialized => _isInitialized;
 
   Future<void> initialize() async {
@@ -65,12 +70,18 @@ class VoiceController {
     _sttService.onTextRecognized.listen((text) async {
       if (text.isNotEmpty) {
         try {
+          // Emit recognized text
+          _textController.add(text);
+          
           _stateController.add(VoiceState.processing);
           logger.info('Processing speech input: $text');
           
           // Get response from GPT
           final response = await _gptService.generateResponse(text);
           logger.info('Got GPT response: $response');
+          
+          // Emit GPT response
+          _responseController.add(response);
           
           // Speak the response
           _stateController.add(VoiceState.speaking);
@@ -134,5 +145,7 @@ class VoiceController {
 
   void dispose() {
     _stateController.close();
+    _textController.close();
+    _responseController.close();
   }
 }

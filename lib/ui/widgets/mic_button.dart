@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:chickies_ui/components/icon_button.dart';
 import '../../services/voice_controller.dart';
 import '../../core/logger.dart';
 
@@ -88,62 +89,49 @@ class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMix
       stream: _controller.stateStream,
       builder: (context, snapshot) {
         final state = snapshot.data ?? VoiceState.uninitialized;
+        final bool isEnabled = state != VoiceState.processing && 
+                             state != VoiceState.uninitialized;
         
         // Show permission button if needed
         if (state == VoiceState.needsPermission) {
-          return FloatingActionButton(
+          return ChickiesIconButton(
             onPressed: () => openAppSettings(),
+            icon: Icons.mic_off,
             backgroundColor: Colors.red,
-            child: const Icon(Icons.mic_off, color: Colors.white),
+            size: 32,
           );
         }
         
         return ScaleTransition(
           scale: _scaleAnimation,
-          child: FloatingActionButton(
-            onPressed: state != VoiceState.processing && 
-                      state != VoiceState.uninitialized
-                ? _toggleListening 
-                : null,
-            backgroundColor: _getBackgroundColor(state),
-            child: _buildIcon(state),
+          child: ChickiesIconButton(
+            onPressed: isEnabled ? _toggleListening : () {}, // Provide empty function when disabled
+            icon: _getIcon(state),
+            backgroundColor: isEnabled ? _getBackgroundColor(state) : Colors.grey,
+            size: 32,
           ),
         );
       },
     );
   }
 
-  Widget _buildIcon(VoiceState state) {
+  IconData _getIcon(VoiceState state) {
     switch (state) {
       case VoiceState.listening:
-        return const Icon(Icons.mic, color: Colors.white, size: 32);
+        return Icons.mic;
       case VoiceState.processing:
-        return const SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-            color: Colors.white,
-            strokeWidth: 2,
-          ),
-        );
+        return Icons.hourglass_empty; // Changed to show processing state with an icon
       case VoiceState.speaking:
-        return const Icon(Icons.volume_up, color: Colors.white, size: 32);
+        return Icons.volume_up;
       case VoiceState.error:
-        return const Icon(Icons.error_outline, color: Colors.white, size: 32);
+        return Icons.error_outline;
       case VoiceState.needsPermission:
-        return const Icon(Icons.mic_off, color: Colors.white, size: 32);
+        return Icons.mic_off;
       case VoiceState.uninitialized:
-        return const SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-            color: Colors.white,
-            strokeWidth: 2,
-          ),
-        );
+        return Icons.hourglass_empty;
       case VoiceState.idle:
       default:
-        return const Icon(Icons.mic_none, color: Colors.white, size: 32);
+        return Icons.mic_none;
     }
   }
 

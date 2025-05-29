@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  chickies_ui:
+    path: ./chickies_ui
   cupertino_icons: ^1.0.6
   
   # Voice Services
@@ -22,7 +24,7 @@ dependencies:
   dio: ^5.4.0
   
   # State Management
-  provider: ^6.1.1
+  get: ^4.6.6
   
   # Utils
   logger: ^2.0.2
@@ -41,10 +43,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
+  assets:
+    - assets/images/
+    - assets/icons/
   
   # fonts:
   #   - family: CustomFont

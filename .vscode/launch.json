@@ -1,0 +1,86 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    
+    {
+      "name": "chicki_assistant",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "chicki_assistant (profile mode)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "chicki_assistant (release mode)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release"
+    },
+    {
+      "name": "chickies_ui",
+      "cwd": "chickies_ui",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "chickies_ui (profile mode)",
+      "cwd": "chickies_ui",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "chickies_ui (release mode)",
+      "cwd": "chickies_ui",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release"
+    },
+    {
+      "name": "smart_micro",
+      "cwd": "smart_micro",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "smart_micro (profile mode)",
+      "cwd": "smart_micro",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "smart_micro (release mode)",
+      "cwd": "smart_micro",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release"
+    },
+    {
+      "name": "chickies_ui",
+      "cwd": "smart_micro\\packages\\chickies_ui",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "chickies_ui (profile mode)",
+      "cwd": "smart_micro\\packages\\chickies_ui",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "chickies_ui (release mode)",
+      "cwd": "smart_micro\\packages\\chickies_ui",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release"
+    }
+  ]
+}

@@ -3,6 +3,9 @@ class Message {
   final String content;
   final DateTime timestamp;
 
+  bool get isUser => role == 'user';
+  bool get isAssistant => role == 'assistant';
+
   Message({
     required this.role,
     required this.content,
@@ -35,6 +38,14 @@ class Message {
       content: json['content'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
     );
+  }
+
+  factory Message.user(String content) {
+    return Message(role: 'user', content: content);
+  }
+
+  factory Message.assistant(String content) {
+    return Message(role: 'assistant', content: content); 
   }
 
   @override
