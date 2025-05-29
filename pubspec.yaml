@@ -1,0 +1,54 @@
+name: chicki_assistant
+description: A Voice AI Assistant using Flutter and GPT
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  
+  # Voice Services
+  speech_to_text: ^7.0.0 
+  flutter_tts: ^3.8.5
+  permission_handler: ^11.0.1  # Added permission handler
+  
+  # HTTP and API
+  http: ^1.2.0
+  dio: ^5.4.0
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Utils
+  logger: ^2.0.2
+  translator: ^1.0.0
+  path_provider: ^2.1.2
+  shared_preferences: ^2.2.2
+  
+  # UI
+  flutter_animate: ^4.5.0
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+  
+  # fonts:
+  #   - family: CustomFont
+  #     fonts:
+  #       - asset: assets/fonts/CustomFont-Regular.ttf
+  #       - asset: assets/fonts/CustomFont-Bold.ttf
+  #         weight: 700
