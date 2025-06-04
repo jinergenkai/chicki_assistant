@@ -1,4 +1,4 @@
-name: chicki_assistant
+name: chicki_buddy
 description: A Voice AI Assistant using Flutter and GPT
 
 publish_to: 'none'
@@ -13,6 +13,10 @@ dependencies:
   chickies_ui:
     path: ./chickies_ui
   cupertino_icons: ^1.0.6
+  
+  # Database
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
   
   # Voice Services
   speech_to_text: ^7.0.0
@@ -32,15 +36,19 @@ dependencies:
   translator: ^1.0.0
   path_provider: ^2.1.2
   shared_preferences: ^2.2.2
+  flutter_local_notifications: ^19.2.1
   
   # UI
   flutter_animate: ^4.5.0
   google_fonts: ^6.1.0
+  table_calendar: ^3.0.9
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
+  build_runner: ^2.4.8
+  hive_generator: ^2.0.1
 
 flutter:
   uses-material-design: true

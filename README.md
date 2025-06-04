@@ -1,4 +1,4 @@
-# chicki_assistant
+# chicki_buddy
 
 A new Flutter project.
 

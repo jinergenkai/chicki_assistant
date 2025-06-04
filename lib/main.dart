@@ -1,38 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:chickies_ui/chickies_ui.dart';
-import 'ui/screens/home_screen.dart';
+import 'package:chicki_buddy/models/friend.dart';
+import 'package:chicki_buddy/services/notification_service.dart';
+import 'package:chicki_buddy/ui/screens/main_screen.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Hive
+  await Hive.initFlutter();
+  Hive.registerAdapter(FriendAdapter());
+  await Hive.openBox<Friend>('friends');
+
+  // Initialize Notifications
+  await NotificationService().initialize();
+  
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  bool _isDarkMode = false;
-
-  void _toggleTheme() {
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Chickies Assistant',
+    return GetMaterialApp(
+      title: 'Birthday App',
       theme: ChickiesTheme.light(),
-      darkTheme: ChickiesTheme.dark(),
-      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: HomeScreen(
-        isDarkMode: _isDarkMode,
-        onThemeToggle: _toggleTheme,
-      ),
+      home: const MainScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

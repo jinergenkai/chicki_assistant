@@ -6,18 +6,18 @@
   "configurations": [
     
     {
-      "name": "chicki_assistant",
+      "name": "chicki_buddy",
       "request": "launch",
       "type": "dart"
     },
     {
-      "name": "chicki_assistant (profile mode)",
+      "name": "chicki_buddy (profile mode)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "profile"
     },
     {
-      "name": "chicki_assistant (release mode)",
+      "name": "chicki_buddy (release mode)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "release"

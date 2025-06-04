@@ -1,4 +1,4 @@
-package com.example.chicki_assistant
+package com.example.chicki_buddy
 
 import io.flutter.embedding.android.FlutterActivity
 
