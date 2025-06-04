@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:porcupine_flutter/porcupine.dart';
+import 'package:porcupine_flutter/porcupine_manager.dart';
+import 'package:porcupine_flutter/porcupine_error.dart';
 import '../core/logger.dart';
 import 'stt_service.dart';
 import 'tts_service.dart';
@@ -12,6 +15,7 @@ enum VoiceState {
   listening,
   processing,
   speaking,
+  detecting,  // Added for wake word detection
   error
 }
 
@@ -23,8 +27,10 @@ class VoiceController {
   final STTService _sttService = SpeechToTextService();
   final TTSService _ttsService = TextToSpeechService();
   final GPTService _gptService = OpenAIService();
+  PorcupineManager? _porcupineManager;
 
   bool _isInitialized = false;
+  bool _isWakeWordEnabled = false;
   final _stateController = StreamController<VoiceState>.broadcast();
 
   final _textController = StreamController<String>.broadcast();
@@ -53,6 +59,23 @@ class VoiceController {
       await _sttService.initialize();
       await _ttsService.initialize();
       await _gptService.initialize();
+      
+      // Initialize Porcupine wake word detection
+      try {
+        _porcupineManager = await PorcupineManager.fromBuiltInKeywords(
+          "3ZsjB+Lqz9YvUxjiPBL8lktSfYU27+Dy3HXQlzObXf+9PhpXizlbkw==",
+          // ["assets/hey_chicki.ppn"], // Custom wake word model file
+            [BuiltInKeyword.PICOVOICE, BuiltInKeyword.PORCUPINE],
+          _wakeWordCallback
+        );
+        _isWakeWordEnabled = true;
+        logger.info('Wake word detection initialized');
+        await _porcupineManager?.start();
+      } catch (e) {
+        logger.error('Failed to initialize wake word detection', e);
+        // Continue without wake word detection
+        _isWakeWordEnabled = false;
+      }
       
       _setupSTTListener();
       _isInitialized = true;
@@ -147,5 +170,42 @@ class VoiceController {
     _stateController.close();
     _textController.close();
     _responseController.close();
+    _porcupineManager?.delete();
+  }
+
+  void _wakeWordCallback(int keywordIndex) {
+    logger.info('Wake word detected! Index: $keywordIndex');
+    if (_stateController.isClosed) return;
+    
+    _stateController.add(VoiceState.detecting);
+    startListening();
+  }
+
+  Future<void> startWakeWordDetection() async {
+    if (!_isInitialized || !_isWakeWordEnabled) {
+      throw Exception('Wake word detection not initialized');
+    }
+
+    try {
+      await _porcupineManager?.start();
+      logger.info('Started wake word detection');
+    } catch (e) {
+      logger.error('Error starting wake word detection', e);
+      _stateController.add(VoiceState.error);
+      rethrow;
+    }
+  }
+
+  Future<void> stopWakeWordDetection() async {
+    if (!_isWakeWordEnabled) return;
+    
+    try {
+      await _porcupineManager?.stop();
+      logger.info('Stopped wake word detection');
+    } catch (e) {
+      logger.error('Error stopping wake word detection', e);
+      _stateController.add(VoiceState.error);
+      rethrow;
+    }
   }
 }

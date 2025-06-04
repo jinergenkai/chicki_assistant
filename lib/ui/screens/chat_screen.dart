@@ -31,6 +31,10 @@ class _ChatScreenState extends State<ChatScreen> {
       _voiceController = VoiceController();
       await _voiceController.initialize();
       _setupVoiceListener();
+      
+      // Start wake word detection after initialization
+      await _voiceController.startWakeWordDetection();
+      
       if (mounted) {
         setState(() {
           _isInitialized = true;
@@ -82,6 +86,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _scrollController.dispose();
     if (_isInitialized) {
+      _voiceController.stopWakeWordDetection();
       _voiceController.dispose();
     }
     super.dispose();
@@ -177,6 +182,8 @@ class _ChatScreenState extends State<ChatScreen> {
         return 'Processing...';
       case VoiceState.speaking:
         return 'Speaking...';
+      case VoiceState.detecting:
+        return 'Wake word detected!';
       case VoiceState.error:
         return 'Error occurred';
       case VoiceState.needsPermission:
@@ -184,7 +191,7 @@ class _ChatScreenState extends State<ChatScreen> {
       case VoiceState.uninitialized:
         return 'Initializing...';
       case VoiceState.idle:
-        return 'Tap microphone to speak';
+        return 'Say "Hey Chicki" to start';
     }
   }
 }

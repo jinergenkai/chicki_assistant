@@ -15,9 +15,10 @@ dependencies:
   cupertino_icons: ^1.0.6
   
   # Voice Services
-  speech_to_text: ^7.0.0 
+  speech_to_text: ^7.0.0
   flutter_tts: ^3.8.5
   permission_handler: ^11.0.1  # Added permission handler
+  porcupine_flutter: ^3.0.3  # Wake word detection
   
   # HTTP and API
   http: ^1.2.0
@@ -43,9 +44,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/
-    - assets/icons/
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+  #   - assets/wake_words/hey_chicki.ppn  # Custom wake word model file
   
   # fonts:
   #   - family: CustomFont
