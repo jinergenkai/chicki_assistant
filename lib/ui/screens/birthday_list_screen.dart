@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chickies_ui/chickies_ui.dart';
 import 'package:chicki_buddy/controllers/birthday_controller.dart';
 import 'package:chicki_buddy/models/friend.dart';
 import 'package:chicki_buddy/services/notification_service.dart';
@@ -13,19 +12,28 @@ class BirthdayListScreen extends StatelessWidget {
     final controller = Get.put(BirthdayController());
 
     return Scaffold(
-      appBar: const ChickiesAppBar(
-        title: '🎂 Danh sách sinh nhật',
+      appBar: AppBar(
+        title: const Text('🎂 Danh sách sinh nhật'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Obx(() => ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: controller.friends.length,
-        itemBuilder: (context, index) {
-          final friend = controller.friends[index];
-          return _FriendCard(friend: friend);
-        },
-      )),
-      floatingActionButton: ChickiesButton(
+            padding: const EdgeInsets.all(16),
+            itemCount: controller.friends.length,
+            itemBuilder: (context, index) {
+              final friend = controller.friends[index];
+              return _FriendCard(friend: friend);
+            },
+          )),
+      floatingActionButton: ElevatedButton(
         onPressed: () => _showAddFriendDialog(context),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -59,7 +67,7 @@ class BirthdayListScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ChickiesButton(
+                ElevatedButton(
                   onPressed: () async {
                     final date = await showDatePicker(
                       context: context,
@@ -71,6 +79,14 @@ class BirthdayListScreen extends StatelessWidget {
                       selectedDate = date;
                     }
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   child: const Text('Chọn ngày sinh'),
                 ),
               ],
@@ -82,7 +98,7 @@ class BirthdayListScreen extends StatelessWidget {
             onPressed: () => Get.back(),
             child: const Text('Hủy'),
           ),
-          ChickiesButton(
+          ElevatedButton(
             onPressed: () {
               if (nameController.text.isNotEmpty && selectedDate != null) {
                 final controller = Get.find<BirthdayController>();
@@ -93,6 +109,14 @@ class BirthdayListScreen extends StatelessWidget {
                 Get.back();
               }
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('Thêm'),
           ),
         ],
@@ -113,8 +137,19 @@ class _FriendCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: ChickiesContainer(
+      child: Container(
         padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -186,7 +221,7 @@ class _FriendCard extends StatelessWidget {
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: ChickiesButton(
+              child: ElevatedButton(
                 onPressed: () async {
                   try {
                     await NotificationService().showBirthdayNotification(friend.name);
@@ -203,6 +238,14 @@ class _FriendCard extends StatelessWidget {
                     );
                   }
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

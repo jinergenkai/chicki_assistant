@@ -1,10 +1,8 @@
+import 'package:chicki_buddy/controllers/voice_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chickies_ui/chickies_ui.dart';
-import 'package:chickies_ui/components/app_bar.dart';
-import 'package:chickies_ui/components/container.dart';
+import 'package:moon_design/moon_design.dart';
 import '../../models/message.dart';
-import '../../services/voice_controller.dart';
 import '../widgets/mic_button.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -96,24 +94,36 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFeef2f9),
-      appBar: const ChickiesAppBar(
-        title: 'Voice Chat',
+      appBar: AppBar(
+        title: MoonChip(
+          chipSize: MoonChipSize.md,
+          leading: const Icon(Icons.chat_bubble_outline, size: 20),
+          label: Text(
+            'Voice Chat',
+            style: MoonTypography.typography.heading.text20,
+          ),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Column(
         children: [
           // Messages List
           Expanded(
             child: !_isInitialized 
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                  child: MoonCircularLoader(
+                    circularLoaderSize: MoonCircularLoaderSize.sm,
+                  ),
+                )
               : Obx(() => ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final message = _messages[index];
-                    return _buildMessageBubble(message);
-                  },
-                )),
+                 controller: _scrollController,
+                 padding: const EdgeInsets.all(16),
+                 itemCount: _messages.length,
+                 itemBuilder: (context, index) {
+                   final message = _messages[index];
+                   return _buildMessageBubble(message);
+                 },
+               )),
           ),
           
           // Voice State Indicator
@@ -123,12 +133,16 @@ class _ChatScreenState extends State<ChatScreen> {
               final state = snapshot.data ?? VoiceState.idle;
               return Container(
                 padding: const EdgeInsets.all(8),
-                child: Text(
-                  _getStateText(state),
-                  style: const TextStyle(
-                    color: Color(0xFF7e7dd6),
-                    fontWeight: FontWeight.bold,
+                child: MoonTag(
+                  tagSize: MoonTagSize.sm,
+                  label: Text(
+                    _getStateText(state),
+                    style: MoonTypography.typography.body.text14.copyWith(
+                      color: const Color(0xFF7e7dd6),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+                  leading: const Icon(Icons.graphic_eq, size: 18, color: Color(0xFF7e7dd6)),
                 ),
               );
             },
@@ -137,9 +151,7 @@ class _ChatScreenState extends State<ChatScreen> {
           // Microphone Button
           const Padding(
             padding: EdgeInsets.all(16),
-            child: 
-               MicButton()
-              // : const CircularProgressIndicator(),
+            child: MicButton(),
           ),
         ],
       ),
@@ -150,26 +162,40 @@ class _ChatScreenState extends State<ChatScreen> {
     final isUser = message.isUser;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Align(
-        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
-          child: ChickiesContainer(
-            padding: const EdgeInsets.all(12),
-            margin: EdgeInsets.only(
-              left: isUser ? 48 : 8,
-              right: isUser ? 8 : 48,
+      child: Row(
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isUser)
+            const MoonAvatar(
+              avatarSize: MoonAvatarSize.sm,
+              showBadge: false,
+              content: Icon(Icons.android, size: 18),
             ),
-            color: isUser ? const Color(0xFF7e7dd6) : const Color(0xFFeef2f9),
-            borderRadius: 12,
-            child: Text(
-              message.content,
-              style: TextStyle(
-                color: isUser ? Colors.white : Colors.black87,
+          if (!isUser) const SizedBox(width: 8),
+          Flexible(
+            child: MoonChip(
+              chipSize: MoonChipSize.md,
+              backgroundColor: isUser ? const Color(0xFF7e7dd6) : const Color(0xFFeef2f9),
+              textColor: isUser ? Colors.white : Colors.black87,
+              borderRadius: BorderRadius.circular(12),
+              padding: const EdgeInsets.all(12),
+              label: Text(
+                message.content,
+                style: MoonTypography.typography.body.text14.copyWith(
+                  color: isUser ? Colors.white : Colors.black87,
+                ),
               ),
             ),
           ),
-        ),
+          if (isUser) const SizedBox(width: 8),
+          if (isUser)
+            const MoonAvatar(
+              avatarSize: MoonAvatarSize.sm,
+              showBadge: false,
+              content: Icon(Icons.person, size: 18),
+            ),
+        ],
       ),
     );
   }

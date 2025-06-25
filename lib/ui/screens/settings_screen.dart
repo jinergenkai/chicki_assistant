@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chickies_ui/chickies_ui.dart';
 import 'package:chicki_buddy/controllers/birthday_controller.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -11,14 +10,26 @@ class SettingsScreen extends StatelessWidget {
     final controller = Get.find<BirthdayController>();
 
     return Scaffold(
-      appBar: const ChickiesAppBar(
-        title: '⚙️ Cài đặt',
+      appBar: AppBar(
+        title: const Text('⚙️ Cài đặt'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          ChickiesContainer(
+          Container(
             padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -30,7 +41,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ChickiesButton(
+                ElevatedButton(
                   onPressed: () {
                     controller.initDemoDataIfEmpty();
                     Get.snackbar(
@@ -39,6 +50,14 @@ class SettingsScreen extends StatelessWidget {
                       backgroundColor: Colors.white,
                     );
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -49,7 +68,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ChickiesButton(
+                ElevatedButton(
                   onPressed: () {
                     Get.dialog(
                       AlertDialog(
@@ -60,7 +79,7 @@ class SettingsScreen extends StatelessWidget {
                             onPressed: () => Get.back(),
                             child: const Text('Hủy'),
                           ),
-                          ChickiesButton(
+                          ElevatedButton(
                             onPressed: () {
                               controller.resetAllData();
                               Get.back();
@@ -70,12 +89,28 @@ class SettingsScreen extends StatelessWidget {
                                 backgroundColor: Colors.white,
                               );
                             },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
                             child: const Text('Xóa'),
                           ),
                         ],
                       ),
                     );
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

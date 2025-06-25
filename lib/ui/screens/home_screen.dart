@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:chickies_ui/chickies_ui.dart';
 import 'chat_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -15,8 +14,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: ChickiesAppBar(
-        title: 'Chickies Assistant',
+      appBar: AppBar(
+        title: const Text('Chickies Assistant'),
         actions: [
           IconButton(
             icon: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
@@ -24,6 +23,7 @@ class HomeScreen extends StatelessWidget {
             tooltip: 'Toggle theme',
           ),
         ],
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: const ChatScreen(),
     );

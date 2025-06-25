@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:chickies_ui/components/icon_button.dart';
-import '../../services/voice_controller.dart';
+import '../../controllers/voice_controller.dart';
 import '../../core/logger.dart';
 
 class MicButton extends StatefulWidget {
@@ -94,21 +93,39 @@ class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMix
         
         // Show permission button if needed
         if (state == VoiceState.needsPermission) {
-          return ChickiesIconButton(
+          return IconButton(
             onPressed: () => openAppSettings(),
-            icon: Icons.mic_off,
-            backgroundColor: Colors.red,
-            size: 32,
+            icon: const Icon(Icons.mic_off, color: Colors.red),
+            iconSize: 32,
           );
         }
         
         return ScaleTransition(
           scale: _scaleAnimation,
-          child: ChickiesIconButton(
-            onPressed: isEnabled ? _toggleListening : () {}, // Provide empty function when disabled
-            icon: _getIcon(state),
-            backgroundColor: isEnabled ? _getBackgroundColor(state) : Colors.grey,
-            size: 32,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isEnabled ? _getBackgroundColor(state) : Colors.grey,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            onPressed: isEnabled ? _toggleListening : null,
+            icon: Icon(
+              _getIcon(state),
+              color: Colors.white,
+              size: 28,
+            ),
+            label: Text(
+              state == VoiceState.listening
+                ? 'Đang nghe'
+                : state == VoiceState.processing
+                  ? 'Đang xử lý'
+                  : state == VoiceState.speaking
+                    ? 'Đang nói'
+                    : 'Nhấn để nói',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         );
       },

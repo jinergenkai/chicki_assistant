@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chickies_ui/chickies_ui.dart';
 import 'package:chicki_buddy/controllers/birthday_controller.dart';
 
 class GiftSuggestionsScreen extends StatelessWidget {
@@ -11,8 +10,9 @@ class GiftSuggestionsScreen extends StatelessWidget {
     final controller = Get.find<BirthdayController>();
 
     return Scaffold(
-      appBar: const ChickiesAppBar(
-        title: '🎁 Gợi ý quà tặng',
+      appBar: AppBar(
+        title: const Text('🎁 Gợi ý quà tặng'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Center(
         child: Padding(
@@ -28,7 +28,7 @@ class GiftSuggestionsScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 24),
-              ChickiesButton(
+              ElevatedButton(
                 onPressed: () {
                   final gift = controller.getRandomGift();
                   Get.snackbar(
@@ -37,6 +37,14 @@ class GiftSuggestionsScreen extends StatelessWidget {
                     backgroundColor: Colors.white,
                   );
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

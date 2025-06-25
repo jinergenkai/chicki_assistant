@@ -10,38 +10,38 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  chickies_ui:
-    path: ./chickies_ui
   cupertino_icons: ^1.0.6
-  
+
   # Database
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  
+
   # Voice Services
   speech_to_text: ^7.0.0
   flutter_tts: ^3.8.5
   permission_handler: ^11.0.1  # Added permission handler
   porcupine_flutter: ^3.0.3  # Wake word detection
-  
+
   # HTTP and API
   http: ^1.2.0
   dio: ^5.4.0
-  
+
   # State Management
   get: ^4.6.6
-  
+
   # Utils
   logger: ^2.0.2
   translator: ^1.0.0
   path_provider: ^2.1.2
   shared_preferences: ^2.2.2
   flutter_local_notifications: ^19.2.1
-  
+
   # UI
   flutter_animate: ^4.5.0
   google_fonts: ^6.1.0
   table_calendar: ^3.0.9
+  go_router: ^15.2.4
+  moon_design: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -52,14 +52,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
-  #   - assets/wake_words/hey_chicki.ppn  # Custom wake word model file
-  
-  # fonts:
-  #   - family: CustomFont
-  #     fonts:
-  #       - asset: assets/fonts/CustomFont-Regular.ttf
-  #       - asset: assets/fonts/CustomFont-Bold.ttf
-  #         weight: 700
+  assets:
+    - assets/DMSans.ttf
+
+  fonts:
+    - family: DMSans
+      fonts:
+        - asset: assets/DMSans.ttf

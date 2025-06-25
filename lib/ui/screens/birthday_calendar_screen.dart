@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:chickies_ui/chickies_ui.dart';
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:chicki_buddy/controllers/birthday_controller.dart';
@@ -38,7 +37,19 @@ class _BirthdayCalendarScreenState extends State<BirthdayCalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChickiesContainer(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
       child: Column(
         children: [
           _buildCalendarHeader(context),
@@ -273,8 +284,8 @@ class _BirthdayCalendarScreenState extends State<BirthdayCalendarScreen> {
                               Positioned(
                                 right: 12,
                                 top: 12,
-                                child: ChickiesIconButton(
-                                  icon: Icons.card_giftcard,
+                                child: IconButton(
+                                  icon: const Icon(Icons.card_giftcard),
                                   onPressed: () {
                                     // TODO: Navigate to gift suggestions
                                   },
@@ -300,8 +311,8 @@ class _BirthdayCalendarScreenState extends State<BirthdayCalendarScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Row(
         children: [
-          ChickiesIconButton(
-            icon: Icons.chevron_left,
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
             onPressed: () {
               setState(() {
                 _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
@@ -317,8 +328,8 @@ class _BirthdayCalendarScreenState extends State<BirthdayCalendarScreen> {
               textAlign: TextAlign.center,
             ),
           ),
-          ChickiesIconButton(
-            icon: Icons.chevron_right,
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
             onPressed: () {
               setState(() {
                 _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);

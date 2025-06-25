@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:chickies_ui/chickies_ui.dart';
+import 'package:go_router/go_router.dart';
 import 'package:chicki_buddy/ui/screens/birthday_list_screen.dart';
 import 'package:chicki_buddy/ui/screens/chat_screen.dart';
 import 'package:chicki_buddy/ui/screens/birthday_calendar_screen.dart';
@@ -7,7 +7,8 @@ import 'package:chicki_buddy/ui/screens/gift_suggestions_screen.dart';
 import 'package:chicki_buddy/ui/screens/settings_screen.dart';
 
 class MainScreen extends StatelessWidget {
-  const MainScreen({super.key});
+  final Widget child;
+  const MainScreen({super.key, required this.child});
 
   Widget _buildTab(IconData icon, String text) {
     return Tab(
@@ -28,47 +29,71 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 5,
-      child: Scaffold(
-        body: const TabBarView(
-          children: [
-            ChatScreen(),
-            BirthdayCalendarScreen(),
-            BirthdayListScreen(),
-            GiftSuggestionsScreen(),
-            SettingsScreen(),
+    // Lấy index hiện tại từ location
+    final location = GoRouterState.of(context).uri.toString();
+    int currentIndex = 0;
+    if (location.startsWith('/calendar')) currentIndex = 1;
+    else if (location.startsWith('/birthdays')) currentIndex = 2;
+    else if (location.startsWith('/gifts')) currentIndex = 3;
+    else if (location.startsWith('/settings')) currentIndex = 4;
+
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 4,
+              offset: const Offset(0, -1),
+            ),
           ],
         ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 4,
-                offset: const Offset(0, -1),
+        child: SafeArea(
+          child: NavigationBar(
+            selectedIndex: currentIndex,
+            onDestinationSelected: (index) {
+              switch (index) {
+                case 0:
+                  context.go('/');
+                  break;
+                case 1:
+                  context.go('/calendar');
+                  break;
+                case 2:
+                  context.go('/birthdays');
+                  break;
+                case 3:
+                  context.go('/gifts');
+                  break;
+                case 4:
+                  context.go('/settings');
+                  break;
+              }
+            },
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.chat),
+                label: 'Chicki',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.calendar_month),
+                label: 'Lịch',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.cake),
+                label: 'Sinh nhật',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.card_giftcard),
+                label: 'Quà tặng',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.settings),
+                label: 'Cài đặt',
               ),
             ],
-          ),
-          child: SafeArea(
-            child: TabBar(
-              tabs: [
-                _buildTab(Icons.chat, 'Chicki'),
-                _buildTab(Icons.calendar_month, 'Lịch'),
-                _buildTab(Icons.cake, 'Sinh nhật'),
-                _buildTab(Icons.card_giftcard, 'Quà tặng'),
-                _buildTab(Icons.settings, 'Cài đặt'),
-              ],
-              labelStyle: const TextStyle(fontSize: 12),
-              labelColor: Theme.of(context).colorScheme.primary,
-              unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-              indicatorSize: TabBarIndicatorSize.label,
-              indicatorColor: Theme.of(context).colorScheme.primary,
-              dividerColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              labelPadding: const EdgeInsets.symmetric(vertical: 6),
-            ),
           ),
         ),
       ),
