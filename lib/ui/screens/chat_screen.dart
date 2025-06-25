@@ -1,9 +1,12 @@
 import 'package:chicki_buddy/controllers/voice_controller.dart';
+import 'package:chicki_buddy/controllers/chat_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:moon_design/moon_design.dart';
 import '../../models/message.dart';
 import '../widgets/mic_button.dart';
+import '../widgets/message_bubble.dart';
+import '../widgets/voice_state_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -13,10 +16,22 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final _messages = <Message>[].obs;
+  final ChatController _chatController = Get.find<ChatController>();
   late final VoiceController _voiceController;
   final _scrollController = ScrollController();
   bool _isInitialized = false;
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -29,10 +44,10 @@ class _ChatScreenState extends State<ChatScreen> {
       _voiceController = VoiceController();
       await _voiceController.initialize();
       _setupVoiceListener();
-      
+
       // Start wake word detection after initialization
-      await _voiceController.startWakeWordDetection();
-      
+      // await _voiceController.startWakeWordDetection();
+
       if (mounted) {
         setState(() {
           _isInitialized = true;
@@ -67,7 +82,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _addMessage(Message message) {
-    _messages.add(message);
+    _chatController.addMessage(message);
     // Scroll to bottom after message is added
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
@@ -84,7 +99,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _scrollController.dispose();
     if (_isInitialized) {
-      _voiceController.stopWakeWordDetection();
+      // _voiceController.stopWakeWordDetection();
       _voiceController.dispose();
     }
     super.dispose();
@@ -93,131 +108,86 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       backgroundColor: const Color(0xFFeef2f9),
       appBar: AppBar(
-        title: MoonChip(
-          chipSize: MoonChipSize.md,
-          leading: const Icon(Icons.chat_bubble_outline, size: 20),
-          label: Text(
-            'Voice Chat',
-            style: MoonTypography.typography.heading.text20,
-          ),
+        title: Row(
+          children: [
+            const MoonAvatar(
+              backgroundColor: Colors.white,
+              content: Icon(Icons.chat_bubble_outline, color: Color(0xFF4F5D73)),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Voice Chat',
+                  style: MoonTypography.typography.heading.text20.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Trò chuyện AI',
+                  style: MoonTypography.typography.body.text12.copyWith(
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
+        elevation: 0.5,
+        toolbarHeight: 64,
+        centerTitle: false,
       ),
       body: Column(
         children: [
           // Messages List
           Expanded(
-            child: !_isInitialized 
-              ? const Center(
-                  child: MoonCircularLoader(
-                    circularLoaderSize: MoonCircularLoaderSize.sm,
-                  ),
-                )
-              : Obx(() => ListView.builder(
-                 controller: _scrollController,
-                 padding: const EdgeInsets.all(16),
-                 itemCount: _messages.length,
-                 itemBuilder: (context, index) {
-                   final message = _messages[index];
-                   return _buildMessageBubble(message);
-                 },
-               )),
+            child: !_isInitialized
+                ? const Center(
+                    child: MoonCircularLoader(
+                      circularLoaderSize: MoonCircularLoaderSize.sm,
+                    ),
+                  )
+                : Obx(() {
+                    // Scroll to bottom mỗi khi messages thay đổi
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _scrollToBottom();
+                    });
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _chatController.messages.length,
+                      itemBuilder: (context, index) {
+                        final message = _chatController.messages[index];
+                        return MessageBubble(message: message);
+                      },
+                    );
+                  }),
           ),
-          
+
           // Voice State Indicator
           StreamBuilder<VoiceState>(
             stream: _isInitialized ? _voiceController.stateStream : null,
             builder: (context, snapshot) {
               final state = snapshot.data ?? VoiceState.idle;
-              return Container(
-                padding: const EdgeInsets.all(8),
-                child: MoonTag(
-                  tagSize: MoonTagSize.sm,
-                  label: Text(
-                    _getStateText(state),
-                    style: MoonTypography.typography.body.text14.copyWith(
-                      color: const Color(0xFF7e7dd6),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  leading: const Icon(Icons.graphic_eq, size: 18, color: Color(0xFF7e7dd6)),
-                ),
-              );
+              return VoiceStateIndicator(state: state);
             },
           ),
 
           // Microphone Button
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: MicButton(),
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom,
+            ),
+            child: const MicButton(),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildMessageBubble(Message message) {
-    final isUser = message.isUser;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isUser)
-            const MoonAvatar(
-              avatarSize: MoonAvatarSize.sm,
-              showBadge: false,
-              content: Icon(Icons.android, size: 18),
-            ),
-          if (!isUser) const SizedBox(width: 8),
-          Flexible(
-            child: MoonChip(
-              chipSize: MoonChipSize.md,
-              backgroundColor: isUser ? const Color(0xFF7e7dd6) : const Color(0xFFeef2f9),
-              textColor: isUser ? Colors.white : Colors.black87,
-              borderRadius: BorderRadius.circular(12),
-              padding: const EdgeInsets.all(12),
-              label: Text(
-                message.content,
-                style: MoonTypography.typography.body.text14.copyWith(
-                  color: isUser ? Colors.white : Colors.black87,
-                ),
-              ),
-            ),
-          ),
-          if (isUser) const SizedBox(width: 8),
-          if (isUser)
-            const MoonAvatar(
-              avatarSize: MoonAvatarSize.sm,
-              showBadge: false,
-              content: Icon(Icons.person, size: 18),
-            ),
-        ],
-      ),
-    );
-  }
-
-  String _getStateText(VoiceState state) {
-    switch (state) {
-      case VoiceState.listening:
-        return 'Listening...';
-      case VoiceState.processing:
-        return 'Processing...';
-      case VoiceState.speaking:
-        return 'Speaking...';
-      case VoiceState.detecting:
-        return 'Wake word detected!';
-      case VoiceState.error:
-        return 'Error occurred';
-      case VoiceState.needsPermission:
-        return 'Microphone permission needed';
-      case VoiceState.uninitialized:
-        return 'Initializing...';
-      case VoiceState.idle:
-        return 'Say "Hey Chicki" to start';
-    }
   }
 }

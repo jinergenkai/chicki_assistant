@@ -25,12 +25,13 @@ class VoiceController {
   VoiceController._internal();
 
   final STTService _sttService = SpeechToTextService();
+  String? _lastProcessedText;
   final TTSService _ttsService = TextToSpeechService();
   final GPTService _gptService = OpenAIService();
   PorcupineManager? _porcupineManager;
 
   bool _isInitialized = false;
-  bool _isWakeWordEnabled = false;
+  final bool _isWakeWordEnabled = false;
   final _stateController = StreamController<VoiceState>.broadcast();
 
   final _textController = StreamController<String>.broadcast();
@@ -61,21 +62,21 @@ class VoiceController {
       await _gptService.initialize();
       
       // Initialize Porcupine wake word detection
-      try {
-        _porcupineManager = await PorcupineManager.fromBuiltInKeywords(
-          "3ZsjB+Lqz9YvUxjiPBL8lktSfYU27+Dy3HXQlzObXf+9PhpXizlbkw==",
-          // ["assets/hey_chicki.ppn"], // Custom wake word model file
-            [BuiltInKeyword.PICOVOICE, BuiltInKeyword.PORCUPINE],
-          _wakeWordCallback
-        );
-        _isWakeWordEnabled = true;
-        logger.info('Wake word detection initialized');
-        await _porcupineManager?.start();
-      } catch (e) {
-        logger.error('Failed to initialize wake word detection', e);
-        // Continue without wake word detection
-        _isWakeWordEnabled = false;
-      }
+      // try {
+      //   _porcupineManager = await PorcupineManager.fromBuiltInKeywords(
+      //     "3ZsjB+Lqz9YvUxjiPBL8lktSfYU27+Dy3HXQlzObXf+9PhpXizlbkw==",
+      //     // ["assets/hey_chicki.ppn"], // Custom wake word model file
+      //       [BuiltInKeyword.PICOVOICE, BuiltInKeyword.PORCUPINE],
+      //     _wakeWordCallback
+      //   );
+      //   _isWakeWordEnabled = true;
+      //   logger.info('Wake word detection initialized');
+      //   await _porcupineManager?.start();
+      // } catch (e) {
+      //   logger.error('Failed to initialize wake word detection', e);
+      //   // Continue without wake word detection
+      //   _isWakeWordEnabled = false;
+      // }
       
       _setupSTTListener();
       _isInitialized = true;
@@ -92,6 +93,12 @@ class VoiceController {
   void _setupSTTListener() {
     _sttService.onTextRecognized.listen((text) async {
       if (text.isNotEmpty) {
+        // Chặn duplicate message
+        if (_lastProcessedText == text) {
+          logger.info('Duplicate speech input detected, skipping: $text');
+          return;
+        }
+        _lastProcessedText = text;
         try {
           // Emit recognized text
           _textController.add(text);
@@ -101,7 +108,7 @@ class VoiceController {
           
           // Get response from GPT
           final response = await _gptService.generateResponse(text);
-          logger.info('Got GPT response: $response');
+          logger.success('Got GPT response: $response');
           
           // Emit GPT response
           _responseController.add(response);
@@ -134,7 +141,7 @@ class VoiceController {
 
       await _sttService.startListening();
       _stateController.add(VoiceState.listening);
-      logger.info('Started listening');
+      logger.info('voice controller: Started listening');
     } catch (e) {
       logger.error('Error starting voice listening', e);
       _stateController.add(VoiceState.error);
@@ -146,7 +153,7 @@ class VoiceController {
     try {
       await _sttService.stopListening();
       _stateController.add(VoiceState.idle);
-      logger.info('Stopped listening');
+      logger.info('voice controller: Stopped listening');
     } catch (e) {
       logger.error('Error stopping voice listening', e);
       _stateController.add(VoiceState.error);
@@ -167,9 +174,11 @@ class VoiceController {
   }
 
   void dispose() {
-    _stateController.close();
-    _textController.close();
-    _responseController.close();
+    // Không đóng các StreamController vì VoiceController là singleton và có thể còn được sử dụng ở nơi khác.
+    // _stateController.close();
+    // _textController.close();
+    // _responseController.close();
+
     _porcupineManager?.delete();
   }
 

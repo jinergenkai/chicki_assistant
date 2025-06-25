@@ -10,6 +10,7 @@ class GiftSuggestionsScreen extends StatelessWidget {
     final controller = Get.find<BirthdayController>();
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: const Text('🎁 Gợi ý quà tặng'),
         backgroundColor: Theme.of(context).colorScheme.primary,

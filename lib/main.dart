@@ -6,11 +6,15 @@ import 'package:chicki_buddy/models/friend.dart';
 import 'package:chicki_buddy/services/notification_service.dart';
 import 'package:chicki_buddy/ui/screens/main_screen.dart';
 import 'package:chicki_buddy/core/app_router.dart';
+import 'package:get/get.dart';
+import 'package:chicki_buddy/controllers/birthday_controller.dart';
+import 'package:chicki_buddy/controllers/chat_controller.dart';
+import 'package:chicki_buddy/controllers/voice_controller.dart';
 
 void main() async {
   // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Hive
   await Hive.initFlutter();
   Hive.registerAdapter(FriendAdapter());
@@ -18,7 +22,12 @@ void main() async {
 
   // Initialize Notifications
   await NotificationService().initialize();
-  
+
+  // Khởi tạo sẵn các controller dùng GetX để tránh lỗi khi chuyển tab
+  Get.put(BirthdayController(), permanent: true);
+  Get.put(ChatController(), permanent: true);
+  Get.put(VoiceController(), permanent: true);
+
   runApp(const MyApp());
 }
 
@@ -31,11 +40,16 @@ class MyApp extends StatelessWidget {
       title: 'Birthday App',
       theme: ThemeData.light().copyWith(
         scaffoldBackgroundColor: const Color(0xFFF6F7F9),
+        primaryColor: const Color(0xFF90CAF9), // xanh nhạt
+        colorScheme: ThemeData.light().colorScheme.copyWith(
+          primary: const Color(0xFF90CAF9),
+        ),
+        textTheme: ThemeData.light().textTheme.apply(fontFamily: 'DMSans'),
         extensions: <ThemeExtension<dynamic>>[
           MoonTheme(
             tokens: MoonTokens.light.copyWith(
               colors: MoonTokens.light.colors.copyWith(
-                piccolo: const Color.fromARGB(255, 0, 0, 0), 
+                piccolo: const Color(0xFF90CAF9), // xanh nhạt
               ),
               typography: MoonTypography.typography.copyWith(
                 heading: MoonTypography.typography.heading.apply(
@@ -53,6 +67,7 @@ class MyApp extends StatelessWidget {
       ),
       darkTheme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF1F1F1F),
+        textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'DMSans'),
         extensions: <ThemeExtension<dynamic>>[
           MoonTheme(
             tokens: MoonTokens.dark.copyWith(

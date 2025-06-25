@@ -98,7 +98,7 @@ class SpeechToTextService implements STTService {
           }
         },
         listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 3),
+        pauseFor: const Duration(seconds: 2),
         partialResults: false,
         cancelOnError: true,
         listenMode: ListenMode.confirmation,

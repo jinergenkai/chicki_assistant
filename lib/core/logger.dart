@@ -1,39 +1,41 @@
-import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
 import 'app_config.dart';
 
-class Logger {
-  static final Logger _instance = Logger._internal();
-  factory Logger() => _instance;
-  Logger._internal();
+class LoggerService {
+  static final LoggerService _instance = LoggerService._internal();
+  factory LoggerService() => _instance;
+  LoggerService._internal();
+
+  static final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      colors: true,
+      printEmojis: true,
+    ),
+  );
 
   void debug(String message) {
     if (AppConfig().isDebugMode) {
-      debugPrint('🐛 DEBUG: $message');
+      _logger.d(message);
     }
   }
 
   void info(String message) {
-    debugPrint('ℹ️ INFO: $message');
+    _logger.i(message);
   }
 
   void warning(String message) {
-    debugPrint('⚠️ WARNING: $message');
+    _logger.w(message);
   }
 
   void error(String message, [dynamic error, StackTrace? stackTrace]) {
-    debugPrint('❌ ERROR: $message');
-    if (error != null) {
-      debugPrint('Error details: $error');
-    }
-    if (stackTrace != null) {
-      debugPrint('Stack trace: $stackTrace');
-    }
+    _logger.e(message, error: error, stackTrace: stackTrace);
   }
 
   void success(String message) {
-    debugPrint('✅ SUCCESS: $message');
+    _logger.i('✅ $message');
   }
 }
 
 // Global logger instance for easy access
-final logger = Logger();
+final logger = LoggerService();

@@ -10,7 +10,7 @@ import '../ui/screens/main_screen.dart';
 final GoRouter appRouter = GoRouter(
   routes: [
     ShellRoute(
-      builder: (context, state, child) => MainScreen(child: child),
+      builder: (context, state, child) => const MainScreen(),
       routes: [
         GoRoute(
           path: '/',

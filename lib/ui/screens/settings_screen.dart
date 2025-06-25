@@ -10,6 +10,7 @@ class SettingsScreen extends StatelessWidget {
     final controller = Get.find<BirthdayController>();
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: const Text('⚙️ Cài đặt'),
         backgroundColor: Theme.of(context).colorScheme.primary,

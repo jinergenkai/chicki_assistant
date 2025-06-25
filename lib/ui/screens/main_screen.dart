@@ -1,101 +1,186 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:chicki_buddy/ui/screens/birthday_list_screen.dart';
-import 'package:chicki_buddy/ui/screens/chat_screen.dart';
-import 'package:chicki_buddy/ui/screens/birthday_calendar_screen.dart';
-import 'package:chicki_buddy/ui/screens/gift_suggestions_screen.dart';
-import 'package:chicki_buddy/ui/screens/settings_screen.dart';
+import 'package:moon_design/moon_design.dart';
 
-class MainScreen extends StatelessWidget {
-  final Widget child;
-  const MainScreen({super.key, required this.child});
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:moon_design/moon_design.dart';
+import 'chat_screen.dart';
+import 'birthday_calendar_screen.dart';
+import 'birthday_list_screen.dart';
+import 'gift_suggestions_screen.dart';
+import 'settings_screen.dart';
 
-  Widget _buildTab(IconData icon, String text) {
-    return Tab(
-      iconMargin: const EdgeInsets.only(bottom: 4),
-      height: 54,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 20),
-          Text(
-            text,
-            style: const TextStyle(fontSize: 11),
-          ),
-        ],
-      ),
-    );
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  late final PageController _pageController;
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = const [
+    ChatScreen(),
+    BirthdayCalendarScreen(),
+    BirthdayListScreen(),
+    GiftSuggestionsScreen(),
+    SettingsScreen(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  void _onNavBarTap(int index) {
+    setState(() {
+      _currentIndex = index;
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.ease,
+      );
+    });
+  }
+
+  void _onPageChanged(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Lấy index hiện tại từ location
-    final location = GoRouterState.of(context).uri.toString();
-    int currentIndex = 0;
-    if (location.startsWith('/calendar')) currentIndex = 1;
-    else if (location.startsWith('/birthdays')) currentIndex = 2;
-    else if (location.startsWith('/gifts')) currentIndex = 3;
-    else if (location.startsWith('/settings')) currentIndex = 4;
-
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, -1),
-            ),
-          ],
+    return SafeArea(
+      child: Scaffold(
+        extendBody: true,
+        backgroundColor: Colors.transparent,
+        body: PageView(
+          controller: _pageController,
+          physics: const BouncingScrollPhysics(),
+          onPageChanged: _onPageChanged,
+          children: _screens,
         ),
-        child: SafeArea(
-          child: NavigationBar(
-            selectedIndex: currentIndex,
-            onDestinationSelected: (index) {
-              switch (index) {
-                case 0:
-                  context.go('/');
-                  break;
-                case 1:
-                  context.go('/calendar');
-                  break;
-                case 2:
-                  context.go('/birthdays');
-                  break;
-                case 3:
-                  context.go('/gifts');
-                  break;
-                case 4:
-                  context.go('/settings');
-                  break;
-              }
-            },
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.chat),
+        bottomNavigationBar: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: context.moonColors!.gohan,
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _MoonNavBarItem(
+                icon: MoonIcons.chat_chat_16_regular,
                 label: 'Chicki',
+                selected: _currentIndex == 0,
+                onTap: () => _onNavBarTap(0),
               ),
-              NavigationDestination(
-                icon: Icon(Icons.calendar_month),
+              _MoonNavBarItem(
+                icon: Icons.calendar_month,
                 label: 'Lịch',
+                selected: _currentIndex == 1,
+                onTap: () => _onNavBarTap(1),
               ),
-              NavigationDestination(
-                icon: Icon(Icons.cake),
+              _MoonNavBarItem(
+                icon: Icons.cake,
                 label: 'Sinh nhật',
+                selected: _currentIndex == 2,
+                onTap: () => _onNavBarTap(2),
               ),
-              NavigationDestination(
-                icon: Icon(Icons.card_giftcard),
+              _MoonNavBarItem(
+                icon: Icons.card_giftcard,
                 label: 'Quà tặng',
+                selected: _currentIndex == 3,
+                onTap: () => _onNavBarTap(3),
               ),
-              NavigationDestination(
-                icon: Icon(Icons.settings),
+              _MoonNavBarItem(
+                icon: Icons.settings,
                 label: 'Cài đặt',
+                selected: _currentIndex == 4,
+                onTap: () => _onNavBarTap(4),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MoonNavBarItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _MoonNavBarItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color selectedColor = context.moonColors!.piccolo;
+    final Color unselectedColor = Theme.of(context).iconTheme.color ?? Colors.grey;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: selected
+            ? Container(
+                decoration: BoxDecoration(
+                  color: context.moonColors!.piccolo.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 26,
+                      color: selectedColor,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: selectedColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Icon(
+                icon,
+                size: 26,
+                color: unselectedColor,
+              ),
       ),
     );
   }
