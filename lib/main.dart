@@ -8,9 +8,6 @@ import 'package:chicki_buddy/ui/screens/main_screen.dart';
 import 'package:chicki_buddy/core/app_router.dart';
 
 void main() async {
-// Định nghĩa custom colors cho Moon Design (có thể chỉnh sửa theo ý bạn)
-  final mdsLightColors = MoonTokens.light.colors;
-  final mdsDarkColors = MoonTokens.dark.colors;
   // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -37,7 +34,9 @@ class MyApp extends StatelessWidget {
         extensions: <ThemeExtension<dynamic>>[
           MoonTheme(
             tokens: MoonTokens.light.copyWith(
-              colors: mdsLightColors,
+              colors: MoonTokens.light.colors.copyWith(
+                piccolo: const Color.fromARGB(255, 0, 0, 0), 
+              ),
               typography: MoonTypography.typography.copyWith(
                 heading: MoonTypography.typography.heading.apply(
                   fontFamily: "DMSans",
