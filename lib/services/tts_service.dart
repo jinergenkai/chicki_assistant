@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../core/logger.dart';
-import '../core/app_config.dart';
+import 'package:get/get.dart';
+import '../controllers/app_config.controller.dart';
 
 abstract class TTSService {
   Future<void> initialize();
@@ -19,7 +20,7 @@ class TextToSpeechService implements TTSService {
 
   final FlutterTts _tts = FlutterTts();
   bool _isInitialized = false;
-  final _config = AppConfig();
+  final _config = Get.find<AppConfigController>();
 
   @override
   bool get isSpeaking => _isSpeaking;
@@ -29,8 +30,8 @@ class TextToSpeechService implements TTSService {
   Future<void> initialize() async {
     try {
       // Set initial configuration
-      await _tts.setLanguage(_config.defaultLanguage);
-      await _tts.setSpeechRate(_config.speechRate);
+      await _tts.setLanguage(_config.defaultLanguage.value);
+      await _tts.setSpeechRate(_config.speechRate.value);
       await _tts.setVolume(1.0);
       await _tts.setPitch(1.0);
 
@@ -52,9 +53,9 @@ class TextToSpeechService implements TTSService {
       });
 
       // Check if the language is available
-      final available = await _tts.isLanguageAvailable(_config.defaultLanguage);
+      final available = await _tts.isLanguageAvailable(_config.defaultLanguage.value);
       if (!available) {
-        logger.warning('Language ${_config.defaultLanguage} not available, falling back to en-US');
+        logger.warning('Language ${_config.defaultLanguage.value} not available, falling back to en-US');
         await _tts.setLanguage('en-US');
       }
 

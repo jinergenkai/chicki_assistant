@@ -1,6 +1,10 @@
 class AppConstants {
+  // Base URLs
+  static const String baseUrl = 'http://192.168.0.106:1337/v1';
+
   // API Keys
   static const String openAIKey = 'YOUR_OPENAI_KEY';
+  static const String janKey = '1';
   
   // App Settings
   static const String appName = 'Voice AI Assistant';

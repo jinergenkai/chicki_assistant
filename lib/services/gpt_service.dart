@@ -1,21 +1,14 @@
 import 'dart:async';
 import '../core/logger.dart';
-import '../core/app_config.dart';
 import '../core/constants.dart';
 import '../models/message.dart';
+import 'llm_service.dart';
 
-abstract class GPTService {
-  Future<String> generateResponse(String userInput);
-  Future<void> initialize();
-  Future<void> resetContext();
-}
-
-class OpenAIService implements GPTService {
+class OpenAIService implements LLMService {
   static final OpenAIService _instance = OpenAIService._internal();
   factory OpenAIService() => _instance;
   OpenAIService._internal();
 
-  final _config = AppConfig();
   final List<Message> _conversationHistory = [];
   bool _isInitialized = false;
 

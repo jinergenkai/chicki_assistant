@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:porcupine_flutter/porcupine.dart';
 import 'package:porcupine_flutter/porcupine_manager.dart';
@@ -6,7 +6,8 @@ import 'package:porcupine_flutter/porcupine_error.dart';
 import '../core/logger.dart';
 import '../services/stt_service.dart';
 import '../services/tts_service.dart';
-import '../services/gpt_service.dart';
+import '../services/local_llm_service.dart';
+import '../services/llm_service.dart';
 
 enum VoiceState {
   uninitialized,
@@ -19,37 +20,54 @@ enum VoiceState {
   error
 }
 
-class VoiceController {
-  static final VoiceController _instance = VoiceController._internal();
-  factory VoiceController() => _instance;
-  VoiceController._internal();
+// Refactor: GetxController + Rx, giữ lại toàn bộ comment cũ để tiện phát triển feature sau này
+class VoiceController extends GetxController {
+  // Singleton không còn cần thiết khi dùng GetX, nhưng giữ lại comment cho tham khảo
+  // static final VoiceController _instance = VoiceController._internal();
+  // factory VoiceController() => _instance;
+  // VoiceController._internal();
 
   final STTService _sttService = SpeechToTextService();
   String? _lastProcessedText;
   final TTSService _ttsService = TextToSpeechService();
-  final GPTService _gptService = OpenAIService();
+  final LLMService _gptService = LocalLLMService();
   PorcupineManager? _porcupineManager;
 
   bool _isInitialized = false;
   final bool _isWakeWordEnabled = false;
-  final _stateController = StreamController<VoiceState>.broadcast();
 
-  final _textController = StreamController<String>.broadcast();
-  final _responseController = StreamController<String>.broadcast();
+  // Rx thay cho StreamController
+  final state = VoiceState.uninitialized.obs;
+  final recognizedText = ''.obs;
+  final gptResponse = ''.obs;
+  final rmsDB = (-2.0).obs;
 
-  Stream<VoiceState> get stateStream => _stateController.stream;
-  Stream<String> get onTextRecognized => _textController.stream;
-  Stream<String> get onGptResponse => _responseController.stream;
-  bool get isInitialized => _isInitialized;
+  // Giữ lại comment về các StreamController cũ để tham khảo
+  // final _stateController = StreamController<VoiceState>.broadcast();
+  // final _textController = StreamController<String>.broadcast();
+  // final _responseController = StreamController<String>.broadcast();
+
+  // Stream<VoiceState> get stateStream => _stateController.stream;
+  // Stream<String> get onTextRecognized => _textController.stream;
+  // Stream<String> get onGptResponse => _responseController.stream;
+  // bool get isInitialized => _isInitialized;
+  // Stream<double> get onRmsChanged => _sttService.onRmsChanged;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _setupSTTListener();
+    _setupRmsListener();
+  }
 
   Future<void> initialize() async {
     try {
-      _stateController.add(VoiceState.uninitialized);
+      state.value = VoiceState.uninitialized;
 
       // Check microphone permission first
       final micStatus = await Permission.microphone.status;
       if (micStatus.isDenied) {
-        _stateController.add(VoiceState.needsPermission);
+        state.value = VoiceState.needsPermission;
         final result = await Permission.microphone.request();
         if (!result.isGranted) {
           throw Exception('Microphone permission denied');
@@ -60,7 +78,7 @@ class VoiceController {
       await _sttService.initialize();
       await _ttsService.initialize();
       await _gptService.initialize();
-      
+
       // Initialize Porcupine wake word detection
       // try {
       //   _porcupineManager = await PorcupineManager.fromBuiltInKeywords(
@@ -77,15 +95,13 @@ class VoiceController {
       //   // Continue without wake word detection
       //   _isWakeWordEnabled = false;
       // }
-      
-      _setupSTTListener();
+
       _isInitialized = true;
-      
       logger.info('Voice Controller initialized successfully');
-      _stateController.add(VoiceState.idle);
+      state.value = VoiceState.idle;
     } catch (e) {
       logger.error('Failed to initialize Voice Controller', e);
-      _stateController.add(VoiceState.error);
+      state.value = VoiceState.error;
       rethrow;
     }
   }
@@ -101,28 +117,35 @@ class VoiceController {
         _lastProcessedText = text;
         try {
           // Emit recognized text
-          _textController.add(text);
-          
-          _stateController.add(VoiceState.processing);
+          recognizedText.value = text;
+
+          state.value = VoiceState.processing;
           logger.info('Processing speech input: $text');
-          
+
           // Get response from GPT
           final response = await _gptService.generateResponse(text);
           logger.success('Got GPT response: $response');
-          
+
           // Emit GPT response
-          _responseController.add(response);
-          
+          gptResponse.value = response;
+
           // Speak the response
-          _stateController.add(VoiceState.speaking);
+          state.value = VoiceState.speaking;
           await _ttsService.speak(response);
-          
-          _stateController.add(VoiceState.idle);
+
+          state.value = VoiceState.idle;
         } catch (e) {
           logger.error('Error processing voice input', e);
-          _stateController.add(VoiceState.error);
+          state.value = VoiceState.error;
         }
       }
+    });
+  }
+
+  void _setupRmsListener() {
+    _sttService.onRmsChanged.listen((level) {
+      rmsDB.value = level;
+      logger.info('VoiceController: rmsDB=$level');
     });
   }
 
@@ -130,21 +153,20 @@ class VoiceController {
     if (!_isInitialized) {
       throw Exception('Voice Controller not initialized');
     }
-    
     try {
       // Double check microphone permission
       final micStatus = await Permission.microphone.status;
       if (!micStatus.isGranted) {
-        _stateController.add(VoiceState.needsPermission);
+        state.value = VoiceState.needsPermission;
         throw Exception('Microphone permission not granted');
       }
 
       await _sttService.startListening();
-      _stateController.add(VoiceState.listening);
+      state.value = VoiceState.listening;
       logger.info('voice controller: Started listening');
     } catch (e) {
       logger.error('Error starting voice listening', e);
-      _stateController.add(VoiceState.error);
+      state.value = VoiceState.error;
       rethrow;
     }
   }
@@ -152,11 +174,11 @@ class VoiceController {
   Future<void> stopListening() async {
     try {
       await _sttService.stopListening();
-      _stateController.add(VoiceState.idle);
+      state.value = VoiceState.idle;
       logger.info('voice controller: Stopped listening');
     } catch (e) {
       logger.error('Error stopping voice listening', e);
-      _stateController.add(VoiceState.error);
+      state.value = VoiceState.error;
       rethrow;
     }
   }
@@ -164,29 +186,29 @@ class VoiceController {
   Future<void> stopSpeaking() async {
     try {
       await _ttsService.stop();
-      _stateController.add(VoiceState.idle);
+      state.value = VoiceState.idle;
       logger.info('Stopped speaking');
     } catch (e) {
       logger.error('Error stopping speech', e);
-      _stateController.add(VoiceState.error);
+      state.value = VoiceState.error;
       rethrow;
     }
   }
 
-  void dispose() {
-    // Không đóng các StreamController vì VoiceController là singleton và có thể còn được sử dụng ở nơi khác.
-    // _stateController.close();
-    // _textController.close();
-    // _responseController.close();
+  // Không đóng các StreamController vì VoiceController là singleton và có thể còn được sử dụng ở nơi khác.
+  // _stateController.close();
+  // _textController.close();
+  // _responseController.close();
 
+  void disposeController() {
     _porcupineManager?.delete();
+    super.dispose();
   }
 
   void _wakeWordCallback(int keywordIndex) {
     logger.info('Wake word detected! Index: $keywordIndex');
-    if (_stateController.isClosed) return;
-    
-    _stateController.add(VoiceState.detecting);
+    // if (_stateController.isClosed) return;
+    state.value = VoiceState.detecting;
     startListening();
   }
 
@@ -194,26 +216,24 @@ class VoiceController {
     if (!_isInitialized || !_isWakeWordEnabled) {
       throw Exception('Wake word detection not initialized');
     }
-
     try {
       await _porcupineManager?.start();
       logger.info('Started wake word detection');
     } catch (e) {
       logger.error('Error starting wake word detection', e);
-      _stateController.add(VoiceState.error);
+      state.value = VoiceState.error;
       rethrow;
     }
   }
 
   Future<void> stopWakeWordDetection() async {
     if (!_isWakeWordEnabled) return;
-    
     try {
       await _porcupineManager?.stop();
       logger.info('Stopped wake word detection');
     } catch (e) {
       logger.error('Error stopping wake word detection', e);
-      _stateController.add(VoiceState.error);
+      state.value = VoiceState.error;
       rethrow;
     }
   }

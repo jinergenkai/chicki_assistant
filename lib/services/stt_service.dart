@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../core/logger.dart';
+import '../controllers/app_config.controller.dart';
 
 abstract class STTService {
   Future<void> initialize();
   Future<void> startListening();
   Future<void> stopListening();
   Stream<String> get onTextRecognized;
+  Stream<double> get onRmsChanged;
   bool get isListening;
 }
 
@@ -17,8 +20,11 @@ class SpeechToTextService implements STTService {
   factory SpeechToTextService() => _instance;
   SpeechToTextService._internal();
 
+  final AppConfigController _appConfig = Get.find<AppConfigController>();
+
   final SpeechToText _speech = SpeechToText();
   final _textController = StreamController<String>.broadcast();
+  final _rmsController = StreamController<double>.broadcast();
   bool _isInitialized = false;
 
   @override
@@ -97,11 +103,15 @@ class SpeechToTextService implements STTService {
             _textController.add(text);
           }
         },
+        onSoundLevelChange: (level) {
+          _rmsController.add(level);
+        },
         listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 2),
+        pauseFor: const Duration(seconds: 3),
         partialResults: false,
         cancelOnError: true,
         listenMode: ListenMode.confirmation,
+        localeId: _appConfig.defaultLanguage.value, 
       );
 
       logger.info('Started listening');
@@ -125,7 +135,11 @@ class SpeechToTextService implements STTService {
   @override
   Stream<String> get onTextRecognized => _textController.stream;
 
+  @override
+  Stream<double> get onRmsChanged => _rmsController.stream;
+
   void dispose() {
     _textController.close();
+    _rmsController.close();
   }
 }

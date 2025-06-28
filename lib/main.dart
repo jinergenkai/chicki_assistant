@@ -1,3 +1,4 @@
+import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -23,6 +24,9 @@ void main() async {
   // Initialize Notifications
   await NotificationService().initialize();
 
+  // Inject AppConfigController
+  Get.put(AppConfigController(), permanent: true);
+
   // Khởi tạo sẵn các controller dùng GetX để tránh lỗi khi chuyển tab
   Get.put(BirthdayController(), permanent: true);
   Get.put(ChatController(), permanent: true);
@@ -36,58 +40,71 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Birthday App',
-      theme: ThemeData.light().copyWith(
-        scaffoldBackgroundColor: const Color(0xFFF6F7F9),
-        primaryColor: const Color(0xFF90CAF9), // xanh nhạt
-        colorScheme: ThemeData.light().colorScheme.copyWith(
-          primary: const Color(0xFF90CAF9),
-        ),
-        textTheme: ThemeData.light().textTheme.apply(fontFamily: 'DMSans'),
-        extensions: <ThemeExtension<dynamic>>[
-          MoonTheme(
-            tokens: MoonTokens.light.copyWith(
-              colors: MoonTokens.light.colors.copyWith(
-                piccolo: const Color(0xFF90CAF9), // xanh nhạt
-              ),
-              typography: MoonTypography.typography.copyWith(
-                heading: MoonTypography.typography.heading.apply(
-                  fontFamily: "DMSans",
-                  fontWeightDelta: -1,
-                  fontVariations: [const FontVariation('wght', 500)],
+    final appConfig = Get.find<AppConfigController>();
+    return Obx(() => GetMaterialApp.router(
+          title: 'Birthday App',
+          theme: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: const Color(0xFFF6F7F9),
+            primaryColor: const Color(0xFF90CAF9),
+            colorScheme: ThemeData.light().colorScheme.copyWith(
+                  primary: const Color(0xFF90CAF9),
                 ),
-                body: MoonTypography.typography.body.apply(
-                  fontFamily: "DMSans",
+            textTheme: ThemeData.light().textTheme.apply(fontFamily: 'DMSans'),
+            extensions: <ThemeExtension<dynamic>>[
+              MoonTheme(
+                tokens: MoonTokens.light.copyWith(
+                  colors: MoonTokens.light.colors.copyWith(
+                    piccolo: const Color(0xFF90CAF9),
+                  ),
+                  typography: MoonTypography.typography.copyWith(
+                    heading: MoonTypography.typography.heading.apply(
+                      fontFamily: "DMSans",
+                      fontWeightDelta: -1,
+                      fontVariations: [const FontVariation('wght', 500)],
+                    ),
+                    body: MoonTypography.typography.body.apply(
+                      fontFamily: "DMSans",
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-      darkTheme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF1F1F1F),
-        textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'DMSans'),
-        extensions: <ThemeExtension<dynamic>>[
-          MoonTheme(
-            tokens: MoonTokens.dark.copyWith(
-              colors: mdsDarkColors,
-              typography: MoonTypography.typography.copyWith(
-                heading: MoonTypography.typography.heading.apply(
-                  fontFamily: "DMSans",
-                  fontWeightDelta: -1,
-                  fontVariations: [const FontVariation('wght', 500)],
-                ),
-                body: MoonTypography.typography.body.apply(
-                  fontFamily: "DMSans",
+          darkTheme: ThemeData.dark().copyWith(
+            scaffoldBackgroundColor: const Color(0xFF1F1F1F),
+            textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'DMSans'),
+            extensions: <ThemeExtension<dynamic>>[
+              MoonTheme(
+                tokens: MoonTokens.dark.copyWith(
+                  colors: mdsDarkColors,
+                  typography: MoonTypography.typography.copyWith(
+                    heading: MoonTypography.typography.heading.apply(
+                      fontFamily: "DMSans",
+                      fontWeightDelta: -1,
+                      fontVariations: [const FontVariation('wght', 500)],
+                    ),
+                    body: MoonTypography.typography.body.apply(
+                      fontFamily: "DMSans",
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-      routerConfig: appRouter,
-      debugShowCheckedModeBanner: false,
-    );
+          themeMode: appConfig.themeMode.value == 'dark'
+              ? ThemeMode.dark
+              : appConfig.themeMode.value == 'light'
+                  ? ThemeMode.light
+                  : ThemeMode.system,
+          routerDelegate: appRouter.routerDelegate,
+          routeInformationParser: appRouter.routeInformationParser,
+          routeInformationProvider: appRouter.routeInformationProvider,
+          debugShowCheckedModeBanner: false,
+          locale: Locale(appConfig.language.value.isNotEmpty ? appConfig.language.value : 'en'),
+          supportedLocales: const [
+            Locale('en'),
+            Locale('vi'),
+          ],
+        ));
   }
 }

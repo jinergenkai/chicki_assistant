@@ -41,7 +41,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _initializeController() async {
     try {
-      _voiceController = VoiceController();
+      _voiceController = Get.find<VoiceController>();
       await _voiceController.initialize();
       _setupVoiceListener();
 
@@ -59,24 +59,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _setupVoiceListener() {
-    // Listen to voice state changes
-    _voiceController.stateStream.listen((state) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-
-    // Listen for recognized text
-    _voiceController.onTextRecognized.listen((text) {
+    // Rx: tự động update UI qua Obx, không cần listen thủ công nữa
+    ever<String>(_voiceController.recognizedText, (text) {
       if (text.isNotEmpty) {
         _addMessage(Message.user(text));
+        // Reset để tránh lặp lại message khi giá trị không đổi
+        _voiceController.recognizedText.value = '';
       }
     });
-
-    // Listen for GPT responses
-    _voiceController.onGptResponse.listen((response) {
+    ever<String>(_voiceController.gptResponse, (response) {
       if (response.isNotEmpty) {
         _addMessage(Message.assistant(response));
+        // Reset để tránh lặp lại message khi giá trị không đổi
+        _voiceController.gptResponse.value = '';
       }
     });
   }
@@ -171,13 +166,10 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
 
           // Voice State Indicator
-          StreamBuilder<VoiceState>(
-            stream: _isInitialized ? _voiceController.stateStream : null,
-            builder: (context, snapshot) {
-              final state = snapshot.data ?? VoiceState.idle;
-              return VoiceStateIndicator(state: state);
-            },
-          ),
+          Obx(() {
+            final state = _voiceController.state.value;
+            return VoiceStateIndicator(state: state);
+          }),
 
           // Microphone Button
           Padding(

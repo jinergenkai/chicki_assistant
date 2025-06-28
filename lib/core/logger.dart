@@ -1,5 +1,4 @@
 import 'package:logger/logger.dart';
-import 'app_config.dart';
 
 class LoggerService {
   static final LoggerService _instance = LoggerService._internal();
@@ -15,9 +14,7 @@ class LoggerService {
   );
 
   void debug(String message) {
-    if (AppConfig().isDebugMode) {
-      _logger.d(message);
-    }
+    _logger.d(message);
   }
 
   void info(String message) {
