@@ -1,10 +1,10 @@
+import 'package:chicki_buddy/ui/screens/flash_card.screen.dart';
+import 'package:chicki_buddy/ui/screens/model_test.screen.dart';
+import 'package:chicki_buddy/ui/screens/super_action.screen.dart';
+import 'package:chicki_buddy/ui/screens/vocabulary.screen.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:moon_design/moon_design.dart';
 
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:moon_design/moon_design.dart';
 import 'chat_screen.dart';
 import 'birthday_calendar_screen.dart';
 import 'birthday_list_screen.dart';
@@ -25,9 +25,11 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = const [
     ChatScreen(),
     BirthdayCalendarScreen(),
-    BirthdayListScreen(),
-    GiftSuggestionsScreen(),
+    SuperControlScreen(),
+    VocabularyListScreen(),
     SettingsScreen(),
+    // FlashCardScreen(),
+    ModelTestScreen(),
   ];
 
   @override
@@ -101,8 +103,8 @@ class _MainScreenState extends State<MainScreen> {
                 onTap: () => _onNavBarTap(1),
               ),
               _MoonNavBarItem(
-                icon: Icons.cake,
-                label: 'Sinh nhật',
+                icon: Icons.book_rounded,
+                label: 'Card',
                 selected: _currentIndex == 2,
                 onTap: () => _onNavBarTap(2),
               ),
@@ -117,6 +119,12 @@ class _MainScreenState extends State<MainScreen> {
                 label: 'Cài đặt',
                 selected: _currentIndex == 4,
                 onTap: () => _onNavBarTap(4),
+              ),
+              _MoonNavBarItem(
+                icon: Icons.settings,
+                label: 'Cài đặt',
+                selected: _currentIndex == 5,
+                onTap: () => _onNavBarTap(5),
               ),
             ],
           ),

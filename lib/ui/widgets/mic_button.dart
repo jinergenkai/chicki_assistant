@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:chicki_buddy/components/chick_design.dart';
 import 'package:get/get.dart';
 import 'package:chicki_buddy/ui/widgets/waveform_mic_visualizer.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +33,6 @@ class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMix
       }
     });
   }
-
 
   Future<void> _initializeVoiceController() async {
     try {
@@ -91,8 +91,7 @@ class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _controller.state.value;
-      final bool isEnabled = state != VoiceState.processing &&
-          state != VoiceState.uninitialized;
+      final bool isEnabled = state != VoiceState.processing && state != VoiceState.uninitialized;
 
       // Show permission button if needed
       if (state == VoiceState.needsPermission) {
@@ -106,31 +105,27 @@ class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMix
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
+          ChickTag(
+              tagSize: ChickTagSize.sm,
               backgroundColor: isEnabled ? _getBackgroundColor(state) : Colors.grey,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+              height: 40,
+              leading: Icon(
+                _getIcon(state),
+                color: Colors.white,
               ),
-            ),
-            onPressed: isEnabled ? _toggleListening : null,
-            icon: Icon(
-              _getIcon(state),
-              color: Colors.white,
-              size: 28,
-            ),
-            label: Text(
-              state == VoiceState.listening
-                  ? 'Đang nghe'
-                  : state == VoiceState.processing
-                      ? 'Đang xử lý'
-                      : state == VoiceState.speaking
-                          ? 'Đang nói'
-                          : 'Nhấn để nói',
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
+              label: Text(
+                state == VoiceState.listening
+                    ? 'Đang nghe'
+                    : state == VoiceState.processing
+                        ? 'Đang xử lý'
+                        : state == VoiceState.speaking
+                            ? 'Đang nói'
+                            : 'Nhấn để nói',
+                style: const TextStyle(color: Colors.white),
+              ),
+            onTap: isEnabled ? _toggleListening : null,
+              ),
           // Hiển thị waveform bên dưới mic
           if (state == VoiceState.listening)
             Padding(

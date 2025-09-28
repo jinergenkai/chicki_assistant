@@ -32,8 +32,15 @@ class TextToSpeechService implements TTSService {
       // Set initial configuration
       await _tts.setLanguage(_config.defaultLanguage.value);
       await _tts.setSpeechRate(_config.speechRate.value);
+
+      // await _tts.setVoice({"name": "en-US-Wavenet-D", "locale": "en-US"});
+      // List<dynamic> voices = await _tts.getVoices;
+      // print("Available voices: $voices");
+
+      await _tts.setVoice({"name": "Google UK English Female", "locale": "en-GB"});
+
       await _tts.setVolume(1.0);
-      await _tts.setPitch(1.0);
+      await _tts.setPitch(1.2);
 
       // Set completion handler
       _tts.setCompletionHandler(() {

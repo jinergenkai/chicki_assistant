@@ -53,7 +53,7 @@ class LocalLLMService implements LLMService {
 
       final responseStr = await LlmApi().chat(
         prompt: userInput,
-        model: "llama3.2:3b",
+        model: "gpt-oss:20b",
         history: history,
         bearerToken: AppConstants.janKey,
       );

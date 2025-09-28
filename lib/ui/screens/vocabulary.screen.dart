@@ -4,14 +4,14 @@ import 'package:chicki_buddy/ui/widgets/vocabulary/add_vocabulary_button.dart';
 import 'package:flutter/material.dart';
 import 'package:vertical_card_pager/vertical_card_pager.dart';
 
-class FlashCardScreen extends StatefulWidget {
-  const FlashCardScreen({super.key});
+class VocabularyListScreen extends StatefulWidget {
+  const VocabularyListScreen({super.key});
 
   @override
-  State<FlashCardScreen> createState() => _FlashCardScreenState();
+  State<VocabularyListScreen> createState() => _VocabularyListScreenState();
 }
 
-class _FlashCardScreenState extends State<FlashCardScreen> {
+class _VocabularyListScreenState extends State<VocabularyListScreen> {
   final VocabularyService service = VocabularyService();
   List<Vocabulary> vocabList = [];
 

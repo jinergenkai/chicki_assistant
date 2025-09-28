@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:chicki_buddy/controllers/birthday_controller.dart';
 import 'package:chicki_buddy/models/friend.dart';
 import 'package:chicki_buddy/services/notification_service.dart';
-import 'package:moon_design/moon_design.dart';
 
 class BirthdayListScreen extends StatelessWidget {
   const BirthdayListScreen({super.key});
@@ -14,7 +13,6 @@ class BirthdayListScreen extends StatelessWidget {
 
     return Scaffold(
       // extendBody: true,
-      // backgroundColor: context.moonColors!.krillin,
       appBar: AppBar(
         title: const Text('🎂 Danh sách sinh nhật'),
         backgroundColor: Theme.of(context).colorScheme.primary,

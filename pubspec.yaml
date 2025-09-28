@@ -40,10 +40,13 @@ dependencies:
   flutter_animate: ^4.5.0
   google_fonts: ^6.1.0
   table_calendar: ^3.0.9
-  go_router: ^15.2.4
+  go_router: ^16.2.2
   moon_design: ^1.1.0
   waveform_flutter: ^1.2.0
   dart_openai: ^5.1.0
+  vertical_card_pager: ^1.6.3
+  tflite_flutter: ^0.11.0
+  
 
 dev_dependencies:
   flutter_test:
@@ -55,9 +58,16 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/DMSans.ttf
+    - assets/models/model.tflite
+    - assets/models/vocab.txt
+
+  # assets:
+  #   - assets/DMSans.ttf
 
   fonts:
     - family: DMSans
       fonts:
-        - asset: assets/DMSans.ttf
+        - asset: assets/fonts/DMSans.ttf
+    - family: inter
+      fonts:
+        - asset: assets/fonts/inter-vietnamese-500-normal.ttf

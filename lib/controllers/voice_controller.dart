@@ -1,3 +1,4 @@
+import 'package:chicki_buddy/services/gpt_service.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:porcupine_flutter/porcupine.dart';
@@ -30,7 +31,7 @@ class VoiceController extends GetxController {
   final STTService _sttService = SpeechToTextService();
   String? _lastProcessedText;
   final TTSService _ttsService = TextToSpeechService();
-  final LLMService _gptService = LocalLLMService();
+  final LLMService _gptService = OpenAIService();
   PorcupineManager? _porcupineManager;
 
   bool _isInitialized = false;

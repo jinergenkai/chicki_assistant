@@ -14,7 +14,7 @@ class LlmApi {
   /// Gọi API chat completions tới OpenAI local
   Future<String> chat({
     required String prompt,
-    String model = "llama3.2:3b",
+    String model = "gpt-oss:20b",
     List<Map<String, String>>? history,
     String? bearerToken,
   }) async {

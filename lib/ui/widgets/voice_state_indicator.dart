@@ -1,3 +1,4 @@
+import 'package:chicki_buddy/components/chick_design.dart';
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
 import '../../controllers/voice_controller.dart';
@@ -31,12 +32,12 @@ class VoiceStateIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(8),
-      child: MoonTag(
-        tagSize: MoonTagSize.sm,
+      child: ChickTag(
+        tagSize: ChickTagSize.sm,
         label: Text(
           _getStateText(state),
-          style: MoonTypography.typography.body.text14.copyWith(
-            color: const Color(0xFF7e7dd6),
+          style: const TextStyle(
+            color: Color(0xFF7e7dd6),
             fontWeight: FontWeight.bold,
           ),
         ),

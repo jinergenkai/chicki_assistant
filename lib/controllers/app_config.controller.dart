@@ -8,7 +8,7 @@ class AppConfigController extends GetxController {
   // Các thuộc tính cấu hình
   var isDebugMode = true.obs;
   var apiEndpoint = 'https://api.openai.com/v1'.obs;
-  var speechRate = 0.7.obs;
+  var speechRate = 0.9.obs;
   var defaultLanguage = 'en-US'.obs;
   var gptModel = 'gpt-3.5-turbo'.obs;
   var maxTokens = 150.obs;
