@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.io.FileNotFoundException
 import android.util.Log
+import kotlin.math.*
 
 class BertClassifier(context: Context) {
     private val interpreter: Interpreter
@@ -16,11 +17,14 @@ class BertClassifier(context: Context) {
     init {
         val modelPath = "models/model.tflite"
         try {
-          val model = FileUtil.loadMappedFile(context, modelPath)
-          Log.i("BertClassifier", "✅ Model loaded successfully: $modelPath (${model.capacity()} bytes)")
+            val model = FileUtil.loadMappedFile(context, modelPath)
+            Log.i("BertClassifier", "✅ Model loaded successfully: $modelPath (${model.capacity()} bytes)")
 
-          interpreter = Interpreter(model)
-          tokenizer = TokenizerHelper(context)
+            interpreter = Interpreter(model)
+            tokenizer = TokenizerHelper(context)
+            
+            // Debug input/output info
+            logModelInfo()
         } catch (e: FileNotFoundException) {
             Log.e("BertClassifier", "❌ Model file not found: $modelPath")
             throw e
@@ -30,79 +34,119 @@ class BertClassifier(context: Context) {
         }
     }
 
-fun classify(text: String): Int {
-    return try {
-      // Thêm vào đầu hàm classify để debug
-Log.i("BertClassifier", "maxLength variable = $maxLength")
-for (i in 0 until interpreter.inputTensorCount) {
-    val tensor = interpreter.getInputTensor(i)
-    Log.i("BertClassifier", "Input $i: name=${tensor.name()}, shape=${tensor.shape().joinToString()}, bytes=${tensor.numBytes()}")
-}
-     // Tokenize input
-val inputIds = tokenizer.tokenize(text, maxLength)
-Log.i("BertClassifier", "Tokenized length=${inputIds.size}, first tokens=${inputIds.take(10)}")
-
-// Attention mask (1 cho token thật, 0 cho padding)
-val attentionMask = LongArray(maxLength) { i ->
-    if (i < inputIds.size && inputIds[i] != 0) 1L else 0L
-}
-
-// Convert IntArray -> LongArray
-val inputIdsLong = LongArray(maxLength) { i ->
-    if (i < inputIds.size) inputIds[i].toLong() else 0L
-}
-
-// Helper: chuyển mảng Long -> ByteBuffer (INT64)
-fun toLongBuffer(arr: LongArray): ByteBuffer {
-    return ByteBuffer.allocateDirect(arr.size * 8).apply {
-        order(ByteOrder.nativeOrder())
-        arr.forEach { putLong(it) }
-        rewind()
+    private fun logModelInfo() {
+        Log.i("BertClassifier", "=== MODEL INFO ===")
+        for (i in 0 until interpreter.inputTensorCount) {
+            val tensor = interpreter.getInputTensor(i)
+            Log.i("BertClassifier", "Input $i: name='${tensor.name()}', shape=${tensor.shape().joinToString()}, dtype=${tensor.dataType()}")
+        }
+        for (i in 0 until interpreter.outputTensorCount) {
+            val tensor = interpreter.getOutputTensor(i)
+            Log.i("BertClassifier", "Output $i: name='${tensor.name()}', shape=${tensor.shape().joinToString()}, dtype=${tensor.dataType()}")
+        }
     }
-}
 
-// Chuẩn bị input tensor [1, maxLength]
-val inputIdsBuffer = toLongBuffer(inputIdsLong)
-val attentionMaskBuffer = toLongBuffer(attentionMask)
+    fun classify(text: String): Int {
+        return try {
+            // Tokenize input
+            val inputIds = tokenizer.tokenize(text, maxLength)
+            Log.i("BertClassifier", "Input text: $text")
+            Log.i("BertClassifier", "Tokenized length=${inputIds.size}, first 30 tokens=${inputIds.take(30)}")
 
-Log.i("BertClassifier", "First 50 ids=${inputIds.take(50)}")
-Log.i("BertClassifier", "First 50 mask=${attentionMask.take(50)}")
+            // Tạo attention mask
+            val attentionMask = LongArray(maxLength) { i ->
+                if (i < inputIds.size && inputIds[i] != 0) 1L else 0L
+            }
 
-val outputTensor = interpreter.getOutputTensor(0)
-val outputShape = outputTensor.shape() // [1, 60]
-Log.i("BertClassifier", "Output tensor shape=${outputShape.joinToString()}")
+            // Convert to LongArray với proper shape [1, maxLength]
+            val inputIdsLong = LongArray(maxLength) { i ->
+                if (i < inputIds.size) inputIds[i].toLong() else 0L
+            }
 
-val numLabels = outputShape[1]
-val outputBuffer = ByteBuffer.allocateDirect(numLabels * 4).apply {
-    order(ByteOrder.nativeOrder())
-}
+            // Tạo ByteBuffer với shape [1, maxLength]
+            val inputIdsBuffer = createLongBuffer(inputIdsLong)
+            val attentionMaskBuffer = createLongBuffer(attentionMask)
 
-// Run inference
-val inputs = arrayOf(inputIdsBuffer, attentionMaskBuffer)
-val outputs = mutableMapOf<Int, Any>()
-outputs[0] = outputBuffer
-try {
-    interpreter.runForMultipleInputsOutputs(inputs, outputs)
-} catch (e: Exception) {
-    Log.e("BertClassifier", "classify failed", e)
-    return -1
-}
+            Log.i("BertClassifier", "First 30 input_ids: ${inputIdsLong.take(30)}")
+            Log.i("BertClassifier", "First 30 attention_mask: ${attentionMask.take(30)}")
 
-// Process results
-outputBuffer.rewind()
-val probabilities = FloatArray(numLabels) { outputBuffer.float }
+            // Prepare inputs - QUAN TRỌNG: đúng thứ tự theo tên tensor
+            val inputs = mutableMapOf<Int, Any>()
+            
+            // Tìm đúng index cho input_ids và attention_mask
+            for (i in 0 until interpreter.inputTensorCount) {
+                val tensor = interpreter.getInputTensor(i)
+                val tensorName = tensor.name() ?: ""
+                
+                when {
+                    tensorName.contains("input_ids", ignoreCase = true) -> {
+                        inputs[i] = inputIdsBuffer
+                        Log.i("BertClassifier", "Set input_ids at index $i")
+                    }
+                    tensorName.contains("attention_mask", ignoreCase = true) -> {
+                        inputs[i] = attentionMaskBuffer  
+                        Log.i("BertClassifier", "Set attention_mask at index $i")
+                    }
+                    else -> {
+                        Log.w("BertClassifier", "Unknown input tensor: $tensorName at index $i")
+                    }
+                }
+            }
 
-Log.i("BertClassifier", "Output probabilities=${probabilities.joinToString()}")
-Log.i("BertClassifier", "Attention mask non-zero=${attentionMask.count { it == 1L }}")
+            // Prepare output
+            val outputTensor = interpreter.getOutputTensor(0)
+            val outputShape = outputTensor.shape() // [1, num_labels]
+            Log.i("BertClassifier", "Output tensor shape: ${outputShape.joinToString()}")
+            
+            val batchSize = outputShape[0]
+            val numLabels = outputShape[1]
+            val outputBuffer = ByteBuffer.allocateDirect(batchSize * numLabels * 4).apply {
+                order(ByteOrder.nativeOrder())
+            }
 
-// Return argmax
-return probabilities.indices.maxByOrNull { probabilities[it] } ?: -1
-        
-    } catch (e: Exception) {
-        Log.e("BertClassifier", "❌ classify failed: ${e.message}", e)
-        -1
+            val outputs = mutableMapOf<Int, Any>()
+            outputs[0] = outputBuffer
+
+            // Run inference
+            interpreter.runForMultipleInputsOutputs(inputs.values.toTypedArray(), outputs)
+
+            // Process output - đây là raw logits, cần softmax như Python
+            outputBuffer.rewind()
+            val rawLogits = FloatArray(numLabels) { outputBuffer.float }
+            
+            Log.i("BertClassifier", "Raw logits: ${rawLogits.joinToString()}")
+            
+            // Apply softmax to get probabilities (như Python)
+            val probabilities = applySoftmax(rawLogits)
+            Log.i("BertClassifier", "Probabilities after softmax: ${probabilities.joinToString()}")
+
+            // Return argmax
+            val prediction = probabilities.indices.maxByOrNull { probabilities[it] } ?: -1
+            Log.i("BertClassifier", "Predicted class: $prediction (confidence: ${probabilities[prediction]})")
+            
+            return prediction
+
+        } catch (e: Exception) {
+            Log.e("BertClassifier", "❌ classify failed: ${e.message}", e)
+            -1
+        }
     }
-}
+
+    private fun createLongBuffer(array: LongArray): ByteBuffer {
+        return ByteBuffer.allocateDirect(array.size * 8).apply {
+            order(ByteOrder.nativeOrder())
+            array.forEach { putLong(it) }
+            rewind()
+        }
+    }
+
+    private fun applySoftmax(logits: FloatArray): FloatArray {
+        // Subtract max for numerical stability
+        val maxLogit = logits.maxOrNull() ?: 0f
+        val expLogits = logits.map { exp(it - maxLogit) }
+        val sumExp = expLogits.sum()
+        return expLogits.map { (it / sumExp).toFloat() }.toFloatArray()
+    }
 
     fun close() {
         interpreter.close()
