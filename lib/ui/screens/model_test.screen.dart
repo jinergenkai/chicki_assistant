@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:moon_design/moon_design.dart';
 import 'package:get/get.dart';
+import 'package:chicki_buddy/services/native_classifier.service.dart';
 
 class ModelTestScreen extends StatefulWidget {
   const ModelTestScreen({super.key});
@@ -13,7 +13,6 @@ class ModelTestScreen extends StatefulWidget {
 
 class _ModelTestScreenState extends State<ModelTestScreen> {
   final TextEditingController _textController = TextEditingController(text:"play classic song");
-  static const _channel = MethodChannel('intent_classifier');
   String _result = '';
   bool _isLoading = false;
 
@@ -23,18 +22,15 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
     setState(() => _isLoading = true);
     
     try {
-      var intentId = await _channel.invokeMethod(
-        'classify',
-        {'text': _textController.text},
-      );
-      Logger().d("Intent ID: $intentId");
+      final intent = await NativeClassifier.classify(_textController.text);
+      Logger().d("Intent: $intent");
       setState(() {
-        _result = 'Intent ID: $intentId';
+        _result = 'Intent: $intent';
         _isLoading = false;
       });
-    } on PlatformException catch (e) {
+    } catch (e) {
       setState(() {
-        _result = 'Error: ${e.message}';
+        _result = 'Error: $e';
         _isLoading = false;
       });
     }
@@ -54,11 +50,9 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
               controller: _textController,
               hintText: 'Enter text to classify...',
               textPadding: const EdgeInsets.all(6),
-              // maxLines: 3,
             ),
             const SizedBox(height: 16),
             MoonButton(
-              // loading: _isLoading,
               onTap: _classifyText,
               backgroundColor: context.moonColors!.piccolo,
               label: const Text('Classify'),

@@ -28,7 +28,6 @@ class IntentClassifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         when (call.method) {
             "classify" -> {
                 val text = call.argument<String>("text")
-                Log.i("BertClassifier","hello from Android1")
                 if (text == null) {
                     result.error("INVALID_ARGUMENT", "Text is null", null)
                     return

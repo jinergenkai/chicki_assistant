@@ -60,6 +60,7 @@ flutter:
   assets:
     - assets/models/model.tflite
     - assets/models/vocab.txt
+    - assets/models/intent_mapping.json
 
   # assets:
   #   - assets/DMSans.ttf
