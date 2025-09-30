@@ -31,14 +31,14 @@ void main() async {
   await Hive.openBox<Vocabulary>('vocabularyBox');
 
   // Initialize Notifications
-  await NotificationService().initialize();
+  // await NotificationService().initialize();
 
   // Inject AppConfigController
   Get.put(AppConfigController(), permanent: true);
 
   // Khởi tạo sẵn các controller dùng GetX để tránh lỗi khi chuyển tab
-  Get.put(BirthdayController(), permanent: true);
-  Get.put(ChatController(), permanent: true);
+  // Get.put(BirthdayController(), permanent: true);
+  // Get.put(ChatController(), permanent: true);
   Get.put(VoiceController(), permanent: true);
 
   runApp(const MyApp());

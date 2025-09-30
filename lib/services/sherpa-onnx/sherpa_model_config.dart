@@ -21,7 +21,7 @@ class SherpaModelConfig {
       sherpa_onnx.initBindings();
 
       // Configuration as specified in the task
-      String modelDir = 'vits-piper-en_US-amy-low';
+      String modelDir = 'models/tts/vits-piper-en_US-amy-low';
       String modelName = 'en_US-amy-low.onnx';
       String dataDir = 'vits-piper-en_US-amy-low/espeak-ng-data';
       
@@ -86,7 +86,7 @@ class SherpaModelConfig {
       late final sherpa_onnx.OfflineTtsKokoroModelConfig kokoro;
 
       if (voices != '') {
-        vits = sherpa_onnx.OfflineTtsVitsModelConfig();
+        vits = const sherpa_onnx.OfflineTtsVitsModelConfig();
         kokoro = sherpa_onnx.OfflineTtsKokoroModelConfig(
           model: modelName,
           voices: voices,
@@ -104,7 +104,7 @@ class SherpaModelConfig {
           dictDir: dictDir,
         );
 
-        kokoro = sherpa_onnx.OfflineTtsKokoroModelConfig();
+        kokoro = const sherpa_onnx.OfflineTtsKokoroModelConfig();
       }
 
       final modelConfig = sherpa_onnx.OfflineTtsModelConfig(
@@ -122,7 +122,7 @@ class SherpaModelConfig {
         maxNumSenetences: 1,
       );
 
-      logger.info('Creating Sherpa-ONNX TTS with config: $modelDir/$modelName');
+      logger.info('Creating Sherpa-ONNX TTS with config: $modelDir - $modelName');
 
       final tts = sherpa_onnx.OfflineTts(config);
       logger.info('Sherpa-ONNX TTS created successfully');
@@ -137,7 +137,7 @@ class SherpaModelConfig {
   /// Get model information
   static Map<String, String> getModelInfo() {
     return {
-      'modelDir': 'vits-piper-en_US-amy-low',
+      'modelDir': 'models/tts/vits-piper-en_US-amy-low',
       'modelName': 'en_US-amy-low.onnx',
       'dataDir': 'vits-piper-en_US-amy-low/espeak-ng-data',
       'description': 'VITS Piper English US Amy Low Quality TTS Model'
@@ -148,9 +148,9 @@ class SherpaModelConfig {
   static Future<bool> checkModelFiles() async {
     try {
       final Directory directory = await getApplicationSupportDirectory();
-      final modelDir = 'vits-piper-en_US-amy-low';
-      final modelName = 'en_US-amy-low.onnx';
-      final dataDir = 'vits-piper-en_US-amy-low/espeak-ng-data';
+      const modelDir = 'models/tts/vits-piper-en_US-amy-low';
+      const modelName = 'en_US-amy-low.onnx';
+      const dataDir = 'vits-piper-en_US-amy-low/espeak-ng-data';
       
       final modelPath = p.join(directory.path, modelDir, modelName);
       final dataPath = p.join(directory.path, dataDir);

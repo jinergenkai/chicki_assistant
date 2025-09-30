@@ -1,5 +1,6 @@
 import 'package:chicki_buddy/ui/screens/flash_card.screen.dart';
 import 'package:chicki_buddy/ui/screens/model_test.screen.dart';
+import 'package:chicki_buddy/ui/screens/sherpa_tts_test_screen.dart';
 import 'package:chicki_buddy/ui/screens/super_action.screen.dart';
 import 'package:chicki_buddy/ui/screens/vocabulary.screen.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +24,8 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
-    ChatScreen(),
+    SherpaTtsTestScreen(),
+    // ChatScreen(),
     BirthdayCalendarScreen(),
     SuperControlScreen(),
     VocabularyListScreen(),

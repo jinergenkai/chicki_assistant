@@ -1,5 +1,8 @@
 download/
 
+*.tflite
+*.onnx
+/assets/models/
 /docs/*
 # Miscellaneous
 *.class

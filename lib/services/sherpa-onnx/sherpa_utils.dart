@@ -24,6 +24,7 @@ class SherpaUtils {
       final AssetManifest assetManifest =
           await AssetManifest.loadFromAssetBundle(rootBundle);
       final List<String> assets = assetManifest.listAssets();
+      logger.info('list all asset files: $assets');
       return assets;
     } catch (e) {
       logger.error('Error getting asset files: $e');
@@ -56,9 +57,7 @@ class SherpaUtils {
   static Future<String> copyAssetFile(String src, [String? dst]) async {
     try {
       final Directory directory = await getApplicationSupportDirectory();
-      if (dst == null) {
-        dst = p.basename(src);
-      }
+      dst ??= p.basename(src);
       final target = p.join(directory.path, dst);
       bool exists = await File(target).exists();
 
@@ -67,9 +66,9 @@ class SherpaUtils {
         final List<int> bytes =
             data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
         await (await File(target).create(recursive: true)).writeAsBytes(bytes);
-        logger.info('Copied asset file: $src -> $target');
+        // logger.info('Copied asset file: $src -> $target');
       } else {
-        logger.info('Asset file already exists: $target');
+        // logger.info('Asset file already exists: $target');
       }
 
       return target;

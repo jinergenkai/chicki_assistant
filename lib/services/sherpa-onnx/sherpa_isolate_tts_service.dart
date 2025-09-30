@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 import 'package:get/get.dart';
 
@@ -55,7 +56,7 @@ class SherpaIsolateTtsService implements TTSService {
   static late final _TtsManager _ttsManager;
   static bool _isInitialized = false;
   static bool _isSpeaking = false;
-  
+
   final _config = Get.find<AppConfigController>();
 
   /// Get communication port to isolate
@@ -73,7 +74,19 @@ class SherpaIsolateTtsService implements TTSService {
 
     try {
       logger.info('Initializing Sherpa Isolate TTS...');
-      
+      if (await Permission.audio.isDenied || await Permission.audio.isPermanentlyDenied) {
+        final state = await Permission.audio.request();
+        if (!state.isGranted) {
+          await SystemNavigator.pop();
+        }
+      }
+      if (await Permission.storage.isDenied || await Permission.storage.isPermanentlyDenied) {
+        final state = await Permission.storage.request();
+        if (!state.isGranted) {
+          await SystemNavigator.pop();
+        }
+      }
+
       ReceivePort port = ReceivePort();
       RootIsolateToken? rootIsolateToken = RootIsolateToken.instance;
 
@@ -86,11 +99,7 @@ class SherpaIsolateTtsService implements TTSService {
       // Wait for isolate to send back its SendPort
       await for (var msg in port) {
         if (msg is SendPort) {
-          _ttsManager = _TtsManager(
-            receivePort: port, 
-            isolate: isolate, 
-            isolatePort: msg
-          );
+          _ttsManager = _TtsManager(receivePort: port, isolate: isolate, isolatePort: msg);
           _isInitialized = true;
           logger.info('Sherpa Isolate TTS initialized successfully');
           break;
@@ -107,11 +116,11 @@ class SherpaIsolateTtsService implements TTSService {
     if (task.rootIsolateToken != null) {
       BackgroundIsolateBinaryMessenger.ensureInitialized(task.rootIsolateToken!);
     }
-    
+
     MediaKit.ensureInitialized();
     final player = Player();
     sherpa_onnx.initBindings();
-    
+
     final receivePort = ReceivePort();
     task.sendPort.send(receivePort.sendPort);
 
@@ -190,7 +199,7 @@ class SherpaIsolateTtsService implements TTSService {
     );
 
     final tts = sherpa_onnx.OfflineTts(config);
-    
+
     receivePort.listen((msg) async {
       if (msg is _PortModel) {
         switch (msg.method) {
@@ -199,13 +208,9 @@ class SherpaIsolateTtsService implements TTSService {
               _PortModel request = msg;
               final stopwatch = Stopwatch();
               stopwatch.start();
-              
-              final audio = tts.generate(
-                text: request.data['text'], 
-                sid: request.data['sid'] ?? 0, 
-                speed: request.data['speed'] ?? 1.0
-              );
-              
+
+              final audio = tts.generate(text: request.data['text'], sid: request.data['sid'] ?? 0, speed: request.data['speed'] ?? 1.0);
+
               final suffix = '-sid-${request.data['sid']}-speed-${(request.data['speed'] ?? 1.0).toStringAsPrecision(2)}';
               final filename = await SherpaUtils.generateWaveFilename(suffix);
 
@@ -229,14 +234,14 @@ class SherpaIsolateTtsService implements TTSService {
                 await player.open(Media('file:///$filename'));
                 await player.play();
               }
-              
+
               // Send completion signal back
               if (request.sendPort != null) {
                 request.sendPort!.send({'status': ok ? 'success' : 'error'});
               }
             }
             break;
-            
+
           case 'stop':
             {
               await player.stop();
@@ -258,23 +263,19 @@ class SherpaIsolateTtsService implements TTSService {
 
     try {
       _isSpeaking = true;
-      
+
       ReceivePort receivePort = ReceivePort();
       _sendPort.send(_PortModel(
         method: 'generate',
-        data: {
-          'text': text.trim(), 
-          'sid': 0, 
-          'speed': _config.speechRate.value
-        },
+        data: {'text': text.trim(), 'sid': 0, 'speed': _config.speechRate.value},
         sendPort: receivePort.sendPort,
       ));
-      
+
       // Wait for completion
       await receivePort.first;
       receivePort.close();
       _isSpeaking = false;
-      
+
       logger.info('Sherpa Isolate TTS: Completed speaking "$text"');
     } catch (e) {
       _isSpeaking = false;
@@ -289,16 +290,16 @@ class SherpaIsolateTtsService implements TTSService {
 
     try {
       _isSpeaking = false;
-      
+
       ReceivePort receivePort = ReceivePort();
       _sendPort.send(_PortModel(
         method: 'stop',
         sendPort: receivePort.sendPort,
       ));
-      
+
       await receivePort.first;
       receivePort.close();
-      
+
       logger.info('Sherpa Isolate TTS: Stopped');
     } catch (e) {
       logger.error('Error stopping Sherpa Isolate TTS: $e');
