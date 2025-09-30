@@ -10,6 +10,7 @@ class AppConfigController extends GetxController {
   var apiEndpoint = 'https://api.openai.com/v1'.obs;
   var speechRate = 0.9.obs;
   var defaultLanguage = 'en-US'.obs;
+  var ttsEngine = 'flutter_tts'.obs; // 'flutter_tts' hoặc 'sherpa'
   var gptModel = 'gpt-3.5-turbo'.obs;
   var maxTokens = 150.obs;
   var temperature = 0.7.obs;
@@ -29,6 +30,7 @@ class AppConfigController extends GetxController {
       apiEndpoint.value = config['apiEndpoint'] ?? 'https://api.openai.com/v1';
       speechRate.value = config['speechRate'] ?? 0.7;
       defaultLanguage.value = config['defaultLanguage'] ?? 'en-US';
+      ttsEngine.value = config['ttsEngine'] ?? 'flutter_tts';
       gptModel.value = config['gptModel'] ?? 'gpt-3.5-turbo';
       maxTokens.value = config['maxTokens'] ?? 150;
       temperature.value = config['temperature'] ?? 0.7;
@@ -49,6 +51,7 @@ class AppConfigController extends GetxController {
       'apiEndpoint': apiEndpoint.value,
       'speechRate': speechRate.value,
       'defaultLanguage': defaultLanguage.value,
+      'ttsEngine': ttsEngine.value,
       'gptModel': gptModel.value,
       'maxTokens': maxTokens.value,
       'temperature': temperature.value,

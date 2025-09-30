@@ -1,5 +1,11 @@
 download/
 
+*.tflite
+*.onnx
+*.pt
+
+assets/models/*
+
 # Miscellaneous
 *.class
 *.log

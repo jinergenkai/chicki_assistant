@@ -25,7 +25,8 @@ class SherpaTTSService implements TTSService {
   late final AudioPlayer _player;
   String? _currentTempFile;
   
-  static const String _modelDir = 'assets/models/tts';
+  // Model directory structure should match Piper model requirements
+  static const String _modelDir = 'assets/models/tts/en_GB-jenny_dioco-medium';
   static const String _modelName = 'en_GB-jenny_dioco-medium.onnx';
   static const String _modelConfigName = 'en_GB-jenny_dioco-medium.onnx.json';
   static const String _tokensName = 'tokens.txt';
@@ -58,9 +59,16 @@ class SherpaTTSService implements TTSService {
         await modelDir.create(recursive: true);
       }
 
-      // Copy all asset files to local storage
-      await copyAllAssetFiles();
-      logger.info('All asset files copied successfully');
+      // Copy model files to local storage
+      await copyModelFiles();
+      logger.info('Model files copied successfully');
+
+      // Verify espeak-ng-data directory
+      final espeakDir = Directory(dataDirPath);
+      if (!await espeakDir.exists()) {
+        throw Exception('espeak-ng-data directory not found at: $dataDirPath');
+      }
+      logger.info('espeak-ng-data directory verified');
 
       // Read config from json
       final configJson = await _readJsonFile(configPath);
@@ -74,13 +82,21 @@ class SherpaTTSService implements TTSService {
       final vits = sherpa_onnx.OfflineTtsVitsModelConfig(
         model: modelPath,
         tokens: tokensPath,
-        dataDir: dataDirPath,
+        dataDir: dataDirPath, // espeak-ng-data directory path
+        lexicon: "",
       );
+
+      logger.info('Model paths:');
+      logger.info('Model: $modelPath');
+      logger.info('Config: $configPath');
+      logger.info('Tokens: $tokensPath');
+      logger.info('Data dir: $dataDirPath');
+      logger.info('Dict dir: $modelDirPath');
 
       // Setup model config with debug mode for more info
       final modelConfig = sherpa_onnx.OfflineTtsModelConfig(
         vits: vits,
-        numThreads: 2,
+        numThreads: 1,
         debug: true, // Enable debug for detailed logs
         provider: 'cpu',
       );
@@ -91,7 +107,12 @@ class SherpaTTSService implements TTSService {
         maxNumSenetences: 1,
       );
 
-      _tts = sherpa_onnx.OfflineTts(config);
+      try {
+        _tts = sherpa_onnx.OfflineTts(config);
+      } catch (e) {
+        logger.error('Error creating OfflineTts instance', e);
+        rethrow;
+      }
 
       // Listen to audio player state changes
       _player.onPlayerComplete.listen((_) {
@@ -125,7 +146,39 @@ class SherpaTTSService implements TTSService {
     }
   }
 
-  // Using file utils from lib/utils/file.dart instead of custom copy methods
+  // Copy model-specific files while preserving directory structure
+  Future<void> copyModelFiles() async {
+    const modelAssetPath = 'assets/models/tts/en_GB-jenny_dioco-medium';
+    final appDir = await getApplicationSupportDirectory();
+    final modelTargetPath = p.join(appDir.path, _modelDir);
+
+    // Create model directory
+    await Directory(modelTargetPath).create(recursive: true);
+
+    // Copy model files
+    await copyAssetFile('$modelAssetPath/$_modelName', p.join(_modelDir, _modelName));
+    await copyAssetFile('$modelAssetPath/$_modelConfigName', p.join(_modelDir, _modelConfigName));
+    await copyAssetFile('$modelAssetPath/$_tokensName', p.join(_modelDir, _tokensName));
+
+    // Copy espeak-ng-data directory with structure preserved
+    const espeakAssetPath = '$modelAssetPath/$_dataDirName';
+    final espeakTargetPath = p.join(modelTargetPath, _dataDirName);
+    
+    await Directory(espeakTargetPath).create(recursive: true);
+    
+    // Copy all espeak-ng-data files preserving structure
+    final manifest = await rootBundle.loadString('AssetManifest.json');
+    final Map<String, dynamic> manifestMap = json.decode(manifest);
+    
+    for (String key in manifestMap.keys) {
+      if (key.startsWith(espeakAssetPath)) {
+        final relativePath = key.substring(espeakAssetPath.length + 1);
+        final targetFile = p.join(espeakTargetPath, relativePath);
+        await Directory(p.dirname(targetFile)).create(recursive: true);
+        await copyAssetFile(key, p.join(_modelDir, _dataDirName, relativePath));
+      }
+    }
+  }
 
   void _cleanupTempFile() {
     if (_currentTempFile != null) {
@@ -159,6 +212,7 @@ class SherpaTTSService implements TTSService {
       final audio = _tts.generate(
         text: text, 
         sid: 0, 
+        
         speed: _config.speechRate.value
       );
 

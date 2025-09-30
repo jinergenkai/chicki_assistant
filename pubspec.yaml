@@ -19,6 +19,7 @@ dependencies:
   # Voice Services
   speech_to_text: ^7.0.0
   flutter_tts: ^3.8.5
+  sherpa_onnx: ^1.12.14  # Text-to-speech with ONNX models
   permission_handler: ^11.0.1  # Added permission handler
   porcupine_flutter: ^3.0.3  # Wake word detection
 
@@ -46,6 +47,8 @@ dependencies:
   dart_openai: ^5.1.0
   vertical_card_pager: ^1.6.3
   tflite_flutter: ^0.11.0
+  audioplayers: ^6.5.1
+  path: ^1.9.1
   
 
 dev_dependencies:
@@ -61,6 +64,49 @@ flutter:
     - assets/models/model.tflite
     - assets/models/vocab.txt
     - assets/models/intent_mapping.json
+    
+    - assets/models/
+    - assets/models/tts/
+    - assets/models/tts/espeak-ng-data/
+    - assets/models/tts/espeak-ng-data/lang/
+    - assets/models/tts/espeak-ng-data/lang/aav/
+    - assets/models/tts/espeak-ng-data/lang/art/
+    - assets/models/tts/espeak-ng-data/lang/azc/
+    - assets/models/tts/espeak-ng-data/lang/bat/
+    - assets/models/tts/espeak-ng-data/lang/bnt/
+    - assets/models/tts/espeak-ng-data/lang/ccs/
+    - assets/models/tts/espeak-ng-data/lang/cel/
+    - assets/models/tts/espeak-ng-data/lang/cus/
+    - assets/models/tts/espeak-ng-data/lang/dra/
+    - assets/models/tts/espeak-ng-data/lang/esx/
+    - assets/models/tts/espeak-ng-data/lang/gmq/
+    - assets/models/tts/espeak-ng-data/lang/gmw/
+    - assets/models/tts/espeak-ng-data/lang/grk/
+    - assets/models/tts/espeak-ng-data/lang/inc/
+    - assets/models/tts/espeak-ng-data/lang/ine/
+    - assets/models/tts/espeak-ng-data/lang/ira/
+    - assets/models/tts/espeak-ng-data/lang/iro/
+    - assets/models/tts/espeak-ng-data/lang/itc/
+    - assets/models/tts/espeak-ng-data/lang/jpx/
+    - assets/models/tts/espeak-ng-data/lang/map/
+    - assets/models/tts/espeak-ng-data/lang/miz/
+    - assets/models/tts/espeak-ng-data/lang/myn/
+    - assets/models/tts/espeak-ng-data/lang/poz/
+    - assets/models/tts/espeak-ng-data/lang/roa/
+    - assets/models/tts/espeak-ng-data/lang/sai/
+    - assets/models/tts/espeak-ng-data/lang/sem/
+    - assets/models/tts/espeak-ng-data/lang/sit/
+    - assets/models/tts/espeak-ng-data/lang/tai/
+    - assets/models/tts/espeak-ng-data/lang/trk/
+    - assets/models/tts/espeak-ng-data/lang/urj/
+    - assets/models/tts/espeak-ng-data/lang/zle/
+    - assets/models/tts/espeak-ng-data/lang/zls/
+    - assets/models/tts/espeak-ng-data/lang/zlw/
+    - assets/models/tts/espeak-ng-data/voices/
+    - assets/models/tts/espeak-ng-data/voices/!v/
+    # - assets/models/tts/en_GB-jenny_dioco-medium.onnx
+    # - assets/models/tts/en_GB-jenny_dioco-medium.onnx.json
+    # - assets/models/tts/tokens.txt
 
   # assets:
   #   - assets/DMSans.ttf

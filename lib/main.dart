@@ -1,4 +1,5 @@
 import 'package:chicki_buddy/controllers/app_config.controller.dart';
+import 'package:chicki_buddy/controllers/tts.controller.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/models/voice_note.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +38,7 @@ void main() async {
   Get.put(AppConfigController(), permanent: true);
 
   // Khởi tạo sẵn các controller dùng GetX để tránh lỗi khi chuyển tab
+  Get.put(TTSController(), permanent: true);
   Get.put(BirthdayController(), permanent: true);
   Get.put(ChatController(), permanent: true);
   Get.put(VoiceController(), permanent: true);
