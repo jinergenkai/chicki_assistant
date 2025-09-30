@@ -38,6 +38,9 @@ dependencies:
 
   # UI
   flutter_animate: ^4.5.0
+
+  # Android Foreground Service
+  flutter_foreground_task: ^8.17.0
   google_fonts: ^6.1.0
   table_calendar: ^3.0.9
   go_router: ^16.2.2

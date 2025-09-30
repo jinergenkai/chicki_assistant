@@ -1,4 +1,6 @@
 download/
+docs/sherpa-onnx/flutter-examples/
+docs/sherpa-onnx/scripts/
 
 # Miscellaneous
 *.class

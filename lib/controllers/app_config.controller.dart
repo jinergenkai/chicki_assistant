@@ -19,6 +19,9 @@ class AppConfigController extends GetxController {
   // Language code, ví dụ: 'vi-VN', 'en-US'
   var language = ''.obs;
 
+  // Enable wakeword background/foreground service (Android)
+  var enableWakewordBackground = false.obs;
+
   // Load config từ Hive hoặc dùng default
   Future<void> loadConfig() async {
     final box = await Hive.openBox(hiveBoxName);
@@ -38,6 +41,7 @@ class AppConfigController extends GetxController {
       // Lấy theme và locale mặc định từ hệ thống
       themeMode.value = Get.isDarkMode ? 'dark' : 'light';
       language.value = Get.deviceLocale?.languageCode ?? 'en';
+      enableWakewordBackground.value = false;
     }
   }
 
@@ -54,6 +58,7 @@ class AppConfigController extends GetxController {
       'temperature': temperature.value,
       'themeMode': themeMode.value,
       'language': language.value,
+      'enableWakewordBackground': enableWakewordBackground.value,
     });
   }
 
