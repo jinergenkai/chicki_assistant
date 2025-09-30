@@ -1,5 +1,6 @@
 download/
 
+/docs/*
 # Miscellaneous
 *.class
 *.log

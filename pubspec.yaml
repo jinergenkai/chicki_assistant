@@ -21,6 +21,10 @@ dependencies:
   flutter_tts: ^3.8.5
   permission_handler: ^11.0.1  # Added permission handler
   porcupine_flutter: ^3.0.3  # Wake word detection
+  sherpa_onnx: ^1.12.14  # Sherpa-ONNX TTS
+  audioplayers: ^6.0.0  # Audio player for sherpa-onnx
+  media_kit: ^1.1.10+1  # Media kit for audio handling
+  path: ^1.9.0  # Path utilities
 
   # HTTP and API
   http: ^1.2.0
