@@ -2,8 +2,9 @@ download/
 
 *.tflite
 *.onnx
-/assets/models/
+/assets/
 /docs/*
+/example/
 # Miscellaneous
 *.class
 *.log

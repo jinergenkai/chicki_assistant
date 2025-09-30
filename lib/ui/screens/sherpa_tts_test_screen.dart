@@ -319,53 +319,7 @@ class SherpaTtsTestScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Model Info
-            Card(
-              color: context.moonColors?.goku,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Model Information',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: context.moonColors?.bulma,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...SherpaModelConfig.getModelInfo().entries.map(
-                          (entry) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: 100,
-                                  child: Text(
-                                    '${entry.key}:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: context.moonColors?.bulma,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    entry.value,
-                                    style: TextStyle(color: context.moonColors?.bulma),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                  ],
-                ),
-              ),
-            ),
+                    const SizedBox(height: 500),
           ],
         ),
       ),

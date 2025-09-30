@@ -12,7 +12,7 @@ and turns them as assets and writes them into ./pubspec.yaml
 import os
 
 def main():
-    target = "./assets/models/tts/vits-piper-en_US-amy-low/"
+    target = "./assets/"
     space = "    "
     subfolders = []
     patterns_to_skip = ["1.5x", "2.x", "3.x", "4.x"]

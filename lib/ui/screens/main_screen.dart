@@ -26,10 +26,10 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = const [
     SherpaTtsTestScreen(),
     // ChatScreen(),
-    BirthdayCalendarScreen(),
-    SuperControlScreen(),
-    VocabularyListScreen(),
-    SettingsScreen(),
+    // BirthdayCalendarScreen(),
+    // SuperControlScreen(),
+    // VocabularyListScreen(),
+    // SettingsScreen(),
     // FlashCardScreen(),
     ModelTestScreen(),
   ];

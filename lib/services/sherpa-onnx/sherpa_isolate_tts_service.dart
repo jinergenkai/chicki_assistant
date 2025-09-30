@@ -133,9 +133,9 @@ class SherpaIsolateTtsService implements TTSService {
     String dictDir = '';
 
     // Use the specified model configuration
-    modelDir = 'vits-piper-en_US-amy-low';
-    modelName = 'en_US-amy-low.onnx';
-    dataDir = 'vits-piper-en_US-amy-low/espeak-ng-data';
+    modelDir = 'vits-piper-en_GB-jenny_dioco-medium';
+    modelName = 'en_GB-jenny_dioco-medium.onnx';
+    dataDir = 'vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data';
 
     if (modelName == '') {
       throw Exception('Model not configured properly');

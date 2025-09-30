@@ -62,50 +62,47 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/models/tts/vits-piper-en_US-amy-low/en_US-amy-low.onnx.json
-    - assets/models/tts/vits-piper-en_US-amy-low/en_US-amy-low.onnx
-    - assets/models/tts/vits-piper-en_US-amy-low/tokens.txt
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/aav/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/art/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/azc/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/bat/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/bnt/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/ccs/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/cel/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/cus/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/dra/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/esx/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/gmq/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/gmw/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/grk/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/inc/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/ine/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/ira/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/iro/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/itc/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/jpx/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/map/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/miz/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/myn/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/poz/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/roa/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/sai/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/sem/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/sit/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/tai/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/trk/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/urj/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/zle/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/zls/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/lang/zlw/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/voices/
-    - assets/models/tts/vits-piper-en_US-amy-low/espeak-ng-data/voices/!v/
 
-  # assets:
-  #   - assets/DMSans.ttf
+  assets:
+    - assets/vits-piper-en_GB-jenny_dioco-medium/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/aav/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/art/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/azc/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/bat/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/bnt/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/ccs/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/cel/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/cus/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/dra/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/esx/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/gmq/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/gmw/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/grk/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/inc/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/ine/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/ira/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/iro/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/itc/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/jpx/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/map/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/miz/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/myn/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/poz/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/roa/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/sai/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/sem/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/sit/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/tai/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/trk/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/urj/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/zle/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/zls/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/lang/zlw/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/voices/
+    - assets/vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data/voices/!v/
+
 
   fonts:
     - family: DMSans

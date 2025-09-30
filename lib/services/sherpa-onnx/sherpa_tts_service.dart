@@ -129,6 +129,9 @@ class SherpaTtsService implements TTSService {
       final stopwatch = Stopwatch();
       stopwatch.start();
 
+      if (_tts == null) {
+        throw Exception('Sherpa-ONNX TTS instance is null');
+      }
       // Generate audio using Sherpa-ONNX
       final audio = _tts!.generate(
         text: cleanText, 
@@ -187,7 +190,7 @@ class SherpaTtsService implements TTSService {
   @override
   Future<void> setLanguage(String language) async {
     // Sherpa-ONNX TTS models are language-specific, so this is mainly for compatibility
-    logger.info('Sherpa-ONNX TTS: Language setting not directly supported. Current model: ${SherpaModelConfig.getModelInfo()['description']}');
+    logger.info('Sherpa-ONNX TTS: Language setting not directly supported.');
   }
 
   @override
@@ -212,9 +215,6 @@ class SherpaTtsService implements TTSService {
 
   /// Get the number of available speakers
   int get numSpeakers => _maxSpeakerID + 1;
-
-  /// Get model information
-  Map<String, String> get modelInfo => SherpaModelConfig.getModelInfo();
 
   /// Play the last generated audio file
   Future<void> playLast() async {

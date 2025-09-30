@@ -21,10 +21,10 @@ class SherpaModelConfig {
       sherpa_onnx.initBindings();
 
       // Configuration as specified in the task
-      String modelDir = 'models/tts/vits-piper-en_US-amy-low';
-      String modelName = 'en_US-amy-low.onnx';
-      String dataDir = 'vits-piper-en_US-amy-low/espeak-ng-data';
-      
+      String modelDir = 'vits-piper-en_GB-jenny_dioco-medium';
+      String modelName = 'en_GB-jenny_dioco-medium.onnx';
+      String dataDir = 'vits-piper-en_GB-jenny_dioco-medium/espeak-ng-data';
+ 
       // Optional parameters
       String voices = ''; // for Kokoro only
       String ruleFsts = '';
@@ -131,41 +131,6 @@ class SherpaModelConfig {
     } catch (e) {
       logger.error('Failed to create Sherpa-ONNX TTS: $e');
       rethrow;
-    }
-  }
-
-  /// Get model information
-  static Map<String, String> getModelInfo() {
-    return {
-      'modelDir': 'models/tts/vits-piper-en_US-amy-low',
-      'modelName': 'en_US-amy-low.onnx',
-      'dataDir': 'vits-piper-en_US-amy-low/espeak-ng-data',
-      'description': 'VITS Piper English US Amy Low Quality TTS Model'
-    };
-  }
-
-  /// Check if model files exist
-  static Future<bool> checkModelFiles() async {
-    try {
-      final Directory directory = await getApplicationSupportDirectory();
-      const modelDir = 'models/tts/vits-piper-en_US-amy-low';
-      const modelName = 'en_US-amy-low.onnx';
-      const dataDir = 'vits-piper-en_US-amy-low/espeak-ng-data';
-      
-      final modelPath = p.join(directory.path, modelDir, modelName);
-      final dataPath = p.join(directory.path, dataDir);
-      final tokensPath = p.join(directory.path, modelDir, 'tokens.txt');
-      
-      final modelExists = await SherpaUtils.fileExists(modelPath);
-      final dataExists = await SherpaUtils.fileExists(dataPath);
-      final tokensExists = await SherpaUtils.fileExists(tokensPath);
-      
-      logger.info('Model files check - Model: $modelExists, Data: $dataExists, Tokens: $tokensExists');
-      
-      return modelExists && dataExists && tokensExists;
-    } catch (e) {
-      logger.error('Error checking model files: $e');
-      return false;
     }
   }
 }
