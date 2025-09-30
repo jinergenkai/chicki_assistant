@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chicki_buddy/services/gpt_service.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -66,32 +68,32 @@ class VoiceController extends GetxController {
     _setupRmsListener();
 
     if (appConfig.enableWakewordBackground.value) {
-      FlutterForegroundTask.init(
-        androidNotificationOptions: AndroidNotificationOptions(
-          channelId: 'wakeword_service_channel',
-          channelName: 'Wakeword Service',
-          channelDescription: 'Foreground service for wakeword detection',
-          channelImportance: NotificationChannelImportance.LOW,
-          priority: NotificationPriority.LOW,
-          iconData: const NotificationIconData(
-            resType: ResourceType.mipmap,
-            resPrefix: ResourcePrefix.ic,
-            name: 'launcher',
-          ),
-          buttons: [],
-        ),
-        foregroundTaskOptions: const ForegroundTaskOptions(
-          interval: 5000,
-          autoRunOnBoot: false,
-          allowWakeLock: true,
-          allowWifiLock: true,
-        ),
-      );
-      FlutterForegroundTask.startService(
-        notificationTitle: 'Wakeword Detection Running',
-        notificationText: 'Listening for wakeword in background',
-        callback: startCallback,
-      );
+      // FlutterForegroundTask.init(
+      //   androidNotificationOptions: AndroidNotificationOptions(
+      //     channelId: 'wakeword_service_channel',
+      //     channelName: 'Wakeword Service',
+      //     channelDescription: 'Foreground service for wakeword detection',
+      //     channelImportance: NotificationChannelImportance.LOW,
+      //     priority: NotificationPriority.LOW,
+      //     iconData: const NotificationIconData(
+      //       resType: ResourceType.mipmap,
+      //       resPrefix: ResourcePrefix.ic,
+      //       name: 'launcher',
+      //     ),
+      //     buttons: [],
+      //   ),
+      //   foregroundTaskOptions: const ForegroundTaskOptions(
+      //     interval: 5000,
+      //     autoRunOnBoot: false,
+      //     allowWakeLock: true,
+      //     allowWifiLock: true,
+      //   ),
+      // );
+      // FlutterForegroundTask.startService(
+      //   notificationTitle: 'Wakeword Detection Running',
+      //   notificationText: 'Listening for wakeword in background',
+      //   callback: startCallback,
+      // );
       logger.info('Started Android foreground service for wakeword');
     } else {
       // Start in-app wakeword as fallback
@@ -100,7 +102,7 @@ class VoiceController extends GetxController {
         if (event.type == WakewordEventType.detected) {
           logger.info('Wakeword detected: ${event.data}');
           // Emit event to AppEventBus for other services/controllers to react
-          eventBus.emit(AppEvent(AppEventType.wakewordDetected, event.data));
+          // eventBus.emit(AppEvent(AppEventType.wakewordDetected, event.data));
         } else if (event.type == WakewordEventType.error) {
           logger.error('Wakeword error: ${event.data}');
         }
