@@ -108,7 +108,9 @@ class BertClassifier(context: Context) {
             outputs[0] = outputBuffer
 
             // Run inference
+            interpreter.allocateTensors() // Đảm bảo tensors được allocate
             interpreter.runForMultipleInputsOutputs(inputs.values.toTypedArray(), outputs)
+            interpreter.close() // Giải phóng tài nguyên ngay sau khi dùng xong
 
             // Process output - đây là raw logits, cần softmax như Python
             outputBuffer.rewind()
