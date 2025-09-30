@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:moon_design/moon_design.dart';
-import 'package:get/get.dart';
+import 'package:logger/logger.dart';
 import 'package:chicki_buddy/services/native_classifier.service.dart';
 
-class ModelTestScreen extends StatefulWidget {
-  const ModelTestScreen({super.key});
+class ClassifyTestWidget extends StatefulWidget {
+  const ClassifyTestWidget({super.key});
 
   @override
-  _ModelTestScreenState createState() => _ModelTestScreenState();
+  State<ClassifyTestWidget> createState() => _ClassifyTestWidgetState();
 }
 
-class _ModelTestScreenState extends State<ModelTestScreen> {
-  final TextEditingController _textController = TextEditingController(text:"play classic song");
+class _ClassifyTestWidgetState extends State<ClassifyTestWidget> {
+  final TextEditingController _textController = TextEditingController(text: "play classic song");
   String _result = '';
   bool _isLoading = false;
 
@@ -30,7 +29,7 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
       });
     } catch (e) {
       setState(() {
-        _result = 'Error: $e';
+        _result = 'Lỗi: $e';
         _isLoading = false;
       });
     }
@@ -38,24 +37,35 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Intent Classification Test'),
-      ),
-      body: Padding(
+    return Card(
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            const Text(
+              'Test Phân loại văn bản',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
             MoonTextArea(
               controller: _textController,
-              hintText: 'Enter text to classify...',
+              hintText: 'Nhập văn bản cần phân loại...',
               textPadding: const EdgeInsets.all(6),
             ),
             const SizedBox(height: 16),
-            MoonButton(
-              onTap: _classifyText,
-              backgroundColor: context.moonColors!.piccolo,
-              label: const Text('Classify'),
+            Center(
+              child: _isLoading 
+                ? const CircularProgressIndicator()
+                : MoonButton(
+                    onTap: _classifyText,
+                    backgroundColor: context.moonColors!.piccolo,
+                    label: const Text('Phân loại'),
+                  ),
             ),
             const SizedBox(height: 16),
             Text(

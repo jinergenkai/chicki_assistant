@@ -2,6 +2,7 @@ import 'package:chicki_buddy/ui/screens/flash_card.screen.dart';
 import 'package:chicki_buddy/ui/screens/model_test.screen.dart';
 import 'package:chicki_buddy/ui/screens/sherpa_tts_test_screen.dart';
 import 'package:chicki_buddy/ui/screens/super_action.screen.dart';
+import 'package:chicki_buddy/ui/screens/test_buddy.screen.dart';
 import 'package:chicki_buddy/ui/screens/vocabulary.screen.dart';
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
@@ -32,6 +33,7 @@ class _MainScreenState extends State<MainScreen> {
     // SettingsScreen(),
     // FlashCardScreen(),
     ModelTestScreen(),
+    TestBuddyScreen(),
   ];
 
   @override
@@ -127,6 +129,12 @@ class _MainScreenState extends State<MainScreen> {
                 label: 'Cài đặt',
                 selected: _currentIndex == 5,
                 onTap: () => _onNavBarTap(5),
+              ),
+              _MoonNavBarItem(
+                icon: Icons.science,
+                label: 'Test Buddy',
+                selected: _currentIndex == 6,
+                onTap: () => _onNavBarTap(6),
               ),
             ],
           ),
