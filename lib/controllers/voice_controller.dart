@@ -3,19 +3,16 @@ import 'dart:async';
 import 'package:chicki_buddy/services/gpt_service.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:porcupine_flutter/porcupine.dart';
-import 'package:porcupine_flutter/porcupine_manager.dart';
-import 'package:porcupine_flutter/porcupine_error.dart';
 import '../core/logger.dart';
 import '../services/stt_service.dart';
 import '../services/tts_service.dart';
 import '../services/local_llm_service.dart';
 import '../services/llm_service.dart';
-import '../services/porcupine_wakeword_service.dart';
+import '../core/app_event_bus.dart';
 import '../services/wakeword_service.dart';
 import '../controllers/app_config.controller.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import '../services/wakeword_foreground_task.dart';
+import '../services/wakeword/wakeword_foreground_task.dart';
 
 enum VoiceState {
   uninitialized,
@@ -34,14 +31,9 @@ class VoiceController extends GetxController {
   String? _lastProcessedText;
   final TTSService _ttsService = TextToSpeechService();
   final LLMService _gptService = OpenAIService();
-  PorcupineManager? _porcupineManager;
-
-  // Wakeword service integration
-  late final WakewordService _wakewordService = PorcupineWakewordService();
-  StreamSubscription<WakewordEvent>? _wakewordSub;
+  StreamSubscription? _wakewordSub;
 
   bool _isInitialized = false;
-  bool _isWakeWordEnabled = false;
 
   // Rx thay cho StreamController
   final state = VoiceState.uninitialized.obs;
@@ -49,64 +41,21 @@ class VoiceController extends GetxController {
   final gptResponse = ''.obs;
   final rmsDB = (-2.0).obs;
 
-  // Giữ lại comment về các StreamController cũ để tham khảo
-  // final _stateController = StreamController<VoiceState>.broadcast();
-  // final _textController = StreamController<String>.broadcast();
-  // final _responseController = StreamController<String>.broadcast();
-
-  // Stream<VoiceState> get stateStream => _stateController.stream;
-  // Stream<String> get onTextRecognized => _textController.stream;
-  // Stream<String> get onGptResponse => _responseController.stream;
-  // bool get isInitialized => _isInitialized;
-  // Stream<double> get onRmsChanged => _sttService.onRmsChanged;
-
   @override
   void onInit() {
     super.onInit();
     _setupSTTListener();
     _setupRmsListener();
 
-    if (appConfig.enableWakewordBackground.value) {
-      // FlutterForegroundTask.init(
-      //   androidNotificationOptions: AndroidNotificationOptions(
-      //     channelId: 'wakeword_service_channel',
-      //     channelName: 'Wakeword Service',
-      //     channelDescription: 'Foreground service for wakeword detection',
-      //     channelImportance: NotificationChannelImportance.LOW,
-      //     priority: NotificationPriority.LOW,
-      //     iconData: const NotificationIconData(
-      //       resType: ResourceType.mipmap,
-      //       resPrefix: ResourcePrefix.ic,
-      //       name: 'launcher',
-      //     ),
-      //     buttons: [],
-      //   ),
-      //   foregroundTaskOptions: const ForegroundTaskOptions(
-      //     interval: 5000,
-      //     autoRunOnBoot: false,
-      //     allowWakeLock: true,
-      //     allowWifiLock: true,
-      //   ),
-      // );
-      // FlutterForegroundTask.startService(
-      //   notificationTitle: 'Wakeword Detection Running',
-      //   notificationText: 'Listening for wakeword in background',
-      //   callback: startCallback,
-      // );
-      logger.info('Started Android foreground service for wakeword');
-    } else {
-      // Start in-app wakeword as fallback
-      _wakewordService.start();
-      _wakewordSub = _wakewordService.events.listen((event) {
-        if (event.type == WakewordEventType.detected) {
-          logger.info('Wakeword detected: ${event.data}');
-          // Emit event to AppEventBus for other services/controllers to react
-          // eventBus.emit(AppEvent(AppEventType.wakewordDetected, event.data));
-        } else if (event.type == WakewordEventType.error) {
-          logger.error('Wakeword error: ${event.data}');
+    _wakewordSub = eventBus.stream
+      .where((event) => event.type == AppEventType.wakewordDetected)
+      .listen((event) {
+        logger.info('Wakeword detected: ${event.payload}');
+        print(state.value);
+        if (state.value == VoiceState.idle) {
+          startListening();
         }
       });
-    }
   }
 
   Future<void> initialize() async {
@@ -128,22 +77,6 @@ class VoiceController extends GetxController {
       await _ttsService.initialize();
       await _gptService.initialize();
 
-      // Initialize Porcupine wake word detection
-      try {
-        _porcupineManager = await PorcupineManager.fromBuiltInKeywords(
-          "Uj1oNEiCvbLlelpA+/kDZ90o4Y1cg/tnPnLwLU1hVaCtrcd2NbKQsg==",
-          // ["assets/hey_chicki.ppn"], // Custom wake word model file
-            [BuiltInKeyword.PICOVOICE, BuiltInKeyword.PORCUPINE],
-          _wakeWordCallback
-        );
-        _isWakeWordEnabled = true;
-        logger.info('Wake word detection initialized');
-        await _porcupineManager?.start();
-      } catch (e) {
-        logger.error('Failed to initialize wake word detection', e);
-        // Continue without wake word detection
-        _isWakeWordEnabled = false;
-      }
 
       _isInitialized = true;
       logger.info('Voice Controller initialized successfully');
@@ -250,40 +183,13 @@ class VoiceController extends GetxController {
   // _responseController.close();
 
   void disposeController() {
-    _porcupineManager?.delete();
     super.dispose();
   }
 
-  void _wakeWordCallback(int keywordIndex) {
-    logger.info('Wake word detected! Index: $keywordIndex');
-    // if (_stateController.isClosed) return;
-    state.value = VoiceState.detecting;
-    startListening();
+  @override
+  void dispose() {
+    _wakewordSub?.cancel();
+    super.dispose();
   }
 
-  Future<void> startWakeWordDetection() async {
-    if (!_isInitialized || !_isWakeWordEnabled) {
-      throw Exception('Wake word detection not initialized');
-    }
-    try {
-      await _porcupineManager?.start();
-      logger.info('Started wake word detection');
-    } catch (e) {
-      logger.error('Error starting wake word detection', e);
-      state.value = VoiceState.error;
-      rethrow;
-    }
-  }
-
-  Future<void> stopWakeWordDetection() async {
-    if (!_isWakeWordEnabled) return;
-    try {
-      await _porcupineManager?.stop();
-      logger.info('Stopped wake word detection');
-    } catch (e) {
-      logger.error('Error stopping wake word detection', e);
-      state.value = VoiceState.error;
-      rethrow;
-    }
-  }
 }

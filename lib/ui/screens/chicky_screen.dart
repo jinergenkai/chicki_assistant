@@ -20,9 +20,7 @@ class ChickyScreen extends StatefulWidget {
 }
 
 class _ChickyScreenState extends State<ChickyScreen> {
-  final ChatController _chatController = Get.find<ChatController>();
-  late final VoiceController _voiceController;
-  final _scrollController = ScrollController();
+  final VoiceController _voiceController = Get.put(VoiceController());
   bool _isInitialized = false;
 
   @override
@@ -33,9 +31,7 @@ class _ChickyScreenState extends State<ChickyScreen> {
 
   Future<void> _initializeController() async {
     try {
-      _voiceController = Get.find<VoiceController>();
       await _voiceController.initialize();
-      _setupVoiceListener();
 
       // Start wake word detection after initialization
       // await _voiceController.startWakeWordDetection();
@@ -50,41 +46,9 @@ class _ChickyScreenState extends State<ChickyScreen> {
     }
   }
 
-  void _setupVoiceListener() {
-    // Rx: tự động update UI qua Obx, không cần listen thủ công nữa
-    ever<String>(_voiceController.recognizedText, (text) {
-      if (text.isNotEmpty) {
-        _addMessage(Message.user(text));
-        // Reset để tránh lặp lại message khi giá trị không đổi
-        _voiceController.recognizedText.value = '';
-      }
-    });
-    ever<String>(_voiceController.gptResponse, (response) {
-      if (response.isNotEmpty) {
-        _addMessage(Message.assistant(response));
-        // Reset để tránh lặp lại message khi giá trị không đổi
-        _voiceController.gptResponse.value = '';
-      }
-    });
-  }
-
-  void _addMessage(Message message) {
-    _chatController.addMessage(message);
-    // Scroll to bottom after message is added
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
 
   @override
   void dispose() {
-    _scrollController.dispose();
     if (_isInitialized) {
       // _voiceController.stopWakeWordDetection();
       _voiceController.dispose();

@@ -10,9 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
 
 import 'chat_screen.dart';
-import 'birthday_calendar_screen.dart';
-import 'birthday_list_screen.dart';
-import 'gift_suggestions_screen.dart';
 import 'settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -27,17 +24,12 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
-    SherpaTtsTestScreen(),
-    AssistantSettingsScreen(),
-    ChickyScreen(),
-    BirthdayCalendarScreen(),
-    BirthdayListScreen(),
-    SuperControlScreen(),
-    VocabularyListScreen(),
-    SettingsScreen(),
-    FlashCardScreen(),
-    ModelTestScreen(),
-    TestBuddyScreen(),
+    ChickyScreen(),            // Tab 0: Chicki
+    AssistantSettingsScreen(), // Tab 1: Lịch
+    
+    SuperControlScreen(),      // Tab 3: Quà tặng
+    SettingsScreen(),          // Tab 4: Cài đặt
+    SherpaTtsTestScreen(),     // Tab 5: Cài đặt (thứ 2)
   ];
 
   @override
@@ -47,6 +39,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onNavBarTap(int index) {
+    if (index < 0 || index >= _screens.length) return; // tránh crash nếu index vượt quá
     setState(() {
       _currentIndex = index;
       _pageController.animateToPage(
@@ -75,11 +68,12 @@ class _MainScreenState extends State<MainScreen> {
       child: Scaffold(
         extendBody: true,
         backgroundColor: Colors.transparent,
-        body: PageView(
+        body: PageView.builder(
           controller: _pageController,
           physics: const BouncingScrollPhysics(),
           onPageChanged: _onPageChanged,
-          children: _screens,
+          itemCount: _screens.length,
+          itemBuilder: (context, index) => _screens[index],
         ),
         bottomNavigationBar: Container(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -133,24 +127,6 @@ class _MainScreenState extends State<MainScreen> {
                 label: 'Cài đặt',
                 selected: _currentIndex == 5,
                 onTap: () => _onNavBarTap(5),
-              ),
-              _MoonNavBarItem(
-                icon: Icons.science,
-                label: 'Test Buddy',
-                selected: _currentIndex == 6,
-                onTap: () => _onNavBarTap(6),
-              ),
-              _MoonNavBarItem(
-                icon: Icons.science,
-                label: 'Test Buddy',
-                selected: _currentIndex == 6,
-                onTap: () => _onNavBarTap(6),
-              ),
-              _MoonNavBarItem(
-                icon: Icons.science,
-                label: 'Test Buddy',
-                selected: _currentIndex == 6,
-                onTap: () => _onNavBarTap(6),
               ),
             ],
           ),

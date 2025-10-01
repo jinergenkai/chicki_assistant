@@ -2,16 +2,15 @@ import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:chicki_buddy/controllers/tts.controller.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/models/voice_note.dart';
+import 'package:chicki_buddy/services/wakeword/porcupine_wakeword_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:moon_design/moon_design.dart';
-import 'package:chicki_buddy/models/friend.dart';
 import 'package:chicki_buddy/services/notification_service.dart';
 import 'package:chicki_buddy/ui/screens/main_screen.dart';
 import 'package:chicki_buddy/core/app_router.dart';
 import 'package:get/get.dart';
-import 'package:chicki_buddy/controllers/birthday_controller.dart';
 import 'package:chicki_buddy/controllers/chat_controller.dart';
 import 'package:chicki_buddy/controllers/voice_controller.dart';
 
@@ -31,7 +30,7 @@ void main() async {
 
   // Inject AppConfigController
   Get.put(AppConfigController(), permanent: true);
-  Get.put(VoiceController(), permanent: true);
+  Get.put(PorcupineWakewordService(), permanent: true);
 
   runApp(const MyApp());
 }

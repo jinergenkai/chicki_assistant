@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chicki_buddy/controllers/birthday_controller.dart';
 
 import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:moon_design/moon_design.dart';
@@ -10,7 +9,6 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<BirthdayController>();
     final appConfig = Get.find<AppConfigController>();
 
     return Scaffold(
@@ -171,7 +169,6 @@ class SettingsScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    controller.initDemoDataIfEmpty();
                     Get.snackbar(
                       '✅ Thành công',
                       'Đã thêm dữ liệu mẫu',
@@ -209,7 +206,6 @@ class SettingsScreen extends StatelessWidget {
                           ),
                           ElevatedButton(
                             onPressed: () {
-                              controller.resetAllData();
                               Get.back();
                               Get.snackbar(
                                 '✅ Thành công',

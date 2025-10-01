@@ -3,13 +3,13 @@ import 'dart:isolate';
 import 'package:chicki_buddy/core/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:porcupine_flutter/porcupine.dart';
-import 'wakeword_service.dart';
+import '../wakeword_service.dart';
 import 'package:porcupine_flutter/porcupine_manager.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Example Porcupine-based wakeword service implementation.
 /// Replace with actual Porcupine/Sherpa integration as needed.
-class PorcupineWakewordService implements WakewordService {
+class BuildtinWakewordService implements WakewordService {
   Isolate? _isolate;
   ReceivePort? _receivePort;
   final StreamController<WakewordEvent> _eventController = StreamController.broadcast();
