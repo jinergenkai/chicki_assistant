@@ -1,11 +1,14 @@
 download/
+docs/sherpa-onnx/flutter-examples/
+docs/sherpa-onnx/scripts/
 
 *.tflite
 *.onnx
 *.pt
 
-assets/models/*
-
+/assets/
+/docs/*
+/example/
 # Miscellaneous
 *.class
 *.log

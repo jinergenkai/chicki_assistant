@@ -32,7 +32,7 @@ void main() async {
   await Hive.openBox<Vocabulary>('vocabularyBox');
 
   // Initialize Notifications
-  await NotificationService().initialize();
+  // await NotificationService().initialize();
 
   // Inject AppConfigController
   Get.put(AppConfigController(), permanent: true);

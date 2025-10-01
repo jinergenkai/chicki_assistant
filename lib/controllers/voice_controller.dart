@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chicki_buddy/services/gpt_service.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -9,6 +11,11 @@ import '../services/stt_service.dart';
 import '../services/tts_service.dart';
 import '../services/local_llm_service.dart';
 import '../services/llm_service.dart';
+import '../services/porcupine_wakeword_service.dart';
+import '../services/wakeword_service.dart';
+import '../controllers/app_config.controller.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import '../services/wakeword_foreground_task.dart';
 
 enum VoiceState {
   uninitialized,
@@ -23,16 +30,16 @@ enum VoiceState {
 
 // Refactor: GetxController + Rx, giữ lại toàn bộ comment cũ để tiện phát triển feature sau này
 class VoiceController extends GetxController {
-  // Singleton không còn cần thiết khi dùng GetX, nhưng giữ lại comment cho tham khảo
-  // static final VoiceController _instance = VoiceController._internal();
-  // factory VoiceController() => _instance;
-  // VoiceController._internal();
-
+  final AppConfigController appConfig = Get.find<AppConfigController>();
   final STTService _sttService = SpeechToTextService();
   String? _lastProcessedText;
   final TTSService _ttsService = TextToSpeechService();
   final LLMService _gptService = OpenAIService();
   PorcupineManager? _porcupineManager;
+
+  // Wakeword service integration
+  late final WakewordService _wakewordService = PorcupineWakewordService();
+  StreamSubscription<WakewordEvent>? _wakewordSub;
 
   bool _isInitialized = false;
   final bool _isWakeWordEnabled = false;
@@ -59,6 +66,48 @@ class VoiceController extends GetxController {
     super.onInit();
     _setupSTTListener();
     _setupRmsListener();
+
+    if (appConfig.enableWakewordBackground.value) {
+      // FlutterForegroundTask.init(
+      //   androidNotificationOptions: AndroidNotificationOptions(
+      //     channelId: 'wakeword_service_channel',
+      //     channelName: 'Wakeword Service',
+      //     channelDescription: 'Foreground service for wakeword detection',
+      //     channelImportance: NotificationChannelImportance.LOW,
+      //     priority: NotificationPriority.LOW,
+      //     iconData: const NotificationIconData(
+      //       resType: ResourceType.mipmap,
+      //       resPrefix: ResourcePrefix.ic,
+      //       name: 'launcher',
+      //     ),
+      //     buttons: [],
+      //   ),
+      //   foregroundTaskOptions: const ForegroundTaskOptions(
+      //     interval: 5000,
+      //     autoRunOnBoot: false,
+      //     allowWakeLock: true,
+      //     allowWifiLock: true,
+      //   ),
+      // );
+      // FlutterForegroundTask.startService(
+      //   notificationTitle: 'Wakeword Detection Running',
+      //   notificationText: 'Listening for wakeword in background',
+      //   callback: startCallback,
+      // );
+      logger.info('Started Android foreground service for wakeword');
+    } else {
+      // Start in-app wakeword as fallback
+      _wakewordService.start();
+      _wakewordSub = _wakewordService.events.listen((event) {
+        if (event.type == WakewordEventType.detected) {
+          logger.info('Wakeword detected: ${event.data}');
+          // Emit event to AppEventBus for other services/controllers to react
+          // eventBus.emit(AppEvent(AppEventType.wakewordDetected, event.data));
+        } else if (event.type == WakewordEventType.error) {
+          logger.error('Wakeword error: ${event.data}');
+        }
+      });
+    }
   }
 
   Future<void> initialize() async {

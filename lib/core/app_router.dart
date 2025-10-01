@@ -6,6 +6,7 @@ import '../ui/screens/settings_screen.dart';
 import '../ui/screens/gift_suggestions_screen.dart';
 import '../ui/screens/chat_screen.dart';
 import '../ui/screens/main_screen.dart';
+import '../ui/screens/sherpa_tts_test_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   routes: [
@@ -36,6 +37,11 @@ final GoRouter appRouter = GoRouter(
           path: '/settings',
           name: 'settings',
           builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: '/sherpa-tts-test',
+          name: 'sherpa-tts-test',
+          builder: (context, state) => const SherpaTtsTestScreen(),
         ),
       ],
     ),
