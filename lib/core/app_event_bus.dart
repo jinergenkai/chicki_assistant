@@ -3,7 +3,7 @@ import 'dart:async';
 enum AppEventType {
   // Wakeword
   wakewordDetected,
-  // Add more event types here as needed
+  assistantMessage,
 }
 
 class AppEvent {

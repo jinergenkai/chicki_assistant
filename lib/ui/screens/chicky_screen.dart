@@ -1,0 +1,217 @@
+import 'dart:ui';
+
+import 'package:chicki_buddy/controllers/voice_controller.dart';
+import 'package:chicki_buddy/controllers/chat_controller.dart';
+import 'package:flutter/material.dart';
+import 'dart:ui';
+import '../../core/app_event_bus.dart';
+import 'package:get/get.dart';
+import 'package:moon_design/moon_design.dart';
+import '../../models/message.dart';
+import '../widgets/mic_button.dart';
+import '../widgets/message_bubble.dart';
+import '../widgets/voice_state_indicator.dart';
+
+class ChickyScreen extends StatefulWidget {
+  const ChickyScreen({super.key});
+
+  @override
+  State<ChickyScreen> createState() => _ChickyScreenState();
+}
+
+class _ChickyScreenState extends State<ChickyScreen> {
+  final ChatController _chatController = Get.find<ChatController>();
+  late final VoiceController _voiceController;
+  final _scrollController = ScrollController();
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeController();
+  }
+
+  Future<void> _initializeController() async {
+    try {
+      _voiceController = Get.find<VoiceController>();
+      await _voiceController.initialize();
+      _setupVoiceListener();
+
+      // Start wake word detection after initialization
+      // await _voiceController.startWakeWordDetection();
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      print('Failed to initialize voice controller: $e');
+    }
+  }
+
+  void _setupVoiceListener() {
+    // Rx: tự động update UI qua Obx, không cần listen thủ công nữa
+    ever<String>(_voiceController.recognizedText, (text) {
+      if (text.isNotEmpty) {
+        _addMessage(Message.user(text));
+        // Reset để tránh lặp lại message khi giá trị không đổi
+        _voiceController.recognizedText.value = '';
+      }
+    });
+    ever<String>(_voiceController.gptResponse, (response) {
+      if (response.isNotEmpty) {
+        _addMessage(Message.assistant(response));
+        // Reset để tránh lặp lại message khi giá trị không đổi
+        _voiceController.gptResponse.value = '';
+      }
+    });
+  }
+
+  void _addMessage(Message message) {
+    _chatController.addMessage(message);
+    // Scroll to bottom after message is added
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    if (_isInitialized) {
+      // _voiceController.stopWakeWordDetection();
+      _voiceController.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        extendBody: true,
+        // Modern dark chill purple gradient background
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/overlay.jpg',
+                fit: BoxFit.cover,
+              ),
+            ),
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: Container(
+                  color: Colors.black.withOpacity(0.1),
+                ),
+              ),
+            ),
+            // Minimal UI: big animated text in center, listen to eventBus for assistantMessage
+            Center(
+              child: _AssistantBigText(),
+            ),
+            // Microphone Button at bottom
+            // Voice State Indicator
+            Positioned(
+              bottom: MediaQuery.of(context).padding.bottom + 32,
+              left: 0,
+              right: 0,
+              child:
+                  // Voice State Indicator
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.2),
+                    child: Obx(() {
+                                    final state = _voiceController.state.value;
+                                    return VoiceStateIndicator(state: state);
+                                  }),
+                  ),
+            ),
+          ],
+        ));
+  }
+}
+
+// Widget to display big animated assistant text
+class _AssistantBigText extends StatefulWidget {
+  @override
+  State<_AssistantBigText> createState() => _AssistantBigTextState();
+}
+
+class _AssistantBigTextState extends State<_AssistantBigText> {
+  String _text = 'Say something...';
+
+  @override
+  void initState() {
+    super.initState();
+    eventBus.stream.listen((event) {
+      if (event.type == AppEventType.assistantMessage) {
+        setState(() {
+          _text = event.payload ?? '';
+        });
+        // TODO: Add ting ting animation here
+      }
+    });
+
+    // Simulate assistant message for demo
+    Future.delayed(const Duration(seconds: 2), () {
+      eventBus.emit(AppEvent(AppEventType.assistantMessage, 'Hello, how can I help you?'));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Split text into up to 3 lines, each line 2-3 words, last line biggest
+    final words = _text.split(' ');
+    List<String> lines = [];
+    int i = 0;
+    while (i < words.length) {
+      int take = (lines.length == 2) ? words.length - i : (words.length - i > 2 ? 2 : words.length - i);
+      lines.add(words.sublist(i, i + take).join(' '));
+      i += take;
+      if (lines.length == 3) break;
+    }
+    while (lines.length < 3) lines.add('');
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          lines[0],
+          style: const TextStyle(
+            fontSize: 28,
+            color: Colors.white70,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          lines[1],
+          style: const TextStyle(
+            fontSize: 36,
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          lines[2],
+          style: const TextStyle(
+            fontSize: 48,
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}

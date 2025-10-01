@@ -1,3 +1,5 @@
+import 'package:chicki_buddy/ui/screens/assistant_settings_screen.dart';
+import 'package:chicki_buddy/ui/screens/chicky_screen.dart';
 import 'package:chicki_buddy/ui/screens/flash_card.screen.dart';
 import 'package:chicki_buddy/ui/screens/model_test.screen.dart';
 import 'package:chicki_buddy/ui/screens/sherpa_tts_test_screen.dart';
@@ -26,12 +28,14 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = const [
     SherpaTtsTestScreen(),
-    // ChatScreen(),
-    // BirthdayCalendarScreen(),
-    // SuperControlScreen(),
-    // VocabularyListScreen(),
-    // SettingsScreen(),
-    // FlashCardScreen(),
+    AssistantSettingsScreen(),
+    ChickyScreen(),
+    BirthdayCalendarScreen(),
+    BirthdayListScreen(),
+    SuperControlScreen(),
+    VocabularyListScreen(),
+    SettingsScreen(),
+    FlashCardScreen(),
     ModelTestScreen(),
     TestBuddyScreen(),
   ];
@@ -129,6 +133,18 @@ class _MainScreenState extends State<MainScreen> {
                 label: 'Cài đặt',
                 selected: _currentIndex == 5,
                 onTap: () => _onNavBarTap(5),
+              ),
+              _MoonNavBarItem(
+                icon: Icons.science,
+                label: 'Test Buddy',
+                selected: _currentIndex == 6,
+                onTap: () => _onNavBarTap(6),
+              ),
+              _MoonNavBarItem(
+                icon: Icons.science,
+                label: 'Test Buddy',
+                selected: _currentIndex == 6,
+                onTap: () => _onNavBarTap(6),
               ),
               _MoonNavBarItem(
                 icon: Icons.science,
