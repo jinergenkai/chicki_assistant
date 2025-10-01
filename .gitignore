@@ -6,9 +6,6 @@ docs/sherpa-onnx/scripts/
 *.onnx
 *.pt
 
-/assets/
-/docs/*
-/example/
 # Miscellaneous
 *.class
 *.log

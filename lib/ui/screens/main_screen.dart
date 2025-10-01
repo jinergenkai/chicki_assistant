@@ -26,7 +26,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = const [
     ChickyScreen(),            // Tab 0: Chicki
     AssistantSettingsScreen(), // Tab 1: Lịch
-    
+    ModelTestScreen(),
     SuperControlScreen(),      // Tab 3: Quà tặng
     SettingsScreen(),          // Tab 4: Cài đặt
     SherpaTtsTestScreen(),     // Tab 5: Cài đặt (thứ 2)
