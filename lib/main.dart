@@ -16,19 +16,14 @@ import 'package:chicki_buddy/controllers/chat_controller.dart';
 import 'package:chicki_buddy/controllers/voice_controller.dart';
 
 void main() async {
-  // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Hive
   await Hive.initFlutter();
 
-  // **Đăng ký adapter**
-  Hive.registerAdapter(FriendAdapter());
   Hive.registerAdapter(VocabularyAdapter());
   Hive.registerAdapter(VoiceNoteAdapter());
 
   await Hive.openBox<VoiceNote>('voiceNoteBox');
-  await Hive.openBox<Friend>('friends');
   await Hive.openBox<Vocabulary>('vocabularyBox');
 
   // Initialize Notifications
@@ -36,11 +31,6 @@ void main() async {
 
   // Inject AppConfigController
   Get.put(AppConfigController(), permanent: true);
-
-  // Khởi tạo sẵn các controller dùng GetX để tránh lỗi khi chuyển tab
-  Get.put(TTSController(), permanent: true);
-  Get.put(BirthdayController(), permanent: true);
-  Get.put(ChatController(), permanent: true);
   Get.put(VoiceController(), permanent: true);
 
   runApp(const MyApp());

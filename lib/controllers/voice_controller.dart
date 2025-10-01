@@ -28,7 +28,6 @@ enum VoiceState {
   error
 }
 
-// Refactor: GetxController + Rx, giữ lại toàn bộ comment cũ để tiện phát triển feature sau này
 class VoiceController extends GetxController {
   final AppConfigController appConfig = Get.find<AppConfigController>();
   final STTService _sttService = SpeechToTextService();
@@ -42,7 +41,7 @@ class VoiceController extends GetxController {
   StreamSubscription<WakewordEvent>? _wakewordSub;
 
   bool _isInitialized = false;
-  final bool _isWakeWordEnabled = false;
+  bool _isWakeWordEnabled = false;
 
   // Rx thay cho StreamController
   final state = VoiceState.uninitialized.obs;
@@ -130,21 +129,21 @@ class VoiceController extends GetxController {
       await _gptService.initialize();
 
       // Initialize Porcupine wake word detection
-      // try {
-      //   _porcupineManager = await PorcupineManager.fromBuiltInKeywords(
-      //     "3ZsjB+Lqz9YvUxjiPBL8lktSfYU27+Dy3HXQlzObXf+9PhpXizlbkw==",
-      //     // ["assets/hey_chicki.ppn"], // Custom wake word model file
-      //       [BuiltInKeyword.PICOVOICE, BuiltInKeyword.PORCUPINE],
-      //     _wakeWordCallback
-      //   );
-      //   _isWakeWordEnabled = true;
-      //   logger.info('Wake word detection initialized');
-      //   await _porcupineManager?.start();
-      // } catch (e) {
-      //   logger.error('Failed to initialize wake word detection', e);
-      //   // Continue without wake word detection
-      //   _isWakeWordEnabled = false;
-      // }
+      try {
+        _porcupineManager = await PorcupineManager.fromBuiltInKeywords(
+          "Uj1oNEiCvbLlelpA+/kDZ90o4Y1cg/tnPnLwLU1hVaCtrcd2NbKQsg==",
+          // ["assets/hey_chicki.ppn"], // Custom wake word model file
+            [BuiltInKeyword.PICOVOICE, BuiltInKeyword.PORCUPINE],
+          _wakeWordCallback
+        );
+        _isWakeWordEnabled = true;
+        logger.info('Wake word detection initialized');
+        await _porcupineManager?.start();
+      } catch (e) {
+        logger.error('Failed to initialize wake word detection', e);
+        // Continue without wake word detection
+        _isWakeWordEnabled = false;
+      }
 
       _isInitialized = true;
       logger.info('Voice Controller initialized successfully');

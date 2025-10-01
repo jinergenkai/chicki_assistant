@@ -122,7 +122,7 @@ class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMix
                         : state == VoiceState.speaking
                             ? 'Đang nói'
                             : 'Nhấn để nói',
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Color(0xFF7e7dd6)),
               ),
             onTap: isEnabled ? _toggleListening : null,
               ),
@@ -177,7 +177,7 @@ class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMix
         return Colors.grey.shade400;
       case VoiceState.idle:
       default:
-        return Colors.blue;
+        return const Color.fromARGB(255, 255, 255, 255);
     }
   }
 

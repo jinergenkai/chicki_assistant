@@ -4,7 +4,7 @@ import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:media_kit/media_kit.dart';
+// import 'package:media_kit/media_kit.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -117,8 +117,8 @@ class SherpaIsolateTtsService implements TTSService {
       BackgroundIsolateBinaryMessenger.ensureInitialized(task.rootIsolateToken!);
     }
 
-    MediaKit.ensureInitialized();
-    final player = Player();
+    // MediaKit.ensureInitialized();
+    // final player = Player();
     sherpa_onnx.initBindings();
 
     final receivePort = ReceivePort();
@@ -231,8 +231,8 @@ class SherpaIsolateTtsService implements TTSService {
                     'RTF: ${(elapsed / 1000).toStringAsPrecision(4)}/${waveDuration.toStringAsPrecision(4)} '
                     '= ${(elapsed / 1000 / waveDuration).toStringAsPrecision(3)}');
 
-                await player.open(Media('file:///$filename'));
-                await player.play();
+                // await player.open(Media('file:///$filename'));
+                // await player.play();
               }
 
               // Send completion signal back
@@ -244,7 +244,7 @@ class SherpaIsolateTtsService implements TTSService {
 
           case 'stop':
             {
-              await player.stop();
+              // await player.stop();
               if (msg.sendPort != null) {
                 msg.sendPort!.send({'status': 'stopped'});
               }
