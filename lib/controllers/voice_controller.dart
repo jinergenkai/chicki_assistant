@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:chicki_buddy/services/gpt_service.dart';
+import 'package:chicki_buddy/services/mock_speech_to_text_service.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../core/logger.dart';
@@ -27,11 +28,12 @@ enum VoiceState {
 
 class VoiceController extends GetxController {
   final AppConfigController appConfig = Get.find<AppConfigController>();
-  final STTService _sttService = SpeechToTextService();
-  String? _lastProcessedText;
+  final STTService _sttService = MockSpeechToTextService();
   final TTSService _ttsService = TextToSpeechService();
   final LLMService _gptService = OpenAIService();
+
   StreamSubscription? _wakewordSub;
+  String? _lastProcessedText;
 
   bool _isInitialized = false;
 
@@ -39,7 +41,7 @@ class VoiceController extends GetxController {
   final state = VoiceState.uninitialized.obs;
   final recognizedText = ''.obs;
   final gptResponse = ''.obs;
-  final rmsDB = (-2.0).obs;
+  final rmsDB = (2.0).obs;
 
   @override
   void onInit() {
@@ -192,4 +194,66 @@ class VoiceController extends GetxController {
     super.dispose();
   }
 
+  /// Starts continuous listening, splits input every 10s, sends to GPT, then TTS.
+  Future<void> startContinuousListeningWithChunking() async {
+    if (!_isInitialized) {
+      throw Exception('Voice Controller not initialized');
+    }
+    try {
+      final micStatus = await Permission.microphone.status;
+      if (!micStatus.isGranted) {
+        state.value = VoiceState.needsPermission;
+        throw Exception('Microphone permission not granted');
+      }
+
+      state.value = VoiceState.listening;
+      logger.info('voice controller: Started continuous listening with chunking');
+
+      await _sttService.startListening();
+
+      String buffer = '';
+      Timer? chunkTimer;
+
+      StreamSubscription? sub;
+      sub = _sttService.onTextRecognized.listen((text) async {
+        if (text.isNotEmpty) {
+          buffer += (buffer.isEmpty ? '' : ' ') + text;
+        }
+      });
+
+      chunkTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+        if (buffer.isNotEmpty) {
+          final chunk = buffer.trim();
+          buffer = '';
+          try {
+            state.value = VoiceState.processing;
+            recognizedText.value = chunk;
+            logger.info('Processing chunk: $chunk');
+            final response = await _gptService.generateResponse(chunk);
+            gptResponse.value = response;
+            state.value = VoiceState.speaking;
+            await _ttsService.speak(response);
+            state.value = VoiceState.listening;
+          } catch (e) {
+            logger.error('Error processing chunk', e);
+            state.value = VoiceState.error;
+          }
+        }
+      });
+
+      // Stop logic: you may want to expose a stop method to cancel timer/sub
+      // For demo, auto-stop after 60s
+      Future.delayed(const Duration(seconds: 60), () async {
+        await sub?.cancel();
+        chunkTimer?.cancel();
+        await _sttService.stopListening();
+        state.value = VoiceState.idle;
+        logger.info('voice controller: Stopped continuous listening');
+      });
+    } catch (e) {
+      logger.error('Error starting continuous listening', e);
+      state.value = VoiceState.error;
+      rethrow;
+    }
+  }
 }

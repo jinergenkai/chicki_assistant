@@ -12,7 +12,7 @@ class TextToSpeechTestWidget extends StatefulWidget {
 }
 
 class _TextToSpeechTestWidgetState extends State<TextToSpeechTestWidget> {
-  final _ttsController = Get.find<TTSController>();
+  final _ttsController = Get.put(TTSController());
   final _config = Get.find<AppConfigController>();
   final _textController = TextEditingController(
     text: "Hello, I am your virtual assistant. How can I help you today?",

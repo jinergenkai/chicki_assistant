@@ -20,7 +20,7 @@ class LocalLLMService implements LLMService {
     try {
       // Khởi tạo OpenAI client với endpoint local
       OpenAI.apiKey = "1"; // Local server thường không cần key
-      OpenAI.baseUrl = "http://192.168.0.106:1337/v1";
+      OpenAI.baseUrl = "http://192.168.95.91:11434/v1";
       _isInitialized = true;
       _logger.i('Local LLM service initialized (dart_openai)');
     } catch (e) {

@@ -1,13 +1,13 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import '../services/tts_service.dart';
-import '../services/sherpa_tts_service.dart';
+import '../services/sherpa-onnx/sherpa_tts_service.dart';
 import 'app_config.controller.dart';
 
 class TTSController extends GetxController {
   // Singleton instances của services
   static final TextToSpeechService _flutterTTSInstance = TextToSpeechService();
-  static final SherpaTTSService _sherpaTTSInstance = SherpaTTSService();
+  static final SherpaTtsService _sherpaTTSInstance = SherpaTtsService();
   
   late TTSService _currentService;
   final _config = Get.find<AppConfigController>();
@@ -22,29 +22,7 @@ class TTSController extends GetxController {
 
     // Listen to changes in ttsEngine config
     ever(_config.ttsEngine, (value) async {
-      // final result = await Get.dialog(
-      //   AlertDialog(
-      //     title: const Text('Thay đổi Text-to-Speech Engine'),
-      //     content: const Text('Bạn có chắc muốn thay đổi TTS engine không? Điều này sẽ dừng âm thanh đang phát.'),
-      //     actions: [
-      //       TextButton(
-      //         child: const Text('Hủy'),
-      //         onPressed: () => Get.back(result: false),
-      //       ),
-      //       TextButton(
-      //         child: const Text('Đồng ý'),
-      //         onPressed: () => Get.back(result: true),
-      //       ),
-      //     ],
-      //   ),
-      // );
-
-      // if (result == true) {
         await _switchService();
-      // } else {
-      //   // Revert the change if user cancels
-      //   _config.ttsEngine.value = _config.ttsEngine.value == 'sherpa' ? 'flutter_tts' : 'sherpa';
-      // }
     });
   }
 

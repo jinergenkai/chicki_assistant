@@ -58,6 +58,28 @@ class Vocabulary extends HiveObject {
   @HiveField(17)
   bool isDeleted; // track xóa offline, default false
 
+  // --- Added fields for advanced vocabulary DB ---
+  @HiveField(18)
+  String? pos; // Part of Speech (danh từ, động từ...)
+
+  @HiveField(19)
+  int? frequencyRank; // Ranking theo corpus
+
+  @HiveField(20)
+  String? sourceList; // List nguồn: oxford_3000, awl...
+
+  @HiveField(21)
+  List<String>? relatedWords; // hypernym / hyponym / collocation
+
+  @HiveField(22)
+  String? userNotes; // User ghi chú riêng
+
+  @HiveField(23)
+  String? imagePath; // Đường dẫn ảnh minh họa
+
+  @HiveField(24)
+  String? reviewStatus; // Trạng thái ôn tập SRS: new, learning, reviewing, mastered
+
   Vocabulary({
     this.id,
     required this.word,
@@ -77,5 +99,14 @@ class Vocabulary extends HiveObject {
     required this.updatedAt,
     this.isSync = false,
     this.isDeleted = false,
+    // --- Added fields ---
+    this.pos,
+    this.frequencyRank,
+    this.sourceList,
+    this.relatedWords,
+    this.userNotes,
+    this.imagePath,
+    this.reviewStatus,
   });
+  // NOTE: Update HiveAdapter if you change fields!
 }

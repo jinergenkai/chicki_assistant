@@ -72,6 +72,7 @@ class SpeechToTextService implements STTService {
         ),
         onStatus: (status) => logger.info('Speech recognition status: $status'),
         debugLogging: true,
+        // finalTimeout: const Duration(seconds: 20),
       );
 
       if (_isInitialized) {
@@ -107,7 +108,7 @@ class SpeechToTextService implements STTService {
           _rmsController.add(level);
         },
         listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 3),
+        pauseFor: const Duration(seconds: 15),
         partialResults: false,
         cancelOnError: true,
         listenMode: ListenMode.confirmation,

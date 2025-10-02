@@ -52,6 +52,7 @@ dependencies:
   tflite_flutter: ^0.11.0
   audioplayers: ^6.5.1
   path: ^1.9.1
+  lucide_icons: ^0.257.0
   # media_kit: ^1.2.0
   # media_kit_libs_audio: ^1.0.6
   

@@ -74,7 +74,7 @@ class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMix
         }
       } else {
         logger.info('MicButton: Starting listening');
-        await _controller.startListening();
+        await _controller.startContinuousListeningWithChunking();
       }
       if (mounted) {
         setState(() => _isListening = !_isListening);

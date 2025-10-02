@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:chicki_buddy/controllers/voice_controller.dart';
@@ -110,23 +111,33 @@ class _AssistantBigText extends StatefulWidget {
 
 class _AssistantBigTextState extends State<_AssistantBigText> {
   String _text = 'Say something...';
+  StreamSubscription? _eventSub;
 
   @override
   void initState() {
     super.initState();
-    eventBus.stream.listen((event) {
+    _eventSub = eventBus.stream.listen((event) {
       if (event.type == AppEventType.assistantMessage) {
-        setState(() {
-          _text = event.payload ?? '';
-        });
-        // TODO: Add ting ting animation here
+        if (mounted) {
+          setState(() {
+            _text = event.payload ?? '';
+          });
+        }
       }
     });
 
     // Simulate assistant message for demo
     Future.delayed(const Duration(seconds: 2), () {
-      eventBus.emit(AppEvent(AppEventType.assistantMessage, 'Hello, how can I help you?'));
+      if (mounted) {
+        eventBus.emit(AppEvent(AppEventType.assistantMessage, 'Hello, how can I help you?'));
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _eventSub?.cancel();
+    super.dispose();
   }
 
   @override

@@ -35,13 +35,20 @@ class VocabularyAdapter extends TypeAdapter<Vocabulary> {
       updatedAt: fields[15] as DateTime,
       isSync: fields[16] as bool,
       isDeleted: fields[17] as bool,
+      pos: fields[18] as String?,
+      frequencyRank: fields[19] as int?,
+      sourceList: fields[20] as String?,
+      relatedWords: (fields[21] as List?)?.cast<String>(),
+      userNotes: fields[22] as String?,
+      imagePath: fields[23] as String?,
+      reviewStatus: fields[24] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Vocabulary obj) {
     writer
-      ..writeByte(18)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -77,7 +84,21 @@ class VocabularyAdapter extends TypeAdapter<Vocabulary> {
       ..writeByte(16)
       ..write(obj.isSync)
       ..writeByte(17)
-      ..write(obj.isDeleted);
+      ..write(obj.isDeleted)
+      ..writeByte(18)
+      ..write(obj.pos)
+      ..writeByte(19)
+      ..write(obj.frequencyRank)
+      ..writeByte(20)
+      ..write(obj.sourceList)
+      ..writeByte(21)
+      ..write(obj.relatedWords)
+      ..writeByte(22)
+      ..write(obj.userNotes)
+      ..writeByte(23)
+      ..write(obj.imagePath)
+      ..writeByte(24)
+      ..write(obj.reviewStatus);
   }
 
   @override
