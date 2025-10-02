@@ -68,6 +68,8 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/icon.png
+
     - assets/models/model.tflite
     - assets/models/vocab.txt
     - assets/models/intent_mapping.json
@@ -113,6 +115,7 @@ flutter:
 
     - assets/hey_chicky.ppn
     - assets/overlay.jpg
+    - assets/black_overlay.jpg
 
   fonts:
     - family: DMSans

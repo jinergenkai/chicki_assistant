@@ -1,8 +1,10 @@
 import 'package:chicki_buddy/ui/screens/assistant_settings_screen.dart';
 import 'package:chicki_buddy/ui/screens/books_screen.dart';
 import 'package:chicki_buddy/ui/screens/chicky_screen.dart';
+import 'package:chicki_buddy/ui/screens/user_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -16,10 +18,10 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
-    ChickyScreen(),            // Tab 0: Chicki
-    AssistantSettingsScreen(), // Tab 1: Lịch
+    ChickyScreen(),           
+    AssistantSettingsScreen(), 
     BooksScreen(),
-    
+    UserScreen(),
   ];
 
   @override
@@ -66,11 +68,11 @@ class _MainScreenState extends State<MainScreen> {
           itemBuilder: (context, index) => _screens[index],
         ),
         bottomNavigationBar: FractionallySizedBox(
-              widthFactor: 0.62, // 60% of screen width
+              widthFactor: 0.70, // 60% of screen width
 
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final double tabWidth = constraints.maxWidth / 4;
+              final double tabWidth = (constraints.maxWidth) / 4;
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
@@ -91,25 +93,25 @@ class _MainScreenState extends State<MainScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _MoonNavBarItem(
-                        icon: MoonIcons.chat_chat_16_regular,
+                        icon: LucideIcons.bot, // Chat cute
                         selected: _currentIndex == 0,
                         onTap: () => _onNavBarTap(0),
                         width: tabWidth,
                       ),
                       _MoonNavBarItem(
-                        icon: Icons.calendar_month,
+                        icon: LucideIcons.wrench, // Setup learning (icon đẹp hơn setting)
                         selected: _currentIndex == 1,
                         onTap: () => _onNavBarTap(1),
                         width: tabWidth,
                       ),
                       _MoonNavBarItem(
-                        icon: Icons.book_rounded,
+                        icon: LucideIcons.shoppingBag, // Bookstore, library
                         selected: _currentIndex == 2,
                         onTap: () => _onNavBarTap(2),
                         width: tabWidth,
                       ),
                       _MoonNavBarItem(
-                        icon: Icons.card_giftcard,
+                        icon: LucideIcons.user2, // User, personal
                         selected: _currentIndex == 3,
                         onTap: () => _onNavBarTap(3),
                         width: tabWidth,

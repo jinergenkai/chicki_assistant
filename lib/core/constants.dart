@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 class AppConstants {
   // Base URLs
   // static const String baseUrl = 'http://192.168.0.106:1337/v1';
@@ -15,4 +17,8 @@ class AppConstants {
   static const String listeningMessage = 'Listening...';
   static const String processingMessage = 'Processing...';
   static const String errorMessage = 'Something went wrong';
+
+  static const Color backgroundColor = Color.fromARGB(255, 221, 230, 238); // light grey bg
+  // static const Color backgroundColor = Color.fromARGB(255, 214, 222, 230); // light grey bg
+
 }
