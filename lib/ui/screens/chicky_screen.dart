@@ -21,40 +21,11 @@ class ChickyScreen extends StatefulWidget {
 }
 
 class _ChickyScreenState extends State<ChickyScreen> {
-  final VoiceController _voiceController = Get.put(VoiceController());
-  bool _isInitialized = false;
+  final VoiceController _voiceController = Get.find<VoiceController>();
 
   @override
   void initState() {
     super.initState();
-    _initializeController();
-  }
-
-  Future<void> _initializeController() async {
-    try {
-      await _voiceController.initialize();
-
-      // Start wake word detection after initialization
-      // await _voiceController.startWakeWordDetection();
-
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-        });
-      }
-    } catch (e) {
-      print('Failed to initialize voice controller: $e');
-    }
-  }
-
-
-  @override
-  void dispose() {
-    if (_isInitialized) {
-      // _voiceController.stopWakeWordDetection();
-      _voiceController.dispose();
-    }
-    super.dispose();
   }
 
   @override
@@ -78,7 +49,7 @@ class _ChickyScreenState extends State<ChickyScreen> {
                 ),
               ),
             ),
-            // Minimal UI: big animated text in center, listen to eventBus for assistantMessage
+            // Minimal UI: big animated text in center, listen to eventBus for 
             Center(
               child: _AssistantBigText(),
             ),
@@ -123,13 +94,6 @@ class _AssistantBigTextState extends State<_AssistantBigText> {
             _text = event.payload ?? '';
           });
         }
-      }
-    });
-
-    // Simulate assistant message for demo
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        eventBus.emit(AppEvent(AppEventType.assistantMessage, 'Hello, how can I help you?'));
       }
     });
   }

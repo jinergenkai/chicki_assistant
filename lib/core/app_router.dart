@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../ui/screens/settings_screen.dart';
 import '../ui/screens/chat_screen.dart';
 import '../ui/screens/main_screen.dart';
-import '../ui/screens/sherpa_tts_test_screen.dart';
+import '../ui/screens/test_screen/sherpa_tts_test_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   routes: [

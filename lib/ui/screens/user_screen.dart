@@ -5,8 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:moon_design/moon_design.dart';
 
-class UserScreen extends StatelessWidget {
+import 'debug_screen.dart';
+
+class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
+
+  @override
+  State<UserScreen> createState() => _UserScreenState();
+}
+
+class _UserScreenState extends State<UserScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +49,16 @@ class UserScreen extends StatelessWidget {
     final double squareSize = screenWidth * 0.5;
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: AppConstants.backgroundColor,
+      drawer: MoonDrawer(
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+        width: MediaQuery.of(context).size.width * 0.7,
+        child: const DebugScreen(),
+      ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -123,7 +141,12 @@ class UserScreen extends StatelessWidget {
                             icon: LucideIcons.settings,
                             onTap: () {},
                           ),
-                          MoonIconButton(onTap: () {}, icon: LucideIcons.bug),
+                          MoonIconButton(
+                            onTap: () {
+                              _scaffoldKey.currentState?.openDrawer();
+                            },
+                            icon: LucideIcons.bug,
+                          ),
                         ],
                       ),
                       const Spacer(),

@@ -1,3 +1,4 @@
+import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:get/get.dart';
 import 'package:porcupine_flutter/porcupine_manager.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -11,14 +12,7 @@ class PorcupineWakewordService extends GetxService implements WakewordService {
 
   @override
   void onInit() async {
-    final micStatus = await Permission.microphone.status;
-    if (!micStatus.isGranted) {
-      final result = await Permission.microphone.request();
-      if (!result.isGranted) {
-        logger.error('PorcupineWakewordService: Microphone permission denied');
-        return;
-      }
-    }
+    await PermissionUtils.checkMicrophone();
     try {
       _porcupineManager = await PorcupineManager.fromKeywordPaths(
         "3ZsjB+Lqz9YvUxjiPBL8lktSfYU27+Dy3HXQlzObXf+9PhpXizlbkw==",

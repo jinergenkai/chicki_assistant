@@ -31,7 +31,7 @@ void main() async {
   // Inject AppConfigController
   Get.put(AppConfigController(), permanent: true);
   Get.put(PorcupineWakewordService(), permanent: true);
-
+  Get.put(VoiceController(), permanent: true);
   runApp(const MyApp());
 }
 
@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final appConfig = Get.find<AppConfigController>();
     return Obx(() => GetMaterialApp.router(
-          title: 'Birthday App',
+          title: 'Chicky Buddy',
           theme: ThemeData.light().copyWith(
             scaffoldBackgroundColor: const Color(0xFFF6F7F9),
             primaryColor: const Color(0xFF90CAF9),

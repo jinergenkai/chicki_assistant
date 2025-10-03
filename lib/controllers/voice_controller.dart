@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:chicki_buddy/services/gpt_service.dart';
 import 'package:chicki_buddy/services/mock_speech_to_text_service.dart';
+import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../core/logger.dart';
@@ -22,15 +23,15 @@ enum VoiceState {
   listening,
   processing,
   speaking,
-  detecting,  // Added for wake word detection
+  detecting, // Added for wake word detection
   error
 }
 
 class VoiceController extends GetxController {
   final AppConfigController appConfig = Get.find<AppConfigController>();
-  final STTService _sttService = MockSpeechToTextService();
+  final STTService _sttService = SpeechToTextService();
   final TTSService _ttsService = TextToSpeechService();
-  final LLMService _gptService = OpenAIService();
+  final LLMService _gptService = LocalLLMService();
 
   StreamSubscription? _wakewordSub;
   String? _lastProcessedText;
@@ -44,41 +45,32 @@ class VoiceController extends GetxController {
   final rmsDB = (2.0).obs;
 
   @override
-  void onInit() {
+  Future<void> onInit() async {
     super.onInit();
     _setupSTTListener();
     _setupRmsListener();
 
-    _wakewordSub = eventBus.stream
-      .where((event) => event.type == AppEventType.wakewordDetected)
-      .listen((event) {
-        logger.info('Wakeword detected: ${event.payload}');
-        print(state.value);
-        if (state.value == VoiceState.idle) {
-          startListening();
-        }
-      });
+    _wakewordSub = eventBus.stream.where((event) => event.type == AppEventType.wakewordDetected).listen((event) {
+      logger.info('Wakeword detected: ${event.payload}');
+      print(state.value);
+      if (state.value == VoiceState.idle) {
+        startListening();
+      }
+    });
+    await initialize();
   }
 
   Future<void> initialize() async {
     try {
       state.value = VoiceState.uninitialized;
 
-      // Check microphone permission first
-      final micStatus = await Permission.microphone.status;
-      if (micStatus.isDenied) {
-        state.value = VoiceState.needsPermission;
-        final result = await Permission.microphone.request();
-        if (!result.isGranted) {
-          throw Exception('Microphone permission denied');
-        }
-      }
+      await PermissionUtils.checkMicrophone();
+      state.value = VoiceState.needsPermission;
 
       // Initialize all services
       await _sttService.initialize();
       await _ttsService.initialize();
       await _gptService.initialize();
-
 
       _isInitialized = true;
       logger.info('Voice Controller initialized successfully');
@@ -94,10 +86,10 @@ class VoiceController extends GetxController {
     _sttService.onTextRecognized.listen((text) async {
       if (text.isNotEmpty) {
         // Chặn duplicate message
-        if (_lastProcessedText == text) {
-          logger.info('Duplicate speech input detected, skipping: $text');
-          return;
-        }
+        // if (_lastProcessedText == text) {
+        //   logger.info('Duplicate speech input detected, skipping: $text');
+        //   return;
+        // }
         _lastProcessedText = text;
         try {
           // Emit recognized text
@@ -129,7 +121,7 @@ class VoiceController extends GetxController {
   void _setupRmsListener() {
     _sttService.onRmsChanged.listen((level) {
       rmsDB.value = level;
-      logger.info('VoiceController: rmsDB=$level');
+      // logger.info('VoiceController: rmsDB=$level');
     });
   }
 
@@ -139,10 +131,9 @@ class VoiceController extends GetxController {
     }
     try {
       // Double check microphone permission
-      final micStatus = await Permission.microphone.status;
-      if (!micStatus.isGranted) {
+      final hasPermission = await PermissionUtils.checkMicrophone();
+      if (!hasPermission) {
         state.value = VoiceState.needsPermission;
-        throw Exception('Microphone permission not granted');
       }
 
       await _sttService.startListening();
@@ -184,15 +175,13 @@ class VoiceController extends GetxController {
   // _textController.close();
   // _responseController.close();
 
-  void disposeController() {
-    super.dispose();
-  }
-
-  @override
-  void dispose() {
-    _wakewordSub?.cancel();
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   _sttService.stopListening();
+  //   _ttsService.stop();
+  //   _wakewordSub?.cancel();
+  //   super.dispose();
+  // }
 
   /// Starts continuous listening, splits input every 10s, sends to GPT, then TTS.
   Future<void> startContinuousListeningWithChunking() async {
@@ -200,10 +189,9 @@ class VoiceController extends GetxController {
       throw Exception('Voice Controller not initialized');
     }
     try {
-      final micStatus = await Permission.microphone.status;
-      if (!micStatus.isGranted) {
+      final hasPermission = await PermissionUtils.checkMicrophone();
+      if (!hasPermission) {
         state.value = VoiceState.needsPermission;
-        throw Exception('Microphone permission not granted');
       }
 
       state.value = VoiceState.listening;

@@ -12,7 +12,7 @@ class MockSpeechToTextService implements STTService {
   final _rmsController = StreamController<double>.broadcast();
   Timer? _timer;
   bool _isListening = false;
-  int _counter = 0;
+  final int _counter = 0;
 
   @override
   Future<void> initialize() async {
@@ -23,12 +23,18 @@ class MockSpeechToTextService implements STTService {
   Future<void> startListening() async {
     if (_isListening) return;
     _isListening = true;
-    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      final text = 'Hello chicky ${++_counter} at ${DateTime.now().toIso8601String()}';
-      _textController.add(text);
-      eventBus.emit(AppEvent(AppEventType.assistantMessage, text));
-      _rmsController.add(0.5); // Mock RMS value
+
+    const text = 'Hello could you become my english teacher?';
+    Future.delayed(const Duration(seconds: 2), () {
+    _textController.add(text);
+    eventBus.emit(AppEvent(AppEventType.assistantMessage, text));
+    _rmsController.add(0.5); // Mock RMS value
     });
+    // _timer = Timer.periodic(const Duration(seconds: 100), (timer) {
+    //   _textController.add(text);
+    //   eventBus.emit(AppEvent(AppEventType.assistantMessage, text));
+    //   _rmsController.add(0.5); // Mock RMS value
+    // });
   }
 
   @override

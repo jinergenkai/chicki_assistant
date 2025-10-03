@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:moon_design/moon_design.dart';
 
-import '../../services/sherpa-onnx/index.dart';
-import '../../core/logger.dart';
+import '../../../services/sherpa-onnx/index.dart';
+import '../../../core/logger.dart';
 
 class SherpaTtsTestController extends GetxController {
   final textController = TextEditingController(text: 'Hello, this is Sherpa-ONNX TTS test.');

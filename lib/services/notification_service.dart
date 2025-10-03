@@ -1,3 +1,4 @@
+import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -25,10 +26,7 @@ class NotificationService {
 
   Future<void> showBirthdayNotification(String name) async {
     // Request notification permission for Android 13 and above
-    final status = await Permission.notification.request();
-    if (status.isDenied) {
-      throw Exception('Notification permission is required to send birthday wishes. Please enable it in app settings.');
-    }
+    await PermissionUtils.checkNotification();
     
     const androidDetails = AndroidNotificationDetails(
       'birthday_channel',

@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../utils/permission_utils.dart';
 import '../core/logger.dart';
 import '../controllers/app_config.controller.dart';
 
@@ -26,45 +28,15 @@ class SpeechToTextService implements STTService {
   final _textController = StreamController<String>.broadcast();
   final _rmsController = StreamController<double>.broadcast();
   bool _isInitialized = false;
+  String _lastRecognizedText = '';
 
   @override
   bool get isListening => _speech.isListening;
 
-  Future<bool> _checkPermissions() async {
-    try {
-      // Check microphone permission
-      PermissionStatus micStatus = await Permission.microphone.status;
-      
-      if (micStatus.isDenied) {
-        // Request microphone permission
-        micStatus = await Permission.microphone.request();
-      }
-
-      if (micStatus.isPermanentlyDenied) {
-        logger.error('Microphone permission permanently denied');
-        return false;
-      }
-
-      if (!micStatus.isGranted) {
-        logger.error('Microphone permission not granted');
-        return false;
-      }
-
-      return true;
-    } catch (e) {
-      logger.error('Error checking permissions', e);
-      return false;
-    }
-  }
-
   @override
   Future<void> initialize() async {
     try {
-      // First check permissions
-      final hasPermission = await _checkPermissions();
-      if (!hasPermission) {
-        throw Exception('Required permissions not granted');
-      }
+      await PermissionUtils.checkMicrophone();
 
       _isInitialized = await _speech.initialize(
         onError: (errorNotification) => logger.error(
@@ -95,24 +67,24 @@ class SpeechToTextService implements STTService {
 
     try {
       logger.info('Starting speech recognition...');
-      
+
       await _speech.listen(
         onResult: (result) {
           if (result.finalResult) {
-            final text = result.recognizedWords;
-            logger.info('Final recognition result: $text');
-            _textController.add(text);
+            _lastRecognizedText = result.recognizedWords;
+            stopListening();
+            logger.info('Final recognition result: $_lastRecognizedText');
           }
         },
         onSoundLevelChange: (level) {
           _rmsController.add(level);
         },
-        listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 15),
+        // listenFor: const Duration(seconds: 30),
+        // pauseFor: const Duration(seconds: 15),
         partialResults: false,
         cancelOnError: true,
         listenMode: ListenMode.confirmation,
-        localeId: _appConfig.defaultLanguage.value, 
+        localeId: _appConfig.defaultLanguage.value,
       );
 
       logger.info('Started listening');
@@ -126,6 +98,11 @@ class SpeechToTextService implements STTService {
   Future<void> stopListening() async {
     try {
       await _speech.stop();
+
+      // Emit the final recognized text via event bus when listening stops
+      eventBus.emit(AppEvent(AppEventType.assistantMessage, _lastRecognizedText));
+      _textController.add(_lastRecognizedText);
+      _lastRecognizedText = '';
       logger.info('Stopped listening');
     } catch (e) {
       logger.error('Error while stopping speech recognition', e);

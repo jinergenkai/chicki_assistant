@@ -1,3 +1,4 @@
+import 'package:chicki_buddy/core/logger.dart';
 import 'package:chicki_buddy/network/dio_client.dart';
 import 'package:dio/dio.dart';
 
@@ -22,11 +23,17 @@ class LlmApi {
       final data = {
         "model": model,
         "messages": [
-          if (history != null) ...history,
+          {"role": "system", "content": "act like teacher, friend of user, answer short"},
+          // if (history != null) ...history,
           {"role": "user", "content": prompt}
         ]
       };
-      final options = bearerToken != null ? Options(headers: {"Authorization": "Bearer $bearerToken"}) : null;
+      final options = Options(
+        headers: bearerToken != null ? {"Authorization": "Bearer $bearerToken"} : null,
+        sendTimeout: const Duration(milliseconds: 120000),
+        receiveTimeout: const Duration(milliseconds: 120000),
+      );
+      logger.info('Sending request: $data to local LLM API');
       final response = await dio.post(
         '/chat/completions',
         data: data,

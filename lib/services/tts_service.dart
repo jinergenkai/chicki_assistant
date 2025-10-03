@@ -40,7 +40,8 @@ class TextToSpeechService implements TTSService {
       await _tts.setVoice({"name": "Google UK English Female", "locale": "en-GB"});
 
       await _tts.setVolume(1.0);
-      await _tts.setPitch(1.2);
+      await _tts.setPitch(0.9);
+      await _tts.setSpeechRate(0.7);
 
       // Set completion handler
       _tts.setCompletionHandler(() {
@@ -87,7 +88,7 @@ class TextToSpeechService implements TTSService {
 
       _isSpeaking = true;
       logger.info('Speaking: $text');
-      
+
       final result = await _tts.speak(text);
       if (result != 1) {
         throw Exception('Failed to start speaking');
@@ -105,7 +106,7 @@ class TextToSpeechService implements TTSService {
       final result = await _tts.stop();
       _isSpeaking = false;
       logger.info('Stopped speaking');
-      
+
       if (result != 1) {
         throw Exception('Failed to stop speaking');
       }

@@ -41,7 +41,7 @@ class _VoiceStateIndicatorState extends State<VoiceStateIndicator> {
       if (_controller.state.value == VoiceState.listening) {
         await _controller.stopListening();
       } else {
-        await _controller.startContinuousListeningWithChunking();
+        await _controller.startListening();
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
