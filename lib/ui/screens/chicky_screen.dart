@@ -3,7 +3,9 @@ import 'dart:ui';
 
 import 'package:chicki_buddy/controllers/voice_controller.dart';
 import 'package:chicki_buddy/controllers/chat_controller.dart';
+import 'package:chicki_buddy/ui/widgets/moon_icon_button.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'dart:ui';
 import '../../core/app_event_bus.dart';
 import 'package:get/get.dart';
@@ -49,9 +51,19 @@ class _ChickyScreenState extends State<ChickyScreen> {
                 ),
               ),
             ),
-            // Minimal UI: big animated text in center, listen to eventBus for 
+            // Minimal UI: big animated text in center, listen to eventBus for
             Center(
-              child: _AssistantBigText(),
+              child: Column(
+                children: [
+                  _AssistantBigText(),
+                  MoonIconButton(
+                    icon: LucideIcons.hardDrive,
+                    onTap: () => {
+                      _voiceController.startForegroundService(),
+                    },
+                  )
+                ],
+              ),
             ),
             // Microphone Button at bottom
             // Voice State Indicator
@@ -62,12 +74,12 @@ class _ChickyScreenState extends State<ChickyScreen> {
               child:
                   // Voice State Indicator
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.2),
-                    child: Obx(() {
-                                    final state = _voiceController.state.value;
-                                    return VoiceStateIndicator(state: state);
-                                  }),
-                  ),
+                padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.2),
+                child: Obx(() {
+                  final state = _voiceController.state.value;
+                  return VoiceStateIndicator(state: state);
+                }),
+              ),
             ),
           ],
         ));

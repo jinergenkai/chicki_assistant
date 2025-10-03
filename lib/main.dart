@@ -4,6 +4,7 @@ import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/models/voice_note.dart';
 import 'package:chicki_buddy/services/wakeword/porcupine_wakeword_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:moon_design/moon_design.dart';
@@ -32,6 +33,9 @@ void main() async {
   Get.put(AppConfigController(), permanent: true);
   Get.put(PorcupineWakewordService(), permanent: true);
   Get.put(VoiceController(), permanent: true);
+
+  FlutterForegroundTask.initCommunicationPort();
+
   runApp(const MyApp());
 }
 

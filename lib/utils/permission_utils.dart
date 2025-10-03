@@ -25,6 +25,9 @@ class PermissionUtils {
   static Future<bool> checkNotification() async {
     try {
       PermissionStatus status = await Permission.notification.request();
+      if (status.isPermanentlyDenied) {
+        openAppSettings();
+      }
       if (status.isDenied || status.isPermanentlyDenied || !status.isGranted) {
         logger.error('Notification permission not granted or permanently denied');
         return false;
