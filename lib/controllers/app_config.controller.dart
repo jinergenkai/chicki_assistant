@@ -8,6 +8,7 @@ class AppConfigController extends GetxController {
   // Các thuộc tính cấu hình
   var isDebugMode = true.obs;
   var apiEndpoint = 'https://api.openai.com/v1'.obs;
+  var apiKey = ''.obs; // Thêm apiKey cho LLM
   var speechRate = 0.9.obs;
   var defaultLanguage = 'en-US'.obs;
   var ttsEngine = 'flutter_tts'.obs; // 'flutter_tts' hoặc 'sherpa'
@@ -31,6 +32,7 @@ class AppConfigController extends GetxController {
     if (config != null) {
       isDebugMode.value = config['isDebugMode'] ?? true;
       apiEndpoint.value = config['apiEndpoint'] ?? 'https://api.openai.com/v1';
+      apiKey.value = config['apiKey'] ?? '';
       speechRate.value = config['speechRate'] ?? 0.7;
       defaultLanguage.value = config['defaultLanguage'] ?? 'en-US';
       ttsEngine.value = config['ttsEngine'] ?? 'flutter_tts';
@@ -53,6 +55,7 @@ class AppConfigController extends GetxController {
     await box.put(hiveKey, {
       'isDebugMode': isDebugMode.value,
       'apiEndpoint': apiEndpoint.value,
+      'apiKey': apiKey.value,
       'speechRate': speechRate.value,
       'defaultLanguage': defaultLanguage.value,
       'ttsEngine': ttsEngine.value,

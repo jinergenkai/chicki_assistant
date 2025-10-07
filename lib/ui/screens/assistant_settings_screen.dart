@@ -1,7 +1,10 @@
 // Dart
 import 'package:chicki_buddy/core/logger.dart';
+import 'package:chicki_buddy/services/local_llm_service.dart';
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
+import 'package:get/get.dart';
+import 'package:chicki_buddy/controllers/app_config.controller.dart';
 
 class AssistantSettingsScreen extends StatefulWidget {
   const AssistantSettingsScreen({super.key});
@@ -15,14 +18,35 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
   String apiKey = '';
   String selectedModel = 'gpt-oss:20b';
   String systemContext = '';
-  final List<String> models = [
-    'gpt-oss:20b',
-    'gpt-3.5-turbo',
-    'gpt-4',
-    'llama-2',
-    'custom'
-  ];
+  List<String> models = [];
   bool showMenu = false;
+
+  late AppConfigController _config;
+
+  @override
+  void initState() {
+    super.initState();
+    _config = Get.find<AppConfigController>();
+    apiKey = _config.apiKey.value;
+    selectedModel = _config.gptModel.value;
+    // Nếu có systemContext thì lấy thêm ở đây
+    _fetchModels();
+  }
+
+  Future<void> _fetchModels() async {
+    final fetched = await LocalLLMService().fetchAvailableModels();
+    setState(() {
+      logger.info('Fetched models: $fetched');
+      models = fetched;
+    });
+  }
+
+  Future<void> _saveConfig() async {
+    _config.apiKey.value = apiKey;
+    _config.gptModel.value = selectedModel;
+    await _config.saveConfig();
+    logger.info('Saved LLM config to AppConfig');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +90,10 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                     Text('API Key', style: Theme.of(context).textTheme.bodyMedium),
                     MoonFormTextInput(
                       controller: TextEditingController(text: apiKey),
-                      onChanged: (val) => setState(() => apiKey = val),
+                      onChanged: (val) => setState(() {
+                        apiKey = val;
+                        _saveConfig();
+                      }),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     const SizedBox(height: 16),
@@ -79,8 +106,9 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                         children: models.map((m) => MoonMenuItem(
                           onTap: () => setState(() {
                             selectedModel = m;
-                          logger.info('Toggling dropdown menu');
-
+                            _saveConfig();
+                            logger.info('Toggling dropdown menu');
+  
                             showMenu = false;
                             // Keep dropdown open after selection
                           }),
@@ -93,10 +121,13 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                         canRequestFocus: false,
                         mouseCursor: MouseCursor.defer,
                         hintText: selectedModel,
-                        onTap: () => setState(() {
+                        onTap: () async {
                           logger.info('Toggling dropdown menu');
-                          showMenu = !showMenu;
-                        }),
+                          await _fetchModels();
+                          setState(() {
+                            showMenu = !showMenu;
+                          });
+                        },
                         trailing: const Center(
                           child: AnimatedRotation(
                             duration: Duration(milliseconds: 200),

@@ -5,6 +5,8 @@ import 'package:chicki_buddy/network/llm.api.dart';
 import 'package:logger/logger.dart';
 import '../models/message.dart';
 import 'llm_service.dart';
+import 'package:get/get.dart';
+import 'package:chicki_buddy/controllers/app_config.controller.dart';
 /// Local LLM Service sử dụng API tương thích OpenAI (ví dụ: Ollama, LM Studio, v.v.)
 class LocalLLMService implements LLMService {
   static final LocalLLMService _instance = LocalLLMService._internal();
@@ -14,13 +16,16 @@ class LocalLLMService implements LLMService {
   final List<Message> _conversationHistory = [];
   bool _isInitialized = false;
   final Logger _logger = Logger();
+  final AppConfigController _config = Get.find<AppConfigController>();
 
   @override
   Future<void> initialize() async {
     try {
       // Khởi tạo OpenAI client với endpoint local
-      OpenAI.apiKey = "1"; // Local server thường không cần key
-      OpenAI.baseUrl = "http://192.168.95.91:11434/v1";
+      OpenAI.apiKey = _config.apiEndpoint.value.contains('openai')
+          ? _config.apiKey.value ?? "1"
+          : "1"; // Nếu là local thì không cần key
+      OpenAI.baseUrl = _config.apiEndpoint.value;
       _isInitialized = true;
       _logger.i('Local LLM service initialized (dart_openai)');
     } catch (e) {
@@ -53,7 +58,7 @@ class LocalLLMService implements LLMService {
 
       final responseStr = await LlmApi().chat(
         prompt: userInput,
-        model: "gpt-oss:20b",
+        model: _config.gptModel.value,
         history: history,
         bearerToken: AppConstants.janKey,
       );
@@ -82,4 +87,18 @@ class LocalLLMService implements LLMService {
   }
 
   List<Message> get conversationHistory => List.unmodifiable(_conversationHistory);
+  Future<List<String>> fetchAvailableModels() async {
+    try {
+      final response = await LlmApi().fetchModels(
+        bearerToken: _config.apiKey.value,
+      );
+      if (response is List) {
+        return response.map((m) => m.toString()).toList();
+      }
+      return [];
+    } catch (e) {
+      _logger.e('Error fetching models', error: e);
+      return [];
+    }
+  }
 }
