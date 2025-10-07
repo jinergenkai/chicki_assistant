@@ -251,6 +251,10 @@ class VoiceController extends GetxController {
           // Emit recognized text
           recognizedText.value = text;
 
+          // STT đã dừng (tự động sau khi nhận kết quả cuối), emit micStopped
+          eventBus.emit(AppEvent(AppEventType.micStopped, null));
+          logger.info('voice controller: STT finished, emitted micStopped event');
+
           state.value = VoiceState.processing;
           logger.info('Processing speech input: $text');
 
@@ -299,11 +303,17 @@ class VoiceController extends GetxController {
         return;
       }
 
+      // Emit event để thông báo mic sắp được sử dụng
+      eventBus.emit(AppEvent(AppEventType.micStarted, null));
+      logger.info('voice controller: Emitted micStarted event');
+
       await _sttService.startListening();
       state.value = VoiceState.listening;
       logger.info('voice controller: Started listening (direct mode)');
     } catch (e) {
       logger.error('Error starting voice listening', e);
+      // Nếu start thất bại, emit micStopped để Porcupine có thể resume
+      eventBus.emit(AppEvent(AppEventType.micStopped, null));
       state.value = VoiceState.error;
       rethrow;
     }
@@ -319,10 +329,17 @@ class VoiceController extends GetxController {
     // Direct mode
     try {
       await _sttService.stopListening();
+      
+      // Emit event để thông báo mic đã được release
+      eventBus.emit(AppEvent(AppEventType.micStopped, null));
+      logger.info('voice controller: Emitted micStopped event');
+      
       state.value = VoiceState.idle;
       logger.info('voice controller: Stopped listening (direct mode)');
     } catch (e) {
       logger.error('Error stopping voice listening', e);
+      // Vẫn emit micStopped ngay cả khi có lỗi để đảm bảo Porcupine resume
+      eventBus.emit(AppEvent(AppEventType.micStopped, null));
       state.value = VoiceState.error;
       rethrow;
     }

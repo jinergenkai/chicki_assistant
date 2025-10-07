@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:get/get.dart';
 import 'package:porcupine_flutter/porcupine_manager.dart';
@@ -9,6 +10,8 @@ import '../../core/logger.dart';
 class PorcupineWakewordService extends GetxService implements WakewordService {
   PorcupineManager? _porcupineManager;
   bool _isRunning = false;
+  bool _isPausedForMic = false; // Flag để track khi đang pause vì mic đang dùng
+  StreamSubscription<AppEvent>? _micEventSubscription;
 
   @override
   void onInit() async {
@@ -20,7 +23,11 @@ class PorcupineWakewordService extends GetxService implements WakewordService {
         _wakeWordCallback,
       );
       await _porcupineManager?.start();
+      _isRunning = true;
       logger.info('PorcupineWakewordService: PorcupineManager initialized');
+      
+      // Lắng nghe mic lifecycle events
+      _setupMicLifecycleListener();
     } catch (e) {
       logger.error('PorcupineWakewordService: Failed to initialize', e);
     }
@@ -81,6 +88,68 @@ class PorcupineWakewordService extends GetxService implements WakewordService {
 
   @override
   bool get isRunning => _isRunning;
+
+  void _setupMicLifecycleListener() {
+    _micEventSubscription = eventBus.stream.listen((event) async {
+      if (event.type == AppEventType.micStarted) {
+        // Khi mic bắt đầu được sử dụng (STT started), dừng Porcupine
+        logger.info('PorcupineWakewordService: Mic started, pausing Porcupine');
+        await _pausePorcupine();
+      } else if (event.type == AppEventType.micStopped) {
+        // Khi mic dừng (STT stopped), khởi động lại Porcupine
+        logger.info('PorcupineWakewordService: Mic stopped, resuming Porcupine');
+        await _resumePorcupine();
+      }
+    });
+  }
+
+  Future<void> _pausePorcupine() async {
+    if (!_isRunning || _isPausedForMic) return;
+    
+    try {
+      await _porcupineManager?.stop();
+      _isPausedForMic = true;
+      logger.info('PorcupineWakewordService: Paused for mic usage');
+    } catch (e) {
+      logger.error('PorcupineWakewordService: Failed to pause', e);
+      _isPausedForMic = false; // Reset flag nếu pause thất bại
+    }
+  }
+
+  Future<void> _resumePorcupine() async {
+    // Chỉ resume nếu service đang running và đã được pause vì mic
+    if (!_isRunning || !_isPausedForMic) return;
+    
+    try {
+      // Delay nhỏ để đảm bảo STT đã release mic hoàn toàn
+      await Future.delayed(const Duration(milliseconds: 200));
+      await _porcupineManager?.start();
+      _isPausedForMic = false;
+      logger.info('PorcupineWakewordService: Resumed after mic usage');
+    } catch (e) {
+      logger.error('PorcupineWakewordService: Failed to resume', e);
+      // Thử lại sau một khoảng thời gian nếu thất bại
+      Future.delayed(const Duration(seconds: 1), () async {
+        if (_isPausedForMic) {
+          logger.info('PorcupineWakewordService: Retrying resume...');
+          try {
+            await _porcupineManager?.start();
+            _isPausedForMic = false;
+            logger.info('PorcupineWakewordService: Resume retry successful');
+          } catch (retryError) {
+            logger.error('PorcupineWakewordService: Resume retry failed', retryError);
+          }
+        }
+      });
+    }
+  }
+
+  @override
+  void onClose() {
+    _micEventSubscription?.cancel();
+    _porcupineManager?.delete();
+    super.onClose();
+  }
 
   void _wakeWordCallback(int keywordIndex) {
     logger.info('PorcupineWakewordService: Wake word detected! Index: $keywordIndex');
