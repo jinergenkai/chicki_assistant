@@ -6,22 +6,29 @@ class AppConfigController extends GetxController {
   static const String hiveKey = 'config';
 
   // Các thuộc tính cấu hình
+  // Debug/General
   var isDebugMode = true.obs;
+
+  // API
   var apiEndpoint = 'https://api.openai.com/v1'.obs;
-  var apiKey = ''.obs; // Thêm apiKey cho LLM
-  var speechRate = 0.9.obs;
-  var defaultLanguage = 'en-US'.obs;
-  var ttsEngine = 'flutter_tts'.obs; // 'flutter_tts' hoặc 'sherpa'
+  var apiKey = ''.obs;
+
+  // GPT/LLM
   var gptModel = 'gpt-3.5-turbo'.obs;
   var maxTokens = 150.obs;
   var temperature = 0.7.obs;
+  var systemContext = ''.obs;
 
-  // Theme: 'system', 'dark', 'light'
+  // TTS/Speech
+  var ttsEngine = 'flutter_tts'.obs;
+  var speechRate = 0.9.obs;
+
+  // Language/UI
+  var defaultLanguage = 'en-US'.obs;
   var themeMode = 'system'.obs;
-  // Language code, ví dụ: 'vi-VN', 'en-US'
   var language = ''.obs;
 
-  // Enable wakeword background/foreground service (Android)
+  // Wakeword
   var enableWakewordBackground = false.obs;
 
   // Load config từ Hive hoặc dùng default
@@ -30,15 +37,25 @@ class AppConfigController extends GetxController {
     final config = box.get(hiveKey);
 
     if (config != null) {
+      // Debug/General
       isDebugMode.value = config['isDebugMode'] ?? true;
+
+      // API
       apiEndpoint.value = config['apiEndpoint'] ?? 'https://api.openai.com/v1';
       apiKey.value = config['apiKey'] ?? '';
-      speechRate.value = config['speechRate'] ?? 0.7;
-      defaultLanguage.value = config['defaultLanguage'] ?? 'en-US';
-      ttsEngine.value = config['ttsEngine'] ?? 'flutter_tts';
+
+      // GPT/LLM
       gptModel.value = config['gptModel'] ?? 'gpt-3.5-turbo';
       maxTokens.value = config['maxTokens'] ?? 150;
       temperature.value = config['temperature'] ?? 0.7;
+      systemContext.value = config['systemContext'] ?? '';
+
+      // TTS/Speech
+      ttsEngine.value = config['ttsEngine'] ?? 'flutter_tts';
+      speechRate.value = config['speechRate'] ?? 0.7;
+
+      // Language/UI
+      defaultLanguage.value = config['defaultLanguage'] ?? 'en-US';
       themeMode.value = config['themeMode'] ?? 'system';
       language.value = config['language'] ?? '';
     } else {
@@ -53,17 +70,29 @@ class AppConfigController extends GetxController {
   Future<void> saveConfig() async {
     final box = await Hive.openBox(hiveBoxName);
     await box.put(hiveKey, {
+      // Debug/General
       'isDebugMode': isDebugMode.value,
+
+      // API
       'apiEndpoint': apiEndpoint.value,
       'apiKey': apiKey.value,
-      'speechRate': speechRate.value,
-      'defaultLanguage': defaultLanguage.value,
-      'ttsEngine': ttsEngine.value,
+
+      // GPT/LLM
       'gptModel': gptModel.value,
       'maxTokens': maxTokens.value,
       'temperature': temperature.value,
+      'systemContext': systemContext.value,
+
+      // TTS/Speech
+      'ttsEngine': ttsEngine.value,
+      'speechRate': speechRate.value,
+
+      // Language/UI
+      'defaultLanguage': defaultLanguage.value,
       'themeMode': themeMode.value,
       'language': language.value,
+
+      // Wakeword
       'enableWakewordBackground': enableWakewordBackground.value,
     });
   }
@@ -73,5 +102,45 @@ class AppConfigController extends GetxController {
   void onInit() {
     super.onInit();
     loadConfig();
+  }
+
+  // ✅ Convert toàn bộ sang JSON để gửi qua isolate
+  Map<String, dynamic> toJson() => {
+        'isDebugMode': isDebugMode.value,
+        'apiEndpoint': apiEndpoint.value,
+        'apiKey': apiKey.value,
+        'gptModel': gptModel.value,
+        'maxTokens': maxTokens.value,
+        'temperature': temperature.value,
+        'systemContext': systemContext.value,
+        'ttsEngine': ttsEngine.value,
+        'speechRate': speechRate.value,
+        'defaultLanguage': defaultLanguage.value,
+        'themeMode': themeMode.value,
+        'language': language.value,
+        'enableWakewordBackground': enableWakewordBackground.value,
+      };
+
+  // ✅ Tạo lại controller từ JSON khi ở isolate
+  static AppConfigController fromJson(Map<String, dynamic> json) {
+    final c = AppConfigController();
+    c._applyConfig(json);
+    return c;
+  }
+
+  void _applyConfig(Map<String, dynamic> json) {
+    isDebugMode.value = json['isDebugMode'] ?? true;
+    apiEndpoint.value = json['apiEndpoint'] ?? 'https://api.openai.com/v1';
+    apiKey.value = json['apiKey'] ?? '';
+    gptModel.value = json['gptModel'] ?? 'gpt-3.5-turbo';
+    maxTokens.value = json['maxTokens'] ?? 150;
+    temperature.value = json['temperature'] ?? 0.7;
+    systemContext.value = json['systemContext'] ?? '';
+    ttsEngine.value = json['ttsEngine'] ?? 'flutter_tts';
+    speechRate.value = json['speechRate'] ?? 0.9;
+    defaultLanguage.value = json['defaultLanguage'] ?? 'en-US';
+    themeMode.value = json['themeMode'] ?? 'system';
+    language.value = json['language'] ?? '';
+    enableWakewordBackground.value = json['enableWakewordBackground'] ?? false;
   }
 }

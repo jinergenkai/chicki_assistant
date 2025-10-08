@@ -38,7 +38,6 @@ class VoiceController extends GetxController {
   final LLMService _gptService = LocalLLMService();
 
   StreamSubscription? _wakewordSub;
-  String? _lastProcessedText;
   void Function(Object)? _taskDataCallback;
 
   bool _isInitialized = false;
@@ -53,22 +52,7 @@ class VoiceController extends GetxController {
   @override
   Future<void> onInit() async {
     super.onInit();
-    
-    // Set up foreground task data receiver (only once)
-    _setupForegroundTaskReceiver();
-    
     await initialize();
-  }
-
-  void _setupForegroundTaskReceiver() {
-    // Listen to data from foreground service globally
-    // This should only be set up once when controller initializes
-    _taskDataCallback = (data) {
-      if (data is Map && _useForegroundService) {
-        _handleForegroundData(data);
-      }
-    };
-    FlutterForegroundTask.addTaskDataCallback(_taskDataCallback!);
   }
 
   @override
@@ -92,6 +76,10 @@ class VoiceController extends GetxController {
       state.value = VoiceState.needsPermission;
 
       // Initialize services for direct mode
+      SpeechToTextService().setConfig(appConfig);
+      TextToSpeechService().setConfig(appConfig);
+      LocalLLMService().setConfig(appConfig);
+      
       await _sttService.initialize();
       await _ttsService.initialize();
       await _gptService.initialize();
@@ -156,18 +144,31 @@ class VoiceController extends GetxController {
         ),
       );
 
-      // Start the foreground service
-      // Data reception is already set up in _setupForegroundTaskReceiver()
+      _taskDataCallback = (data) {
+        logger.info('Main received data from foreground task: $data');
+        if (data is Map && _useForegroundService) {
+          _handleForegroundData(data);
+        }
+      };
+      FlutterForegroundTask.addTaskDataCallback((data) {
+        // logger.info('⏱ ForegroundTask tick: $data');
+      });
+
       await FlutterForegroundTask.startService(
         serviceId: 256,
         notificationTitle: 'Voice Assistant',
-        notificationText: 'Listening for wake word...',
+        notificationText: 'Ready to start listening',
         notificationIcon: null,
         notificationButtons: [
+          const NotificationButton(id: 'start', text: 'Start'),
           const NotificationButton(id: 'stop', text: 'Stop'),
         ],
         callback: startVoiceForegroundTask,
       );
+
+      FlutterForegroundTask.sendDataToTask({
+        'config': appConfig.toJson(), // 👈 gửi config
+      });
 
       _useForegroundService = true;
       logger.info('Foreground service started');
@@ -219,6 +220,7 @@ class VoiceController extends GetxController {
   }
 
   void _handleForegroundData(Map data) {
+    logger.info('Main received data from foreground task: $data');
     // Update observables from foreground service data
     if (data['state'] != null) {
       final stateName = data['state'] as String;
@@ -241,12 +243,6 @@ class VoiceController extends GetxController {
   void _setupSTTListener() {
     _sttService.onTextRecognized.listen((text) async {
       if (text.isNotEmpty) {
-        // Chặn duplicate message
-        // if (_lastProcessedText == text) {
-        //   logger.info('Duplicate speech input detected, skipping: $text');
-        //   return;
-        // }
-        _lastProcessedText = text;
         try {
           // Emit recognized text
           recognizedText.value = text;
@@ -288,6 +284,7 @@ class VoiceController extends GetxController {
   Future<void> startListening() async {
     if (_useForegroundService) {
       // Delegate to foreground service
+      logger.info('startListening to foreground service');
       FlutterForegroundTask.sendDataToTask({'command': 'startListening'});
       return;
     }
@@ -329,11 +326,11 @@ class VoiceController extends GetxController {
     // Direct mode
     try {
       await _sttService.stopListening();
-      
+
       // Emit event để thông báo mic đã được release
       eventBus.emit(AppEvent(AppEventType.micStopped, null));
       logger.info('voice controller: Emitted micStopped event');
-      
+
       state.value = VoiceState.idle;
       logger.info('voice controller: Stopped listening (direct mode)');
     } catch (e) {
@@ -359,69 +356,6 @@ class VoiceController extends GetxController {
       logger.info('Stopped speaking (direct mode)');
     } catch (e) {
       logger.error('Error stopping speech', e);
-      state.value = VoiceState.error;
-      rethrow;
-    }
-  }
-
-  /// Starts continuous listening, splits input every 10s, sends to GPT, then TTS.
-  /// Note: This only works in direct mode, not supported in foreground service mode yet
-  Future<void> startContinuousListeningWithChunking() async {
-    if (!_isInitialized) {
-      throw Exception('Voice Controller not initialized');
-    }
-    try {
-      final hasPermission = await PermissionUtils.checkMicrophone();
-      if (!hasPermission) {
-        state.value = VoiceState.needsPermission;
-      }
-
-      state.value = VoiceState.listening;
-      logger.info('voice controller: Started continuous listening with chunking');
-
-      await _sttService.startListening();
-
-      String buffer = '';
-      Timer? chunkTimer;
-
-      StreamSubscription? sub;
-      sub = _sttService.onTextRecognized.listen((text) async {
-        if (text.isNotEmpty) {
-          buffer += (buffer.isEmpty ? '' : ' ') + text;
-        }
-      });
-
-      chunkTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-        if (buffer.isNotEmpty) {
-          final chunk = buffer.trim();
-          buffer = '';
-          try {
-            state.value = VoiceState.processing;
-            recognizedText.value = chunk;
-            logger.info('Processing chunk: $chunk');
-            final response = await _gptService.generateResponse(chunk);
-            gptResponse.value = response;
-            state.value = VoiceState.speaking;
-            await _ttsService.speak(response);
-            state.value = VoiceState.listening;
-          } catch (e) {
-            logger.error('Error processing chunk', e);
-            state.value = VoiceState.error;
-          }
-        }
-      });
-
-      // Stop logic: you may want to expose a stop method to cancel timer/sub
-      // For demo, auto-stop after 60s
-      Future.delayed(const Duration(seconds: 60), () async {
-        await sub?.cancel();
-        chunkTimer?.cancel();
-        await _sttService.stopListening();
-        state.value = VoiceState.idle;
-        logger.info('voice controller: Stopped continuous listening');
-      });
-    } catch (e) {
-      logger.error('Error starting continuous listening', e);
       state.value = VoiceState.error;
       rethrow;
     }

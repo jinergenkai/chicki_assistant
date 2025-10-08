@@ -1,8 +1,6 @@
 import 'package:chicki_buddy/core/logger.dart';
 import 'package:chicki_buddy/network/dio_client.dart';
 import 'package:dio/dio.dart';
-import 'package:get/get.dart';
-import 'package:chicki_buddy/controllers/app_config.controller.dart';
 
 class LlmApi {
   static final LlmApi _instance = LlmApi._internal();
@@ -20,21 +18,23 @@ class LlmApi {
     String? model,
     List<Map<String, String>>? history,
     String? bearerToken,
+    String? apiKey,
   }) async {
-    final AppConfigController config = Get.find<AppConfigController>();
     try {
+      logger.info('api info: url=${dio.options.baseUrl}, model=$model, prompt=$prompt');
       final data = {
-        "model": model ?? config.gptModel.value,
+        "model": model ?? 'gpt-3.5-turbo',
         "messages": [
           {"role": "system", "content": "act like teacher, friend of user, answer short"},
           // if (history != null) ...history,
           {"role": "user", "content": prompt}
         ]
       };
+      final authToken = bearerToken ?? apiKey ?? '';
       final options = Options(
-        headers: (bearerToken ?? config.apiKey.value).isNotEmpty ? {"Authorization": "Bearer ${bearerToken ?? config.apiKey.value}"} : null,
-        sendTimeout: const Duration(milliseconds: 120000),
-        receiveTimeout: const Duration(milliseconds: 120000),
+        headers: authToken.isNotEmpty ? {"Authorization": "Bearer $authToken"} : null,
+        receiveTimeout: const Duration(seconds: 120),
+        sendTimeout: const Duration(seconds: 120),
       );
       logger.info('Sending request: $data to local LLM API');
       final response = await dio.post(
@@ -65,6 +65,8 @@ class LlmApi {
         options: options,
       );
       // Tùy vào API trả về, có thể cần parse lại cho phù hợp
+
+      print('Fetch models response: ${response.data}');
       if (response.data is List) {
         return (response.data as List).map((e) => e.toString()).toList();
       }
@@ -73,7 +75,7 @@ class LlmApi {
           return (response.data['models'] as List).map((e) => e.toString()).toList();
         }
         if (response.data['data'] is List) {
-          return (response.data['data'] as List).map((e) => e['name']?.toString() ?? e.toString()).toList();
+          return (response.data['data'] as List).map((e) => e['id']?.toString() ?? e.toString()).toList();
         }
       }
       return [];

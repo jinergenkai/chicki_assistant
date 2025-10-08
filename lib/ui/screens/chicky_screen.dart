@@ -57,9 +57,12 @@ class _ChickyScreenState extends State<ChickyScreen> {
                 children: [
                   _AssistantBigText(),
                   MoonIconButton(
-                    icon: LucideIcons.hardDrive,
+                    icon: _voiceController.isForegroundServiceActive ? LucideIcons.stopCircle : LucideIcons.playCircle,
                     onTap: () => {
-                      _voiceController.startForegroundService(),
+                      if (_voiceController.isForegroundServiceActive)
+                        _voiceController.stopForegroundService()
+                      else _voiceController.startForegroundService(),
+                      setState(() {}),
                     },
                   )
                 ],

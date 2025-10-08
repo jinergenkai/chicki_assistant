@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:chicki_buddy/utils/permission_utils.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import '../core/logger.dart';
 import '../core/app_event_bus.dart';
@@ -8,16 +10,7 @@ import '../services/tts_service.dart';
 import '../services/local_llm_service.dart';
 import '../services/llm_service.dart';
 
-enum VoiceState {
-  uninitialized,
-  needsPermission,
-  idle,
-  listening,
-  processing,
-  speaking,
-  detecting,
-  error
-}
+enum VoiceState { uninitialized, needsPermission, idle, listening, processing, speaking, detecting, error }
 
 class VoiceForegroundTaskHandler extends TaskHandler {
   // Note: Cannot use Get.find() in isolate, instantiate directly if needed
@@ -26,7 +19,6 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   final LLMService _gptService = LocalLLMService();
 
   StreamSubscription? _wakewordSub;
-  String? _lastProcessedText;
   bool _isInitialized = false;
 
   VoiceState state = VoiceState.uninitialized;
@@ -36,6 +28,8 @@ class VoiceForegroundTaskHandler extends TaskHandler {
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
+    WidgetsFlutterBinding.ensureInitialized();
+    
     // Communication is done via FlutterForegroundTask.sendDataToMain
     await initialize();
     _setupSTTListener();
@@ -58,13 +52,35 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   @override
   void onReceiveData(Object data) {
     // Handle commands from main isolate
+    logger.info('Received data in foreground task: $data');
     if (data is Map) {
+      if (data['config'] != null) {
+        final config = AppConfigController.fromJson(data['config']);
+        SpeechToTextService().setConfig(config);
+        TextToSpeechService().setConfig(config);
+        LocalLLMService().setConfig(config);
+        FlutterForegroundTask.sendDataToMain({'status': 'config_set'});
+      }
+
       final command = data['command'] as String?;
       switch (command) {
         case 'startListening':
+          FlutterForegroundTask.sendDataToMain({'status': 'listening'});
+          FlutterForegroundTask.updateService(
+            notificationText: 'Listening...',
+            notificationButtons: [
+              const NotificationButton(id: 'stop', text: 'Stop'),
+            ],
+          );
           startListening();
           break;
         case 'stopListening':
+          FlutterForegroundTask.updateService(
+            notificationText: 'Stopped',
+            notificationButtons: [
+              const NotificationButton(id: 'start', text: 'Start'),
+            ],
+          );
           stopListening();
           break;
         case 'stopSpeaking':
@@ -104,7 +120,6 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   void _setupSTTListener() {
     _sttService.onTextRecognized.listen((text) async {
       if (text.isNotEmpty) {
-        _lastProcessedText = text;
         try {
           recognizedText = text;
           FlutterForegroundTask.sendDataToMain({'recognizedText': text});
@@ -187,78 +202,6 @@ class VoiceForegroundTaskHandler extends TaskHandler {
       logger.info('Stopped speaking');
     } catch (e) {
       logger.error('Error stopping speech', e);
-      state = VoiceState.error;
-      FlutterForegroundTask.sendDataToMain({'state': state.name, 'error': e.toString()});
-      rethrow;
-    }
-  }
-
-  /// Starts continuous listening, splits input every 10s, sends to GPT, then TTS.
-  Future<void> startContinuousListeningWithChunking() async {
-    if (!_isInitialized) {
-      throw Exception('VoiceForegroundTaskHandler not initialized');
-    }
-    try {
-      final hasPermission = await PermissionUtils.checkMicrophone();
-      if (!hasPermission) {
-        state = VoiceState.needsPermission;
-        FlutterForegroundTask.sendDataToMain({'state': state.name});
-        return;
-      }
-
-      state = VoiceState.listening;
-      FlutterForegroundTask.sendDataToMain({'state': state.name});
-      logger.info('VoiceForegroundTaskHandler: Started continuous listening with chunking');
-
-      await _sttService.startListening();
-
-      String buffer = '';
-      Timer? chunkTimer;
-
-      StreamSubscription? sub;
-      sub = _sttService.onTextRecognized.listen((text) async {
-        if (text.isNotEmpty) {
-          buffer += (buffer.isEmpty ? '' : ' ') + text;
-        }
-      });
-
-      chunkTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-        if (buffer.isNotEmpty) {
-          final chunk = buffer.trim();
-          buffer = '';
-          try {
-            state = VoiceState.processing;
-            recognizedText = chunk;
-            FlutterForegroundTask.sendDataToMain({'recognizedText': chunk, 'state': state.name});
-            logger.info('Processing chunk: $chunk');
-            final response = await _gptService.generateResponse(chunk);
-            gptResponse = response;
-            FlutterForegroundTask.sendDataToMain({'gptResponse': response});
-            state = VoiceState.speaking;
-            FlutterForegroundTask.sendDataToMain({'state': state.name});
-            await _ttsService.speak(response);
-            state = VoiceState.listening;
-            FlutterForegroundTask.sendDataToMain({'state': state.name});
-          } catch (e) {
-            logger.error('Error processing chunk', e);
-            state = VoiceState.error;
-            FlutterForegroundTask.sendDataToMain({'state': state.name, 'error': e.toString()});
-          }
-        }
-      });
-
-      // Stop logic: you may want to expose a stop method to cancel timer/sub
-      // For demo, auto-stop after 60s
-      Future.delayed(const Duration(seconds: 60), () async {
-        await sub?.cancel();
-        chunkTimer?.cancel();
-        await _sttService.stopListening();
-        state = VoiceState.idle;
-        FlutterForegroundTask.sendDataToMain({'state': state.name});
-        logger.info('VoiceForegroundTaskHandler: Stopped continuous listening');
-      });
-    } catch (e) {
-      logger.error('Error starting continuous listening', e);
       state = VoiceState.error;
       FlutterForegroundTask.sendDataToMain({'state': state.name, 'error': e.toString()});
       rethrow;

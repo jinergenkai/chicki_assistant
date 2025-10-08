@@ -29,7 +29,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
     _config = Get.find<AppConfigController>();
     apiKey = _config.apiKey.value;
     selectedModel = _config.gptModel.value;
-    // Nếu có systemContext thì lấy thêm ở đây
+    systemContext = _config.systemContext.value;
     _fetchModels();
   }
 
@@ -44,6 +44,7 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
   Future<void> _saveConfig() async {
     _config.apiKey.value = apiKey;
     _config.gptModel.value = selectedModel;
+    _config.systemContext.value = systemContext;
     await _config.saveConfig();
     logger.info('Saved LLM config to AppConfig');
   }
@@ -139,12 +140,15 @@ class _AssistantSettingsScreenState extends State<AssistantSettingsScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text('System Context', style: Theme.of(context).textTheme.bodyMedium),
-                    MoonFormTextInput(
-                      controller: TextEditingController(text: systemContext),
-                      onChanged: (val) => setState(() => systemContext = val),
-                      borderRadius: BorderRadius.circular(12),
-                      maxLines: 3,
-                    ),
+                                    MoonFormTextInput(
+                                      controller: TextEditingController(text: systemContext),
+                                      onChanged: (val) => setState(() {
+                                        systemContext = val;
+                                        _saveConfig();
+                                      }),
+                                      borderRadius: BorderRadius.circular(12),
+                                      maxLines: 3,
+                                    ),
                     const SizedBox(height: 16),
                     // Add more settings here...
                     Text('More settings coming soon...', style: TextStyle(color: context.moonColors?.trunks)),

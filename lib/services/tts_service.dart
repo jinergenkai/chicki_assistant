@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../core/logger.dart';
-import 'package:get/get.dart';
 import '../controllers/app_config.controller.dart';
 
 abstract class TTSService {
@@ -18,9 +17,13 @@ class TextToSpeechService implements TTSService {
   factory TextToSpeechService() => _instance;
   TextToSpeechService._internal();
 
-  final FlutterTts _tts = FlutterTts();
+  late final FlutterTts _tts;
   bool _isInitialized = false;
-  final _config = Get.find<AppConfigController>();
+  AppConfigController? _appConfig;
+
+  void setConfig(AppConfigController config) {
+    _appConfig = config;
+  }
 
   @override
   bool get isSpeaking => _isSpeaking;
@@ -29,9 +32,15 @@ class TextToSpeechService implements TTSService {
   @override
   Future<void> initialize() async {
     try {
-      // Set initial configuration
-      await _tts.setLanguage(_config.defaultLanguage.value);
-      await _tts.setSpeechRate(_config.speechRate.value);
+      // Initialize FlutterTts here instead of at declaration
+      _tts = FlutterTts();
+      
+      // Set initial configuration using config if available
+      final language = _appConfig?.defaultLanguage.value ?? 'en-GB';
+      final speechRate = _appConfig?.speechRate.value ?? 0.7;
+      
+      await _tts.setLanguage(language);
+      await _tts.setSpeechRate(speechRate);
 
       // await _tts.setVoice({"name": "en-US-Wavenet-D", "locale": "en-US"});
       // List<dynamic> voices = await _tts.getVoices;
@@ -41,7 +50,7 @@ class TextToSpeechService implements TTSService {
 
       await _tts.setVolume(1.0);
       await _tts.setPitch(0.9);
-      await _tts.setSpeechRate(0.7);
+      await _tts.setSpeechRate(speechRate);
 
       // Set completion handler
       _tts.setCompletionHandler(() {
@@ -61,9 +70,9 @@ class TextToSpeechService implements TTSService {
       });
 
       // Check if the language is available
-      final available = await _tts.isLanguageAvailable(_config.defaultLanguage.value);
+      final available = await _tts.isLanguageAvailable(language);
       if (!available) {
-        logger.warning('Language ${_config.defaultLanguage.value} not available, falling back to en-US');
+        logger.warning('Language $language not available, falling back to en-US');
         await _tts.setLanguage('en-US');
       }
 

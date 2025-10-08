@@ -22,13 +22,17 @@ class SpeechToTextService implements STTService {
   factory SpeechToTextService() => _instance;
   SpeechToTextService._internal();
 
-  final AppConfigController _appConfig = Get.find<AppConfigController>();
+  AppConfigController? _appConfig;
 
   final SpeechToText _speech = SpeechToText();
   final _textController = StreamController<String>.broadcast();
   final _rmsController = StreamController<double>.broadcast();
   bool _isInitialized = false;
   String _lastRecognizedText = '';
+
+  void setConfig(AppConfigController config) {
+    _appConfig = config;
+  }
 
   @override
   bool get isListening => _speech.isListening;
@@ -84,7 +88,7 @@ class SpeechToTextService implements STTService {
         partialResults: false,
         cancelOnError: true,
         listenMode: ListenMode.confirmation,
-        localeId: _appConfig.defaultLanguage.value,
+        localeId: _appConfig?.defaultLanguage.value ?? 'en_US',
       );
 
       logger.info('Started listening');

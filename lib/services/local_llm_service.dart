@@ -5,7 +5,6 @@ import 'package:chicki_buddy/network/llm.api.dart';
 import 'package:logger/logger.dart';
 import '../models/message.dart';
 import 'llm_service.dart';
-import 'package:get/get.dart';
 import 'package:chicki_buddy/controllers/app_config.controller.dart';
 /// Local LLM Service sử dụng API tương thích OpenAI (ví dụ: Ollama, LM Studio, v.v.)
 class LocalLLMService implements LLMService {
@@ -16,16 +15,21 @@ class LocalLLMService implements LLMService {
   final List<Message> _conversationHistory = [];
   bool _isInitialized = false;
   final Logger _logger = Logger();
-  final AppConfigController _config = Get.find<AppConfigController>();
+  AppConfigController? _appConfig;
+
+  void setConfig(AppConfigController config) {
+    _appConfig = config;
+  }
 
   @override
   Future<void> initialize() async {
     try {
       // Khởi tạo OpenAI client với endpoint local
-      OpenAI.apiKey = _config.apiEndpoint.value.contains('openai')
-          ? _config.apiKey.value ?? "1"
-          : "1"; // Nếu là local thì không cần key
-      OpenAI.baseUrl = _config.apiEndpoint.value;
+      final apiEndpoint = _appConfig?.apiEndpoint.value ?? 'http://localhost:11434/v1';
+      final apiKey = _appConfig?.apiKey.value ?? '1';
+      
+      OpenAI.apiKey = apiEndpoint.contains('openai') ? apiKey : "1"; // Nếu là local thì không cần key
+      OpenAI.baseUrl = apiEndpoint;
       _isInitialized = true;
       _logger.i('Local LLM service initialized (dart_openai)');
     } catch (e) {
@@ -56,11 +60,15 @@ class LocalLLMService implements LLMService {
               })
           .toList();
 
+      final model = _appConfig?.gptModel.value ?? 'gpt-3.5-turbo';
+      final apiKey = _appConfig?.apiKey.value ?? '1';
+      
       final responseStr = await LlmApi().chat(
         prompt: userInput,
-        model: _config.gptModel.value,
+        model: model,
         history: history,
         bearerToken: AppConstants.janKey,
+        apiKey: apiKey,
       );
 
       _conversationHistory.add(Message(
@@ -89,13 +97,12 @@ class LocalLLMService implements LLMService {
   List<Message> get conversationHistory => List.unmodifiable(_conversationHistory);
   Future<List<String>> fetchAvailableModels() async {
     try {
+      final apiKey = _appConfig?.apiKey.value ?? '1';
       final response = await LlmApi().fetchModels(
-        bearerToken: _config.apiKey.value,
+        bearerToken: apiKey,
       );
-      if (response is List) {
-        return response.map((m) => m.toString()).toList();
-      }
-      return [];
+      return response.map((m) => m.toString()).toList();
+          return [];
     } catch (e) {
       _logger.e('Error fetching models', error: e);
       return [];
