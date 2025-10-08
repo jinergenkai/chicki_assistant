@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:chicki_buddy/controllers/app_config.controller.dart';
+import 'package:chicki_buddy/services/sherpa-onnx/index.dart';
 import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -16,6 +17,7 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   // Note: Cannot use Get.find() in isolate, instantiate directly if needed
   final STTService _sttService = SpeechToTextService();
   final TTSService _ttsService = TextToSpeechService();
+  // final TTSService _ttsService = SherpaTtsService();
   final LLMService _gptService = LocalLLMService();
 
   StreamSubscription? _wakewordSub;
@@ -29,14 +31,15 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     // Communication is done via FlutterForegroundTask.sendDataToMain
     await initialize();
     _setupSTTListener();
     _setupRmsListener();
 
     _wakewordSub = eventBus.stream.where((event) => event.type == AppEventType.wakewordDetected).listen((event) {
-      logger.info('Wakeword detected: ${event.payload}');
+      logger.info('ForegroundTask: Wakeword detected: ${event.payload}');
+      FlutterForegroundTask.sendDataToMain({'wakewordDetected': true, 'payload': event.payload});
       if (state == VoiceState.idle) {
         startListening();
       }
@@ -52,8 +55,9 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   @override
   void onReceiveData(Object data) {
     // Handle commands from main isolate
-    logger.info('Received data in foreground task: $data');
+    logger.info('ForegroundTask: Received data: $data');
     if (data is Map) {
+      // Handle config update
       if (data['config'] != null) {
         final config = AppConfigController.fromJson(data['config']);
         SpeechToTextService().setConfig(config);
@@ -62,6 +66,16 @@ class VoiceForegroundTaskHandler extends TaskHandler {
         FlutterForegroundTask.sendDataToMain({'status': 'config_set'});
       }
 
+      // Handle wakeword detection từ main isolate
+      if (data['wakewordDetected'] == true) {
+        logger.info('ForegroundTask: Wakeword detected from main isolate');
+        if (state == VoiceState.idle) {
+          startListening();
+        }
+        return;
+      }
+
+      // Handle commands
       final command = data['command'] as String?;
       switch (command) {
         case 'startListening':
@@ -87,7 +101,9 @@ class VoiceForegroundTaskHandler extends TaskHandler {
           stopSpeaking();
           break;
         default:
-          logger.warning('Unknown command: $command');
+          if (command != null) {
+            logger.warning('ForegroundTask: Unknown command: $command');
+          }
       }
     }
   }
@@ -123,6 +139,10 @@ class VoiceForegroundTaskHandler extends TaskHandler {
         try {
           recognizedText = text;
           FlutterForegroundTask.sendDataToMain({'recognizedText': text});
+
+          // STT đã dừng (tự động sau khi nhận kết quả cuối), gửi micStopped về main
+          FlutterForegroundTask.sendDataToMain({'micLifecycle': 'stopped'});
+          logger.info('ForegroundTask: STT finished, sent micStopped to main isolate');
 
           state = VoiceState.processing;
           FlutterForegroundTask.sendDataToMain({'state': state.name});
@@ -168,6 +188,10 @@ class VoiceForegroundTaskHandler extends TaskHandler {
         return;
       }
 
+      // Gửi micStarted về main isolate để pause wakeword
+      FlutterForegroundTask.sendDataToMain({'micLifecycle': 'started'});
+      logger.info('ForegroundTask: Sent micStarted to main isolate');
+
       await _sttService.startListening();
       state = VoiceState.listening;
       FlutterForegroundTask.sendDataToMain({'state': state.name});
@@ -183,11 +207,18 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   Future<void> stopListening() async {
     try {
       await _sttService.stopListening();
+
+      // Gửi micStopped về main isolate để resume wakeword
+      FlutterForegroundTask.sendDataToMain({'micLifecycle': 'stopped'});
+      logger.info('ForegroundTask: Sent micStopped to main isolate');
+
       state = VoiceState.idle;
       FlutterForegroundTask.sendDataToMain({'state': state.name});
       logger.info('VoiceForegroundTaskHandler: Stopped listening');
     } catch (e) {
       logger.error('Error stopping voice listening', e);
+      // Vẫn gửi micStopped để đảm bảo wakeword resume
+      FlutterForegroundTask.sendDataToMain({'micLifecycle': 'stopped'});
       state = VoiceState.error;
       FlutterForegroundTask.sendDataToMain({'state': state.name, 'error': e.toString()});
       rethrow;
@@ -214,5 +245,6 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     await stopSpeaking();
     _wakewordSub?.cancel();
     FlutterForegroundTask.sendDataToMain({'status': 'destroyed'});
+    logger.info('ForegroundTask: Destroyed and cleaned up');
   }
 }

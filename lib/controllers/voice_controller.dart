@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:chicki_buddy/services/sherpa-onnx/index.dart';
 import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:get/get.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -10,6 +11,7 @@ import '../services/tts_service.dart';
 import '../services/local_llm_service.dart';
 import '../services/llm_service.dart';
 import '../services/voice_foreground_task_handler.dart';
+import '../services/wakeword/porcupine_wakeword_service.dart';
 import '../controllers/app_config.controller.dart';
 
 // Callback function for foreground task
@@ -34,7 +36,8 @@ class VoiceController extends GetxController {
 
   // Direct service instances (used when NOT in foreground mode)
   final STTService _sttService = SpeechToTextService();
-  final TTSService _ttsService = TextToSpeechService();
+  // final TTSService _ttsService = TextToSpeechService();
+  final TTSService _ttsService = SherpaTtsService();
   final LLMService _gptService = LocalLLMService();
 
   StreamSubscription? _wakewordSub;
@@ -119,9 +122,6 @@ class VoiceController extends GetxController {
         throw Exception('Notification permission is required for foreground service');
       }
 
-      // Stop direct mode listeners
-      _wakewordSub?.cancel();
-
       // Initialize foreground task
       FlutterForegroundTask.init(
         androidNotificationOptions: AndroidNotificationOptions(
@@ -145,14 +145,11 @@ class VoiceController extends GetxController {
       );
 
       _taskDataCallback = (data) {
-        logger.info('Main received data from foreground task: $data');
         if (data is Map && _useForegroundService) {
           _handleForegroundData(data);
         }
       };
-      FlutterForegroundTask.addTaskDataCallback((data) {
-        // logger.info('⏱ ForegroundTask tick: $data');
-      });
+       FlutterForegroundTask.addTaskDataCallback(_taskDataCallback!);
 
       await FlutterForegroundTask.startService(
         serviceId: 256,
@@ -220,7 +217,25 @@ class VoiceController extends GetxController {
   }
 
   void _handleForegroundData(Map data) {
-    logger.info('Main received data from foreground task: $data');
+    // Handle wakeword detection từ foreground task
+    if (data['wakewordDetected'] == true) {
+      logger.info('VoiceController: Wakeword detected from foreground task');
+      // Wakeword đã được xử lý trong foreground task (startListening đã được gọi)
+      // Chỉ cần log hoặc update UI nếu cần
+    }
+    
+    // Handle mic lifecycle events từ foreground task
+    if (data['micLifecycle'] != null) {
+      final lifecycle = data['micLifecycle'] as String;
+      logger.info('VoiceController: Received micLifecycle from foreground: $lifecycle');
+      // Emit event để PorcupineWakewordService có thể handle
+      if (lifecycle == 'started') {
+        eventBus.emit(AppEvent(AppEventType.micStarted, null));
+      } else if (lifecycle == 'stopped') {
+        eventBus.emit(AppEvent(AppEventType.micStopped, null));
+      }
+    }
+    
     // Update observables from foreground service data
     if (data['state'] != null) {
       final stateName = data['state'] as String;
