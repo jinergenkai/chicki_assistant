@@ -5,6 +5,7 @@ import 'package:chicki_buddy/models/book.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/models/voice_note.dart';
 import 'package:chicki_buddy/services/wakeword/porcupine_wakeword_service.dart';
+import 'package:chicki_buddy/voice/core/voice_isolate_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:go_router/go_router.dart';
@@ -41,6 +42,8 @@ void main() async {
 
   FlutterForegroundTask.initCommunicationPort();
 
+
+  await VoiceIsolateManager().start();
   runApp(const MyApp());
 }
 

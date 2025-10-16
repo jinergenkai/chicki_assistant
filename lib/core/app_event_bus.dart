@@ -4,10 +4,12 @@ enum AppEventType {
   // Wakeword
   wakewordDetected,
   assistantMessage,
-  
   // Microphone lifecycle events
-  micStarted,  // Khi STT bắt đầu sử dụng mic
-  micStopped,  // Khi STT dừng sử dụng mic
+  micStarted,
+  micStopped,
+  // Voice intent and actions
+  voiceIntent,
+  voiceAction,
 }
 
 class AppEvent {
