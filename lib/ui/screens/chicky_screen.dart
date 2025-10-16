@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:chicki_buddy/controllers/voice_controller.dart';
 import 'package:chicki_buddy/controllers/chat_controller.dart';
+import 'package:chicki_buddy/core/app_router.dart';
 import 'package:chicki_buddy/ui/widgets/moon_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -14,6 +15,7 @@ import '../../models/message.dart';
 import '../widgets/mic_button.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/voice_state_indicator.dart';
+import '../../controllers/bubble_controller.dart';
 
 class ChickyScreen extends StatefulWidget {
   const ChickyScreen({super.key});
@@ -24,6 +26,7 @@ class ChickyScreen extends StatefulWidget {
 
 class _ChickyScreenState extends State<ChickyScreen> {
   final VoiceController _voiceController = Get.find<VoiceController>();
+  final BubbleController _bubbleController = Get.find<BubbleController>();
 
   @override
   void initState() {
@@ -59,12 +62,21 @@ class _ChickyScreenState extends State<ChickyScreen> {
                   MoonIconButton(
                     icon: _voiceController.isForegroundServiceActive ? LucideIcons.stopCircle : LucideIcons.playCircle,
                     onTap: () => {
-                      if (_voiceController.isForegroundServiceActive)
-                        _voiceController.stopForegroundService()
-                      else _voiceController.startForegroundService(),
+                      if (_voiceController.isForegroundServiceActive) _voiceController.stopForegroundService() else _voiceController.startForegroundService(),
                       setState(() {}),
                     },
-                  )
+                  ),
+                  MoonIconButton(
+                    icon: _bubbleController.isVisible.value ? LucideIcons.eyeOff : LucideIcons.eye,
+                    onTap: () {
+                      if (_bubbleController.isVisible.value) {
+                        _bubbleController.hideBubble();
+                      } else {
+                        _bubbleController.showBubble(navigatorKey);
+                      }
+                      setState(() {});
+                    },
+                  ),
                 ],
               ),
             ),

@@ -5,7 +5,10 @@ import '../ui/screens/chat_screen.dart';
 import '../ui/screens/main_screen.dart';
 import '../ui/screens/test_screen/sherpa_tts_test_screen.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 final GoRouter appRouter = GoRouter(
+  navigatorKey: navigatorKey,
   routes: [
     ShellRoute(
       builder: (context, state, child) => const MainScreen(),
