@@ -38,7 +38,7 @@ class LlmApi {
       );
       logger.info('Sending request: $data to local LLM API');
       final response = await dio.post(
-        '/chat/completions',
+        'llm/chat',
         data: data,
         options: options,
       );

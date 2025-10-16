@@ -36,15 +36,15 @@ class VoiceController extends GetxController {
 
   // Direct service instances (used when NOT in foreground mode)
   final STTService _sttService = SpeechToTextService();
-  // final TTSService _ttsService = TextToSpeechService();
-  final TTSService _ttsService = SherpaTtsService();
+  final TTSService _ttsService = TextToSpeechService();
+  // final TTSService _ttsService = SherpaTtsService();
   final LLMService _gptService = LocalLLMService();
 
   StreamSubscription? _wakewordSub;
   void Function(Object)? _taskDataCallback;
 
   bool _isInitialized = false;
-  bool _useForegroundService = false;
+  bool _useForegroundService = true;
 
   // Rx observables for UI
   final state = VoiceState.uninitialized.obs;
