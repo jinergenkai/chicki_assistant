@@ -1,0 +1,187 @@
+[
+  {
+    "id": "book1",
+    "title": "English Starter",
+    "description": "Basic English vocabulary for beginners.",
+    "price": 0,
+    "isCustom": false,
+    "ownerId": null,
+    "topics": [
+      {
+        "id": "topic1",
+        "title": "Greetings",
+        "bookId": "book1",
+        "vocabList": [
+          {
+            "word": "hello",
+            "originLanguage": "en",
+            "targetLanguage": "vi",
+            "meaning": "xin chào",
+            "example": "Hello, how are you?",
+            "audioUrl": null,
+            "createdAt": "2025-10-01T10:00:00Z",
+            "updatedAt": "2025-10-01T10:00:00Z"
+          },
+          {
+            "word": "goodbye",
+            "originLanguage": "en",
+            "targetLanguage": "vi",
+            "meaning": "tạm biệt",
+            "example": "Goodbye! See you soon.",
+            "audioUrl": null,
+            "createdAt": "2025-10-01T10:01:00Z",
+            "updatedAt": "2025-10-01T10:01:00Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "book2",
+    "title": "English Starter",
+    "description": "Basic English vocabulary for beginners.",
+    "price": 0,
+    "isCustom": false,
+    "ownerId": null,
+    "topics": [
+      {
+        "id": "topic1",
+        "title": "Greetings",
+        "bookId": "book1",
+        "vocabList": [
+          {
+            "word": "hello",
+            "originLanguage": "en",
+            "targetLanguage": "vi",
+            "meaning": "xin chào",
+            "example": "Hello, how are you?",
+            "audioUrl": null,
+            "createdAt": "2025-10-01T10:00:00Z",
+            "updatedAt": "2025-10-01T10:00:00Z"
+          },
+          {
+            "word": "goodbye",
+            "originLanguage": "en",
+            "targetLanguage": "vi",
+            "meaning": "tạm biệt",
+            "example": "Goodbye! See you soon.",
+            "audioUrl": null,
+            "createdAt": "2025-10-01T10:01:00Z",
+            "updatedAt": "2025-10-01T10:01:00Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "book3",
+    "title": "English Starter",
+    "description": "Basic English vocabulary for beginners.",
+    "price": 0,
+    "isCustom": false,
+    "ownerId": null,
+    "topics": [
+      {
+        "id": "topic1",
+        "title": "Greetings",
+        "bookId": "book1",
+        "vocabList": [
+          {
+            "word": "hello",
+            "originLanguage": "en",
+            "targetLanguage": "vi",
+            "meaning": "xin chào",
+            "example": "Hello, how are you?",
+            "audioUrl": null,
+            "createdAt": "2025-10-01T10:00:00Z",
+            "updatedAt": "2025-10-01T10:00:00Z"
+          },
+          {
+            "word": "goodbye",
+            "originLanguage": "en",
+            "targetLanguage": "vi",
+            "meaning": "tạm biệt",
+            "example": "Goodbye! See you soon.",
+            "audioUrl": null,
+            "createdAt": "2025-10-01T10:01:00Z",
+            "updatedAt": "2025-10-01T10:01:00Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "book4",
+    "title": "English Starter",
+    "description": "Basic English vocabulary for beginners.",
+    "price": 0,
+    "isCustom": false,
+    "ownerId": null,
+    "topics": [
+      {
+        "id": "topic1",
+        "title": "Greetings",
+        "bookId": "book1",
+        "vocabList": [
+          {
+            "word": "hello",
+            "originLanguage": "en",
+            "targetLanguage": "vi",
+            "meaning": "xin chào",
+            "example": "Hello, how are you?",
+            "audioUrl": null,
+            "createdAt": "2025-10-01T10:00:00Z",
+            "updatedAt": "2025-10-01T10:00:00Z"
+          },
+          {
+            "word": "goodbye",
+            "originLanguage": "en",
+            "targetLanguage": "vi",
+            "meaning": "tạm biệt",
+            "example": "Goodbye! See you soon.",
+            "audioUrl": null,
+            "createdAt": "2025-10-01T10:01:00Z",
+            "updatedAt": "2025-10-01T10:01:00Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "book5",
+    "title": "English Starter",
+    "description": "Basic English vocabulary for beginners.",
+    "price": 0,
+    "isCustom": false,
+    "ownerId": null,
+    "topics": [
+      {
+        "id": "topic1",
+        "title": "Greetings",
+        "bookId": "book1",
+        "vocabList": [
+          {
+            "word": "hello",
+            "originLanguage": "en",
+            "targetLanguage": "vi",
+            "meaning": "xin chào",
+            "example": "Hello, how are you?",
+            "audioUrl": null,
+            "createdAt": "2025-10-01T10:00:00Z",
+            "updatedAt": "2025-10-01T10:00:00Z"
+          },
+          {
+            "word": "goodbye",
+            "originLanguage": "en",
+            "targetLanguage": "vi",
+            "meaning": "tạm biệt",
+            "example": "Goodbye! See you soon.",
+            "audioUrl": null,
+            "createdAt": "2025-10-01T10:01:00Z",
+            "updatedAt": "2025-10-01T10:01:00Z"
+          }
+        ]
+      }
+    ]
+  }
+]

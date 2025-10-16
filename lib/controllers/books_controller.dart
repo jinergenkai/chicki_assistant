@@ -1,69 +1,44 @@
 import 'package:chicki_buddy/core/logger.dart';
 import 'package:get/get.dart';
+import '../models/book.dart';
+import '../services/book_service.dart';
+import 'package:hive/hive.dart';
 
 class BooksController extends GetxController {
-  // Example book list (simulate remote dictionaries)
-  final books = [
-    {
-      'id': 'oxford_3000',
-      'title': 'Oxford 3000',
-      'desc': 'Essential English words for learners.',
-    },
-    {
-      'id': 'oxford_5000',
-      'title': 'Oxford 5000',
-      'desc': 'Advanced English vocabulary.',
-    },
-    {
-      'id': 'awl',
-      'title': 'Academic Word List',
-      'desc': 'Words for academic English.',
-    },
-    {
-      'id': 'ielts_cambridge',
-      'title': 'IELTS Cambridge',
-      'desc': 'IELTS exam vocabulary.',
-    },
-    {
-      'id': 'ielts_cambridge1',
-      'title': 'IELTS Cambridge',
-      'desc': 'IELTS exam vocabulary.',
-    },
-    {
-      'id': 'ielts_cambridge2',
-      'title': 'IELTS Cambridge',
-      'desc': 'IELTS exam vocabulary.',
-    },
-  ].obs;
+  final RxList<Book> books = <Book>[].obs;
+  final RxSet<String> downloadedBooks = <String>{}.obs;
+  final RxString downloadingBookId = ''.obs;
+  final RxDouble downloadProgress = 0.0.obs;
 
-  // Download state
-  final downloadingBookId = RxString('');
-  final downloadedBooks = <String>{}.obs;
-  final downloadProgress = 0.0.obs;
+  final BookService service = BookService();
 
-  // Simulate download with progress
+  @override
+  void onInit() {
+    super.onInit();
+    service.init().then((_) async {
+      books.value = await service.loadAllBooks();
+      logger.info('Loaded ${books.length} books from service.');
+    });
+  }
+
+  Future<void> reloadBooks() async {
+      books.value = await service.loadAllBooks();
+  }
+
   void downloadBook(String bookId) async {
-    logger.info('Starting download for book: $bookId');
-    // if (downloadingBookId.value.isNotEmpty) return;
     downloadingBookId.value = bookId;
-    downloadProgress.value = 0;
+    downloadProgress.value = 0.0;
+    // Simulate download progress
     for (int i = 1; i <= 10; i++) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      downloadProgress.value = (i * 10) / 100;
-      print('Progress: ${downloadProgress.value}, Downloading: ${downloadingBookId.value}');
+      await Future.delayed(const Duration(milliseconds: 100));
+      downloadProgress.value = i / 10.0;
     }
     downloadedBooks.add(bookId);
-    print('Downloaded books: $downloadedBooks');
     downloadingBookId.value = '';
-    downloadProgress.value = 0;
-    print('Download finished, Downloading: ${downloadingBookId.value}');
-    // Simulate sync logic here if needed
-    await Future.delayed(const Duration(seconds: 2));
+    downloadProgress.value = 0.0;
   }
 
   void removeBook(String bookId) {
-    // Simulate removing cached/downloaded files for this book
     downloadedBooks.remove(bookId);
-    downloadedBooks.refresh();
   }
 }

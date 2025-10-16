@@ -1,10 +1,12 @@
 import 'dart:ui';
 
+import 'package:chicki_buddy/utils/gradient.dart';
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class BookCard extends StatefulWidget {
+  final String id;
   final String title;
   final String desc;
   final bool isDownloaded;
@@ -15,6 +17,7 @@ class BookCard extends StatefulWidget {
 
   const BookCard({
     super.key,
+    required this.id,
     required this.title,
     required this.desc,
     required this.isDownloaded,
@@ -57,16 +60,20 @@ class _BookCardState extends State<BookCard> {
               height: cardHeight,
               child: Stack(
                 children: [
-                  Image.asset(
-                    'assets/overlay.jpg',
-                    fit: BoxFit.cover,
-                    width: cardWidth,
-                    height: cardHeight,
-                  ),
-                  Container(
-                    width: cardWidth,
-                    height: cardHeight,
-                    color: Colors.black.withOpacity(0.18),
+                  // Image.asset(
+                  //   'assets/overlay.jpg',
+                  //   fit: BoxFit.cover,
+                  //   width: cardWidth,
+                  //   height: cardHeight,
+                  // ),
+                  RandomGradient(
+                    widget.id,
+                    seed: "bookCardGradient",
+                    child: Container(
+                      width: cardWidth,
+                      height: cardHeight,
+                      color: Colors.black.withOpacity(0.1),
+                    ),
                   ),
                 ],
               ),
@@ -120,9 +127,7 @@ class _BookCardState extends State<BookCard> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       MoonButton.icon(
-                        icon: widget.isDownloaded
-                            ? const Icon(LucideIcons.trash, color: Colors.red)
-                            : const Icon(LucideIcons.download, color: Colors.amber),
+                        icon: widget.isDownloaded ? const Icon(LucideIcons.trash, color: Colors.red) : const Icon(LucideIcons.download, color: Colors.amber),
                         onTap: widget.isDownloaded ? widget.onRemove : widget.onDownload,
                         // size: MoonIconButtonSize.xs,
                         backgroundColor: Colors.white.withOpacity(0.18),

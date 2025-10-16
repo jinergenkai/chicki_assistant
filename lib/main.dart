@@ -1,5 +1,6 @@
 import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:chicki_buddy/controllers/tts.controller.dart';
+import 'package:chicki_buddy/models/book.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/models/voice_note.dart';
 import 'package:chicki_buddy/services/wakeword/porcupine_wakeword_service.dart';
@@ -22,9 +23,11 @@ void main() async {
 
   Hive.registerAdapter(VocabularyAdapter());
   Hive.registerAdapter(VoiceNoteAdapter());
+  Hive.registerAdapter(BookAdapter());
 
   await Hive.openBox<VoiceNote>('voiceNoteBox');
   await Hive.openBox<Vocabulary>('vocabularyBox');
+  await Hive.openBox<Book>('books');
 
   // Initialize Notifications
   // await NotificationService().initialize();

@@ -2,9 +2,11 @@
 
 import 'package:chicki_buddy/ui/widgets/book_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:moon_design/moon_design.dart';
 import '../../controllers/books_controller.dart';
+import 'topic_screen.dart';
 
 class BooksScreen extends StatefulWidget {
   const BooksScreen({super.key});
@@ -18,17 +20,17 @@ class _BooksScreenState extends State<BooksScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-        decoration: const BoxDecoration(
-    gradient: LinearGradient(
-      colors: [
-        Color.fromARGB(255, 195, 66, 218),
-        Colors.blue,
-        Color.fromARGB(255, 18, 176, 220),
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    ),
-  ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color.fromARGB(255, 195, 66, 218),
+            Colors.blue,
+            Color.fromARGB(255, 18, 176, 220),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Scaffold(
         // backgroundColor: Colors.grey[100]?.withValues(alpha: 0.0),
         backgroundColor: Colors.transparent,
@@ -93,30 +95,45 @@ class _BooksScreenState extends State<BooksScreen> {
                 padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 0),
                 child: Scrollbar(
                   // thumbVisibility: true,
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    // physics: const AlwaysScrollableScrollPhysics(),
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.8,
-                    ),
-                    itemCount: controller.books.length,
-                    itemBuilder: (context, index) {
-                      final book = controller.books[index];
-                      return Obx(() => BookCard(
-                        title: book['title'] as String,
-                        desc: book['desc'] as String,
-                        isDownloaded: controller.downloadedBooks.contains(book['id']),
-                        isDownloading: controller.downloadingBookId.value == book['id'],
-                        progress: controller.downloadProgress.value,
-                        onDownload: () => controller.downloadBook(book['id'] as String),
-                        onRemove: () => controller.removeBook(book['id'] as String),
-                      ));
-                    },
-                  ),
+                  child: Obx(() => GridView.builder(
+                        shrinkWrap: true,
+                        // physics: const AlwaysScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.8,
+                        ),
+                        itemCount: controller.books.length,
+                        itemBuilder: (context, index) {
+                          final book = controller.books[index];
+                          timeDilation = 4.0;
+                          return GestureDetector(
+                            onLongPress: () async {
+                              await controller.reloadBooks();
+                            },
+                            onTap: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => TopicScreen(book: book),
+                              ));
+                            },
+                            child: Hero(
+                              tag: 'book_${book.id}',
+                              child: Obx(() => BookCard(
+                                    id: book.id,
+                                    title: book.title,
+                                    desc: book.description,
+                                    isDownloaded: controller.downloadedBooks.contains(book.id),
+                                    isDownloading: controller.downloadingBookId.value == book.id,
+                                    progress: controller.downloadProgress.value,
+                                    onDownload: () => controller.downloadBook(book.id),
+                                    onRemove: () => controller.removeBook(book.id),
+                                  )),
+                            ),
+                          );
+                        },
+                      )),
                 ),
               ),
             ),
@@ -139,6 +156,7 @@ class _TopCurveClipper extends CustomClipper<Path> {
     path.close();
     return path;
   }
+
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
