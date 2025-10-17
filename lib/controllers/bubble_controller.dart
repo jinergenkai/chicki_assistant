@@ -16,7 +16,7 @@ class BubbleController extends GetxController {
       return Obx(() => Positioned(
             left: position.value.dx,
             top: position.value.dy,
-            child: BubbleOverlay(
+            child: BubbleOverlayWithDebug(
               onClose: hideBubble,
               onMove: (offset) => position.value = offset,
             ),

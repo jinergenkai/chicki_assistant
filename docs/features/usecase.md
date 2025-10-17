@@ -1,3 +1,5 @@
+export 'search_handler.dart'; // web, app, voc...
+
 Write note.
 
 need remember note for speech seminar

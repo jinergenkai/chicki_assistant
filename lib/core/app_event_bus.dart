@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:isolate';
+
+import 'package:chicki_buddy/core/logger.dart';
 
 enum AppEventType {
   // Wakeword
@@ -23,7 +26,10 @@ class AppEventBus {
 
   Stream<AppEvent> get stream => _controller.stream;
 
-  void emit(AppEvent event) => _controller.add(event);
+  void emit(AppEvent event) {
+    logger.info('[EventBus - ${Isolate.current.debugName}] emit: ${event.type} | ${event.payload}');
+    _controller.add(event);
+  }
 }
 
 final eventBus = AppEventBus();

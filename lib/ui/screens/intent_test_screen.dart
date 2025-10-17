@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chicki_buddy/voice/dispatcher/voice_intent_dispatcher.dart';
 import 'package:chicki_buddy/voice/models/voice_state_context.dart';
 import 'package:flutter/material.dart';
@@ -16,11 +18,12 @@ class _IntentTestScreenState extends State<IntentTestScreen> {
   final IntentSimulator _simulator = IntentSimulator();
   final List<String> _logs = [];
   final VoiceStateContext _graphState = VoiceStateContext(currentScreen: 'idle');
+  StreamSubscription<AppEvent>? _eventSub;
 
   @override
   void initState() {
     super.initState();
-    eventBus.stream
+    _eventSub = eventBus.stream
       .where((e) => e.type == AppEventType.voiceAction)
       .listen((event) {
         final action = event.payload as VoiceActionEvent;
@@ -44,10 +47,19 @@ class _IntentTestScreenState extends State<IntentTestScreen> {
           default:
             break;
         }
-        setState(() {
-          _logs.add('Action: ${action.action}, Data: ${action.data}');
-        });
+        if (mounted) {
+          setState(() {
+            _logs.add('Action: ${action.action}, Data: ${action.data}');
+          });
+        }
       });
+  }
+
+
+  @override
+  void dispose() {
+    _eventSub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -104,12 +116,12 @@ class GraphRunnerWidget extends StatefulWidget {
 
 class _GraphRunnerWidgetState extends State<GraphRunnerWidget> {
   final VoiceIntentDispatcher _dispatcher = VoiceIntentDispatcher();
+  StreamSubscription<AppEvent>? _eventSub;
 
-  // Listen for action events and update dispatcher state
   @override
   void initState() {
     super.initState();
-    eventBus.stream
+    _eventSub = eventBus.stream
       .where((e) => e.type == AppEventType.voiceAction)
       .listen((event) {
         final action = event.payload as VoiceActionEvent;
@@ -132,8 +144,16 @@ class _GraphRunnerWidgetState extends State<GraphRunnerWidget> {
           default:
             break;
         }
-        setState(() {});
+        if (mounted) {
+          setState(() {});
+        }
       });
+  }
+
+  @override
+  void dispose() {
+    _eventSub?.cancel();
+    super.dispose();
   }
 
   @override

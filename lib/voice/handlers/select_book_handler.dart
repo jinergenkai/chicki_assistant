@@ -1,3 +1,5 @@
+import 'package:chicki_buddy/core/logger.dart';
+
 import 'intent_handler.dart';
 import '../models/voice_intent_payload.dart';
 import '../models/voice_state_context.dart';
@@ -18,11 +20,12 @@ class SelectBookHandler extends IntentHandler {
     }
 
     // Simulate book lookup (replace with real lookup later)
-    const bookId = 'book_001';
+    const bookId = 'book1';
 
     state.currentBookId = bookId;
     state.currentScreen = 'bookSelected';
 
+    logger.info('Handler - Selected book: $bookName with ID: $bookId');
     return HandlerResult(success: true, data: {'bookId': bookId});
   }
 }

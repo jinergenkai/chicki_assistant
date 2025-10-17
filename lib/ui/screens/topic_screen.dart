@@ -1,14 +1,53 @@
+import 'dart:async';
+
+import 'package:chicki_buddy/core/app_event_bus.dart';
+import 'package:chicki_buddy/ui/screens/flash_card.screen.dart';
+import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
 import 'package:chicki_buddy/utils/gradient.dart';
+import 'package:chicki_buddy/voice/models/voice_action_event.dart';
 import 'package:flutter/material.dart';
 import '../../models/book.dart';
 import '../../models/topic.dart';
 
-class TopicScreen extends StatelessWidget {
+class TopicScreen extends StatefulWidget {
   final Book book;
   const TopicScreen({super.key, required this.book});
 
   @override
+  State<TopicScreen> createState() => _TopicScreenState();
+}
+
+class _TopicScreenState extends State<TopicScreen> {
+  StreamSubscription? _voiceActionSub;
+
+  void openTopic(String topicId) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const FlashCardScreen2(),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _voiceActionSub = eventBus.stream.where((e) => e.type == AppEventType.voiceAction).listen((event) {
+      final action = event.payload;
+      if (action is VoiceActionEvent && action.action == 'selectTopic' && action.data['topicId'] != null) {
+        openTopic(action.data['topicId']);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _voiceActionSub?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final book = widget.book;
     return Scaffold(
       backgroundColor: Colors.deepPurple.shade50,
       body: Column(
@@ -36,6 +75,9 @@ class TopicScreen extends StatelessWidget {
                               )),
                           const SizedBox(height: 8),
                           Text(book.description,
+                          overflow: TextOverflow.ellipsis,
+                          // maxLines: 2,
+                          softWrap: true,
                               style: const TextStyle(
                                 fontSize: 16,
                                 color: Colors.white70,
@@ -98,12 +140,9 @@ class TopicScreen extends StatelessWidget {
                                   fontSize: 18,
                                   color: Colors.white,
                                 )),
-                            subtitle: Text('${topic.vocabList.length} vocabularies',
-                                style: const TextStyle(color: Colors.white70)),
+                            subtitle: Text('${topic.vocabList.length} vocabularies', style: const TextStyle(color: Colors.white70)),
                             trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-                            onTap: () {
-                              // TODO: Navigate to vocabulary screen with animation
-                            },
+                            onTap: () => openTopic(topic.id),
                           ),
                         ),
                       ],

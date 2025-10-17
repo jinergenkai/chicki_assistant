@@ -1,6 +1,9 @@
+import 'dart:isolate';
+
 import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:chicki_buddy/controllers/bubble_controller.dart';
 import 'package:chicki_buddy/controllers/tts.controller.dart';
+import 'package:chicki_buddy/core/app_lifecycle.dart';
 import 'package:chicki_buddy/models/book.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/models/voice_note.dart';
@@ -42,8 +45,15 @@ void main() async {
 
   FlutterForegroundTask.initCommunicationPort();
 
-
   await VoiceIsolateManager().start();
+
+  AppLifecycleHandler(
+    onResumed: () {
+      print("🟢 App resumed");
+      // AppNavigator.instance.restoreStateIfNeeded();
+    },
+    onPaused: () { print("🔴 App paused"); },
+  );
   runApp(const MyApp());
 }
 

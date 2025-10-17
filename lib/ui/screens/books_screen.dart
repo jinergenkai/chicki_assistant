@@ -1,6 +1,11 @@
 // Modern Books Screen with Moon Design grid and download simulation
 
+import 'dart:async';
+
+import 'package:chicki_buddy/core/app_event_bus.dart';
+import 'package:chicki_buddy/models/book.dart';
 import 'package:chicki_buddy/ui/widgets/book_card.dart';
+import 'package:chicki_buddy/voice/models/voice_action_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
@@ -17,6 +22,36 @@ class BooksScreen extends StatefulWidget {
 
 class _BooksScreenState extends State<BooksScreen> {
   final controller = Get.put(BooksController());
+  StreamSubscription? _voiceActionSub;
+
+  void openBook(Book book) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => TopicScreen(book: book),
+    ));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen for voice action events (e.g. selectBook intent)
+    _voiceActionSub = eventBus.stream.where((e) => e.type == AppEventType.voiceAction).listen((event) {
+      final action = event.payload;
+      if (action is VoiceActionEvent && action.action == 'selectBook' && action.data['bookId'] != null) {
+        final bookId = action.data['bookId'];
+        final book = controller.books.firstWhereOrNull((b) => b.id == bookId);
+        if (book != null) {
+          openBook(book);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _voiceActionSub?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -113,11 +148,7 @@ class _BooksScreenState extends State<BooksScreen> {
                             onLongPress: () async {
                               await controller.reloadBooks();
                             },
-                            onTap: () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) => TopicScreen(book: book),
-                              ));
-                            },
+                            onTap: () => openBook(book),
                             child: Hero(
                               tag: 'book_${book.id}',
                               child: Obx(() => BookCard(

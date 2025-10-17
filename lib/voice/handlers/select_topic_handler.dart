@@ -18,7 +18,7 @@ class SelectTopicHandler extends IntentHandler {
     }
 
     // Simulate topic lookup (replace with real lookup later)
-    const topicId = 'topic_001';
+    const topicId = 'topic1';
 
     state.currentTopicId = topicId;
     state.currentScreen = 'topicSelected';

@@ -1,4 +1,5 @@
 import 'package:chicki_buddy/models/vocabulary.dart';
+import 'package:chicki_buddy/models/book.dart';
 import 'package:hive/hive.dart';
 
 class VocabularyService {
@@ -9,6 +10,16 @@ class VocabularyService {
   /// Khởi tạo Hive box, gọi 1 lần khi app start
   Future<void> init() async {
     _box = await Hive.openBox<Vocabulary>(boxName);
+  }
+  /// Import vocabularies from a list of books (e.g. after loading from JSON)
+  Future<void> importFromBooks(List<Book> books) async {
+    for (final book in books) {
+      for (final topic in book.topics) {
+        for (final vocab in topic.vocabList) {
+          await upsertVocabulary(vocab);
+        }
+      }
+    }
   }
 
   /// Thêm từ mới hoặc update nếu đã tồn tại

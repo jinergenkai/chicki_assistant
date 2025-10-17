@@ -1,6 +1,11 @@
 import '../models/voice_intent_payload.dart';
 import '../models/voice_state_context.dart';
 
+export 'next_vocab_handler.dart';
+export 'read_aloud_handler.dart';
+export 'select_book_handler.dart';
+export 'select_topic_handler.dart';
+
 /// Base interface for intent handlers
 abstract class IntentHandler {
   String get name;

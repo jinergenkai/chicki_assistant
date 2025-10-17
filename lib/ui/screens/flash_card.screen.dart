@@ -1,3 +1,4 @@
+import 'package:chicki_buddy/utils/gradient.dart';
 import 'package:flutter/material.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/services/vocabulary.service.dart';
@@ -10,23 +11,22 @@ class FlashCardScreen extends StatefulWidget {
   State<FlashCardScreen> createState() => _FlashCardScreenState();
 }
 
-class _FlashCardScreenState extends State<FlashCardScreen>
-    with TickerProviderStateMixin {
+class _FlashCardScreenState extends State<FlashCardScreen> with TickerProviderStateMixin {
   final VocabularyService service = VocabularyService();
   List<Vocabulary> vocabList = [];
   int currentIndex = 0;
-  
+
   // Animation controllers
   late AnimationController _swipeController;
   late AnimationController _flipController;
   late AnimationController _stackController;
-  
+
   // Animations
   late Animation<Offset> _swipeAnimation;
   late Animation<double> _rotationAnimation;
   late Animation<double> _flipAnimation;
   late Animation<double> _scaleAnimation;
-  
+
   // Swipe state
   bool _isFlipped = false;
   Offset _swipeOffset = Offset.zero;
@@ -35,23 +35,23 @@ class _FlashCardScreenState extends State<FlashCardScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize animation controllers
     _swipeController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _flipController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
+
     _stackController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    
+
     // Setup animations
     _swipeAnimation = Tween<Offset>(
       begin: Offset.zero,
@@ -60,7 +60,7 @@ class _FlashCardScreenState extends State<FlashCardScreen>
       parent: _swipeController,
       curve: Curves.easeInOut,
     ));
-    
+
     _rotationAnimation = Tween<double>(
       begin: 0,
       end: 0.3,
@@ -68,7 +68,7 @@ class _FlashCardScreenState extends State<FlashCardScreen>
       parent: _swipeController,
       curve: Curves.easeInOut,
     ));
-    
+
     _flipAnimation = Tween<double>(
       begin: 0,
       end: 1,
@@ -76,7 +76,7 @@ class _FlashCardScreenState extends State<FlashCardScreen>
       parent: _flipController,
       curve: Curves.easeInOut,
     ));
-    
+
     _scaleAnimation = Tween<double>(
       begin: 0.9,
       end: 1.0,
@@ -110,7 +110,7 @@ class _FlashCardScreenState extends State<FlashCardScreen>
 
   void _handlePanEnd(DragEndDetails details) {
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     if (_swipeOffset.dx.abs() > screenWidth * 0.3) {
       // Complete the swipe
       _completeSwipe(_swipeOffset.dx > 0);
@@ -123,7 +123,7 @@ class _FlashCardScreenState extends State<FlashCardScreen>
   void _completeSwipe(bool swipeRight) async {
     // Animate card off screen
     await _swipeController.forward();
-    
+
     // Move to next card
     setState(() {
       currentIndex = (currentIndex + 1) % vocabList.length;
@@ -131,7 +131,7 @@ class _FlashCardScreenState extends State<FlashCardScreen>
       _swipeOffset = Offset.zero;
       _swipeRotation = 0;
     });
-    
+
     _swipeController.reset();
     _stackController.forward();
   }
@@ -145,13 +145,13 @@ class _FlashCardScreenState extends State<FlashCardScreen>
 
   void _flipCard() {
     if (_flipController.isAnimating) return;
-    
+
     if (_isFlipped) {
       _flipController.reverse();
     } else {
       _flipController.forward();
     }
-    
+
     setState(() {
       _isFlipped = !_isFlipped;
     });
@@ -159,62 +159,69 @@ class _FlashCardScreenState extends State<FlashCardScreen>
 
   Widget _buildCard(Vocabulary vocab, int index, {bool isTop = true}) {
     return AnimatedBuilder(
-      animation: Listenable.merge([_flipController, _stackController]),
-      builder: (context, child) {
-        double scale = isTop ? 1.0 : _scaleAnimation.value;
-        double opacity = isTop ? 1.0 : 0.7;
-        
-        return Transform.scale(
-          scale: scale,
-          child: Opacity(
-            opacity: opacity,
-            child: GestureDetector(
-              onTap: _flipCard,
-              onPanUpdate: isTop ? _handlePanUpdate : null,
-              onPanEnd: isTop ? _handlePanEnd : null,
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.001)
-                  ..rotateY(_flipAnimation.value * 3.14159),
+        animation: _flipController,
+        builder: (context, child) {
+          return AnimatedBuilder(
+            animation: _stackController,
+            builder: (context, child) {
+              double scale = isTop ? 1.0 : _scaleAnimation.value;
+              double opacity = isTop ? 1.0 : 0.7;
+
+              return Transform.scale(
+                scale: scale,
+                child: _buildCardContent(vocab, opacity),
+              );
+            },
+          );
+        });
+  }
+
+  Widget _buildCardContent(Vocabulary vocab, double opacity, {bool isTop = true}) {
+    return Opacity(
+      opacity: opacity,
+      child: GestureDetector(
+        onTap: _flipCard,
+        onPanUpdate: isTop ? _handlePanUpdate : null,
+        onPanEnd: isTop ? _handlePanEnd : null,
+        child: Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.001)
+            ..rotateY(_flipAnimation.value * 3.14159),
+          child: SizedBox(
+            width: 300,
+            height: 400,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: RandomGradient(
+                vocab.word,
+                seed: "flashCardGradient",
                 child: Container(
                   width: 300,
                   height: 400,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.blue.shade400,
-                        Colors.blue.shade600,
-                        Colors.purple.shade500,
-                      ],
-                    ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withOpacity(0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: _flipAnimation.value < 0.5
-                        ? _buildFrontSide(vocab)
-                        : Transform(
-                            alignment: Alignment.center,
-                            transform: Matrix4.identity()..rotateY(3.14159),
-                            child: _buildBackSide(vocab),
-                          ),
-                  ),
+                  child: _flipAnimation.value < 0.5
+                      ? _buildFrontSide(vocab)
+                      : Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()..rotateY(3.14159),
+                          child: _buildBackSide(vocab),
+                        ),
                 ),
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -312,7 +319,7 @@ class _FlashCardScreenState extends State<FlashCardScreen>
 
   Widget _buildCardStack() {
     List<Widget> stackCards = [];
-    
+
     // Add background cards (next 2 cards)
     for (int i = 2; i >= 1; i--) {
       int cardIndex = (currentIndex + i) % vocabList.length;
@@ -323,21 +330,21 @@ class _FlashCardScreenState extends State<FlashCardScreen>
         ),
       );
     }
-    
+
     // Add top card with swipe animations
     stackCards.add(
       Positioned(
         top: 0,
-        child: Transform.translate(
-          offset: _swipeOffset,
-          child: Transform.rotate(
-            angle: _swipeRotation,
-            child: _buildCard(vocabList[currentIndex], currentIndex),
-          ),
+        child: Transform(
+          transform: Matrix4.identity()
+            ..translate(_swipeOffset.dx, _swipeOffset.dy)
+            ..rotateZ(_swipeRotation),
+          alignment: Alignment.center,
+          child: _buildCard(vocabList[currentIndex], currentIndex),
         ),
       ),
     );
-    
+
     return Stack(
       alignment: Alignment.center,
       children: stackCards,

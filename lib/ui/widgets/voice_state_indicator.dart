@@ -64,6 +64,7 @@ class _VoiceStateIndicatorState extends State<VoiceStateIndicator> {
           tagSize: ChickTagSize.sm,
           label: Text(
             _getStateText(widget.state),
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Color(0xFF7e7dd6),
               fontWeight: FontWeight.bold,
