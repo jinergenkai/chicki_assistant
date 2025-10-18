@@ -20,6 +20,7 @@ import 'package:chicki_buddy/core/app_router.dart';
 import 'package:get/get.dart';
 import 'package:chicki_buddy/controllers/chat_controller.dart';
 import 'package:chicki_buddy/controllers/voice_controller.dart';
+import 'package:rive/rive.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +47,8 @@ void main() async {
   FlutterForegroundTask.initCommunicationPort();
 
   await VoiceIsolateManager().start();
+  await RiveNative.init();
+
 
   AppLifecycleHandler(
     onResumed: () {

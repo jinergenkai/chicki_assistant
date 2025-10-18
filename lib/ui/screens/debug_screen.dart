@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'test_screen/model_test.screen.dart';
 import 'test_screen/sherpa_tts_test_screen.dart';
 import 'test_screen/test_buddy.screen.dart';
+import 'test_screen/chicky_mascot.screen.dart';
 
 class DebugScreen extends StatelessWidget {
   const DebugScreen({super.key});
@@ -22,6 +23,10 @@ class DebugScreen extends StatelessWidget {
     _DebugItem(
       title: 'Test Buddy',
       screen: TestBuddyScreen(),
+    ),
+    _DebugItem(
+      title: 'Chicky Mascot',
+      screen: ChickyMascotScreen(),
     ),
   ];
 
