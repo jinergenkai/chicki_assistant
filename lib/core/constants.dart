@@ -5,6 +5,7 @@ class AppConstants {
   // static const String baseUrl = 'http://192.168.0.103:1337/v1';
   // static const String baseUrl = 'http://192.168.95.91:11434/v1';
   static const String baseUrl = 'http://huynhhanh.com:9443/api/v1';
+  // static const String baseUrl = 'http://192.168.0.105:9443/api/v1';
 
   // API Keys
   static const String openAIKey = 'YOUR_OPENAI_KEY';

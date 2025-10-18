@@ -38,14 +38,17 @@ class LlmApi {
       );
       logger.info('Sending request: $data to local LLM API');
       final response = await dio.post(
-        'llm/chat',
+        '/llm/chat',
         data: data,
         options: options,
       );
-      final choices = response.data['choices'];
-      if (choices != null && choices is List && choices.isNotEmpty) {
-        return choices.first['message']['content'] ?? '';
+      if (response.data['result'] != null) {
+        return response.data['result'];
       }
+      // final choices = response.data['choices'];
+      // if (choices != null && choices is List && choices.isNotEmpty) {
+      //   return choices.first['message']['content'] ?? '';
+      // }
       return '';
     } catch (e) {
       rethrow;

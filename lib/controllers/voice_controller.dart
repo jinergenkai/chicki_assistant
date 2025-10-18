@@ -44,7 +44,7 @@ class VoiceController extends GetxController {
   void Function(Object)? _taskDataCallback;
 
   bool _isInitialized = false;
-  bool _useForegroundService = true;
+  bool _useForegroundService = false;
 
   // Rx observables for UI
   final state = VoiceState.uninitialized.obs;
