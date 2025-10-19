@@ -28,7 +28,7 @@ class _VoiceStateIndicatorState extends State<VoiceStateIndicator> {
       case VoiceState.error:
         return 'Error occurred';
       case VoiceState.needsPermission:
-        return 'Microphone permission needed';
+        return 'Mic permission needed';
       case VoiceState.uninitialized:
         return 'Initializing...';
       case VoiceState.idle:

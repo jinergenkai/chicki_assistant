@@ -92,7 +92,7 @@ class VoiceController extends GetxController {
 
       _wakewordSub = eventBus.stream.where((event) => event.type == AppEventType.wakewordDetected).listen((event) {
         logger.info('Wakeword detected: ${event.payload}');
-        if (state.value == VoiceState.idle) {
+        if (state.value == VoiceState.idle || state.value == VoiceState.error) {
           startListening();
         }
       });
