@@ -75,6 +75,7 @@ flutter:
   assets:
     - assets/chicky.riv
     - assets/vocab/books.json
+    - assets/data/graph.json
     - assets/icon.png
 
     - assets/models/model.tflite

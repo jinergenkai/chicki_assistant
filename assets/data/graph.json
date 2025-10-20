@@ -1,0 +1,28 @@
+{
+  "nodes": [
+    {
+      "id": "root",
+      "label": "Root",
+      "description": "Starting point of all actions",
+      "allowed_intents": ["start_conversation", "listBook", "help"]
+    },
+    {
+      "id": "book_context",
+      "label": "Book Context",
+      "description": "User is inside book-related actions",
+      "allowed_intents": ["listTopic", "selectTopic", "exitBook"]
+    },
+    {
+      "id": "conversation_mode",
+      "label": "Conversation Mode",
+      "description": "Free chat with AI",
+      "allowed_intents": ["stop_conversation"]
+    }
+  ],
+  "edges": [
+    { "from": "root", "intent": "listBook", "to": "book_context" },
+    { "from": "root", "intent": "start_conversation", "to": "conversation_mode" },
+    { "from": "book_context", "intent": "exitBook", "to": "root" },
+    { "from": "conversation_mode", "intent": "stop_conversation", "to": "root" }
+  ]
+}
