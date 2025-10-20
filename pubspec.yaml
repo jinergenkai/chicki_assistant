@@ -54,6 +54,10 @@ dependencies:
   path: ^1.9.1
   lucide_icons: ^0.257.0
   mesh_gradient: ^1.3.8
+  device_info_plus: ^12.1.0
+  package_info_plus: ^9.0.0
+  android_id: ^0.4.0
+  # rive: ^0.14.0-dev.6
   # media_kit: ^1.2.0
   # media_kit_libs_audio: ^1.0.6
   
@@ -70,6 +74,7 @@ flutter:
 
   assets:
     - assets/vocab/books.json
+    - assets/data/graph.json
     - assets/icon.png
 
     - assets/models/model.tflite
