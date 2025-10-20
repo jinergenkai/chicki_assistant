@@ -42,7 +42,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _initializeController() async {
     try {
       _voiceController = Get.find<VoiceController>();
-      await _voiceController.initialize();
+      await _voiceController.startForegroundService();
       _setupVoiceListener();
 
       // Start wake word detection after initialization

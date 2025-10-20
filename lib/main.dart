@@ -49,15 +49,38 @@ void main() async {
   await VoiceIsolateManager().start();
   await RiveNative.init();
 
-
   AppLifecycleHandler(
     onResumed: () {
       print("🟢 App resumed");
       // AppNavigator.instance.restoreStateIfNeeded();
     },
-    onPaused: () { print("🔴 App paused"); },
+    onPaused: () {
+      print("🔴 App paused");
+    },
   );
+
+  // traceBug();
   runApp(const MyApp());
+}
+
+void traceBug() {
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.dumpErrorToConsole(details);
+    debugPrintStack(label: 'STACK TRACE', stackTrace: details.stack);
+  };
+
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: Colors.red,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          details.toString(),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+        ),
+      ),
+    );
+  };
 }
 
 class MyApp extends StatelessWidget {

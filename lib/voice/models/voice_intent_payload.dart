@@ -8,16 +8,16 @@ class VoiceIntentPayload {
   final Map<String, dynamic> slots;
   
   /// Confidence score (0.0 - 1.0)
-  final double confidence;
+  final double? confidence;
   
   /// Timestamp when intent was detected
-  final DateTime timestamp;
+  final DateTime? timestamp;
 
   VoiceIntentPayload({
     required this.intent,
     required this.slots,
-    required this.confidence,
-    required this.timestamp,
+    this.confidence,
+    this.timestamp,
   });
 
   /// Create from JSON
@@ -25,8 +25,8 @@ class VoiceIntentPayload {
     return VoiceIntentPayload(
       intent: json['intent'] as String,
       slots: Map<String, dynamic>.from(json['slots'] as Map),
-      confidence: (json['confidence'] as num).toDouble(),
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      confidence: json['confidence'] != null ? (json['confidence'] as num).toDouble() : null,
+      timestamp: json['timestamp'] != null ? DateTime.parse(json['timestamp'] as String) : null,
     );
   }
 
@@ -35,8 +35,8 @@ class VoiceIntentPayload {
     return {
       'intent': intent,
       'slots': slots,
-      'confidence': confidence,
-      'timestamp': timestamp.toIso8601String(),
+      if (confidence != null) 'confidence': confidence,
+      if (timestamp != null) 'timestamp': timestamp!.toIso8601String(),
     };
   }
 

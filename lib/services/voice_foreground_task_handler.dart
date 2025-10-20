@@ -1,5 +1,9 @@
 import 'dart:async';
+import 'dart:isolate';
+import 'dart:ui';
 import 'package:chicki_buddy/controllers/app_config.controller.dart';
+import 'package:chicki_buddy/core/constants.dart';
+import 'package:chicki_buddy/services/llm_intent_classifier_service.dart';
 import 'package:chicki_buddy/services/sherpa-onnx/index.dart';
 import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:flutter/widgets.dart';
@@ -18,7 +22,11 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   final STTService _sttService = SpeechToTextService();
   final TTSService _ttsService = TextToSpeechService();
   // final TTSService _ttsService = SherpaTtsService();
-  final LLMService _gptService = LocalLLMService();
+  // final LLMService _gptService = LocalLLMService();
+  final LLMIntentClassifierService _intentClassifier = LLMIntentClassifierService();
+
+  final fgReceivePort = ReceivePort();
+  SendPort? bgPort;
 
   StreamSubscription? _wakewordSub;
   bool _isInitialized = false;
@@ -37,13 +45,26 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     _setupSTTListener();
     _setupRmsListener();
 
-    _wakewordSub = eventBus.stream.where((event) => event.type == AppEventType.wakewordDetected).listen((event) {
-      logger.info('ForegroundTask: Wakeword detected: ${event.payload}');
-      FlutterForegroundTask.sendDataToMain({'wakewordDetected': true, 'payload': event.payload});
-      if (state == VoiceState.idle) {
-        startListening();
-      }
+    foregroundEntry();
+  }
+
+  void foregroundEntry() {
+    // Register for background lookup
+    IsolateNameServer.registerPortWithName(fgReceivePort.sendPort, AppConstants.kForegroundPortName);
+
+    print('[FG] Foreground started');
+
+    fgReceivePort.listen((msg) {
+      print('[FG] Received from BG: $msg');
     });
+
+    // Find background port and send message
+    bgPort = IsolateNameServer.lookupPortByName(AppConstants.kBgTaskPortName);
+    if (bgPort != null) {
+      bgPort?.send('[FG → BG] Hello Background!');
+    } else {
+      print('[FG] ❌ Background port not found!');
+    }
   }
 
   @override
@@ -119,7 +140,7 @@ class VoiceForegroundTaskHandler extends TaskHandler {
 
       await _sttService.initialize();
       await _ttsService.initialize();
-      await _gptService.initialize();
+      // await _gptService.initialize();
 
       _isInitialized = true;
       logger.info('VoiceForegroundTaskHandler initialized successfully');
@@ -148,15 +169,16 @@ class VoiceForegroundTaskHandler extends TaskHandler {
           FlutterForegroundTask.sendDataToMain({'state': state.name});
           logger.info('Processing speech input: $text');
 
-          final response = await _gptService.generateResponse(text);
-          logger.success('Got GPT response: $response');
+          // Phân tích intent bằng LLM
+          final response = await _intentClassifier.classify(text);
+          logger.success('LLM intent result: $response');
 
-          gptResponse = response;
-          FlutterForegroundTask.sendDataToMain({'gptResponse': response});
+          bgPort?.send({'command': 'dispatchIntent', 'payload': response});
+          FlutterForegroundTask.sendDataToMain({'gptResponse': response['intent']});
 
           state = VoiceState.speaking;
           FlutterForegroundTask.sendDataToMain({'state': state.name});
-          await _ttsService.speak(response);
+          await _ttsService.speak(response['intent']);
 
           state = VoiceState.idle;
           FlutterForegroundTask.sendDataToMain({'state': state.name});

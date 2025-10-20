@@ -36,7 +36,7 @@ class _MicButtonState extends State<MicButton> with SingleTickerProviderStateMix
 
   Future<void> _initializeVoiceController() async {
     try {
-      await _controller.initialize();
+      await _controller.startForegroundService();
     } catch (e) {
       logger.error('Failed to initialize voice controller', e);
       if (mounted) {

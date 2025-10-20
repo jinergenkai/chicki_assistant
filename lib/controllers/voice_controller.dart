@@ -33,17 +33,9 @@ enum VoiceState {
 
 class VoiceController extends GetxController {
   final AppConfigController appConfig = Get.find<AppConfigController>();
-
-  // Direct service instances (used when NOT in foreground mode)
-  final STTService _sttService = SpeechToTextService();
-  final TTSService _ttsService = TextToSpeechService();
-  // final TTSService _ttsService = SherpaTtsService();
-  final LLMService _gptService = LocalLLMService();
-
   StreamSubscription? _wakewordSub;
-  void Function(Object)? _taskDataCallback;
 
-  bool _isInitialized = false;
+  void Function(Object)? _taskDataCallback;
   bool _useForegroundService = false;
 
   // Rx observables for UI
@@ -55,40 +47,33 @@ class VoiceController extends GetxController {
   @override
   Future<void> onInit() async {
     super.onInit();
-    await initialize();
+    await _startForegroundOnly();
   }
 
   @override
   void onClose() {
-    _wakewordSub?.cancel();
     if (_useForegroundService) {
       stopForegroundService();
     }
     if (_taskDataCallback != null) {
       FlutterForegroundTask.removeTaskDataCallback(_taskDataCallback!);
     }
+    _wakewordSub?.cancel();
     super.onClose();
   }
 
-  /// Initialize in direct mode (not using foreground service)
-  Future<void> initialize() async {
+  /// Khởi tạo foreground service và chỉ sử dụng foreground isolate
+  Future<void> _startForegroundOnly() async {
     try {
       state.value = VoiceState.uninitialized;
 
+      // Permission cho mic và notification
       await PermissionUtils.checkMicrophone();
-      state.value = VoiceState.needsPermission;
-
-      // Initialize services for direct mode
-      SpeechToTextService().setConfig(appConfig);
-      TextToSpeechService().setConfig(appConfig);
-      LocalLLMService().setConfig(appConfig);
-      
-      await _sttService.initialize();
-      await _ttsService.initialize();
-      await _gptService.initialize();
-
-      _setupSTTListener();
-      _setupRmsListener();
+      final notificationPermission = await _requestNotificationPermission();
+      if (!notificationPermission) {
+        logger.error('Notification permission denied, cannot start foreground service');
+        throw Exception('Notification permission is required for foreground service');
+      }
 
       _wakewordSub = eventBus.stream.where((event) => event.type == AppEventType.wakewordDetected).listen((event) {
         logger.info('Wakeword detected: ${event.payload}');
@@ -97,32 +82,7 @@ class VoiceController extends GetxController {
         }
       });
 
-      _isInitialized = true;
-      logger.info('Voice Controller initialized successfully (direct mode)');
-      state.value = VoiceState.idle;
-    } catch (e) {
-      logger.error('Failed to initialize Voice Controller', e);
-      state.value = VoiceState.error;
-      rethrow;
-    }
-  }
-
-  /// Start using foreground service mode
-  Future<void> startForegroundService() async {
-    if (_useForegroundService) {
-      logger.info('Foreground service already running');
-      return;
-    }
-
-    try {
-      // Request necessary permissions for foreground service
-      final notificationPermission = await _requestNotificationPermission();
-      if (!notificationPermission) {
-        logger.error('Notification permission denied, cannot start foreground service');
-        throw Exception('Notification permission is required for foreground service');
-      }
-
-      // Initialize foreground task
+      // Init foreground task
       FlutterForegroundTask.init(
         androidNotificationOptions: AndroidNotificationOptions(
           channelId: 'voice_assistant_channel',
@@ -149,7 +109,7 @@ class VoiceController extends GetxController {
           _handleForegroundData(data);
         }
       };
-       FlutterForegroundTask.addTaskDataCallback(_taskDataCallback!);
+      FlutterForegroundTask.addTaskDataCallback(_taskDataCallback!);
 
       await FlutterForegroundTask.startService(
         serviceId: 256,
@@ -164,19 +124,18 @@ class VoiceController extends GetxController {
       );
 
       FlutterForegroundTask.sendDataToTask({
-        'config': appConfig.toJson(), // 👈 gửi config
+        'config': appConfig.toJson(),
       });
 
       _useForegroundService = true;
-      logger.info('Foreground service started');
+      logger.info('Foreground service started (foreground-only mode)');
+      state.value = VoiceState.idle;
     } catch (e) {
       logger.error('Failed to start foreground service', e);
+      state.value = VoiceState.error;
       rethrow;
     }
   }
-
-  /// Check if foreground service is currently active
-  bool get isForegroundServiceActive => _useForegroundService;
 
   /// Request notification permission (Android 13+)
   Future<bool> _requestNotificationPermission() async {
@@ -185,58 +144,54 @@ class VoiceController extends GetxController {
     if (await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
       // Battery optimization already disabled
     } else {
-      // Request to disable battery optimization
       await FlutterForegroundTask.requestIgnoreBatteryOptimization();
     }
 
-    // Check if notification permission is granted
     final status = await FlutterForegroundTask.checkNotificationPermission();
     if (status == NotificationPermission.granted) {
       return true;
     }
 
-    // Request notification permission
     final result = await FlutterForegroundTask.requestNotificationPermission();
     return result == NotificationPermission.granted;
   }
 
-  /// Stop foreground service and return to direct mode
+  /// Getter trạng thái foreground service (giữ lại cho UI cũ)
+  bool get isForegroundServiceActive => _useForegroundService;
+
+  /// Khởi tạo foreground service (giữ lại cho UI cũ)
+  Future<void> startForegroundService() async {
+    await _startForegroundOnly();
+  }
+
+  /// Stop foreground service
   Future<void> stopForegroundService() async {
     if (!_useForegroundService) return;
 
     try {
       await FlutterForegroundTask.stopService();
       _useForegroundService = false;
-
-      // Restart direct mode
-      await initialize();
-      logger.info('Foreground service stopped, returned to direct mode');
+      logger.info('Foreground service stopped');
+      state.value = VoiceState.uninitialized;
     } catch (e) {
       logger.error('Failed to stop foreground service', e);
     }
   }
 
   void _handleForegroundData(Map data) {
-    // Handle wakeword detection từ foreground task
+    // Wakeword, mic lifecycle, state, recognizedText, gptResponse, rmsDB
     if (data['wakewordDetected'] == true) {
       logger.info('VoiceController: Wakeword detected from foreground task');
-      // Wakeword đã được xử lý trong foreground task (startListening đã được gọi)
-      // Chỉ cần log hoặc update UI nếu cần
     }
-    
-    // Handle mic lifecycle events từ foreground task
     if (data['micLifecycle'] != null) {
       final lifecycle = data['micLifecycle'] as String;
       logger.info('VoiceController: Received micLifecycle from foreground: $lifecycle');
-      // Emit event để PorcupineWakewordService có thể handle
       if (lifecycle == 'started') {
         eventBus.emit(AppEvent(AppEventType.micStarted, null));
       } else if (lifecycle == 'stopped') {
         eventBus.emit(AppEvent(AppEventType.micStopped, null));
       }
     }
-    
-    // Update observables from foreground service data
     if (data['state'] != null) {
       final stateName = data['state'] as String;
       state.value = VoiceState.values.firstWhere(
@@ -255,124 +210,23 @@ class VoiceController extends GetxController {
     }
   }
 
-  void _setupSTTListener() {
-    _sttService.onTextRecognized.listen((text) async {
-      if (text.isNotEmpty) {
-        try {
-          // Emit recognized text
-          recognizedText.value = text;
-
-          // STT đã dừng (tự động sau khi nhận kết quả cuối), emit micStopped
-          eventBus.emit(AppEvent(AppEventType.micStopped, null));
-          logger.info('voice controller: STT finished, emitted micStopped event');
-
-          state.value = VoiceState.processing;
-          logger.info('Processing speech input: $text');
-
-          // Get response from GPT
-          final response = await _gptService.generateResponse(text);
-          logger.success('Got GPT response: $response');
-
-          // Emit GPT response
-          gptResponse.value = response;
-
-          // Speak the response
-          state.value = VoiceState.speaking;
-          await _ttsService.speak(response);
-
-          state.value = VoiceState.idle;
-        } catch (e) {
-          logger.error('Error processing voice input', e);
-          state.value = VoiceState.error;
-        }
-      }
-    });
-  }
-
-  void _setupRmsListener() {
-    _sttService.onRmsChanged.listen((level) {
-      rmsDB.value = level;
-      // logger.info('VoiceController: rmsDB=$level');
-    });
-  }
-
+  /// Gửi lệnh sang foreground isolate
   Future<void> startListening() async {
     if (_useForegroundService) {
-      // Delegate to foreground service
       logger.info('startListening to foreground service');
       FlutterForegroundTask.sendDataToTask({'command': 'startListening'});
-      return;
-    }
-
-    // Direct mode
-    if (!_isInitialized) {
-      throw Exception('Voice Controller not initialized');
-    }
-    try {
-      final hasPermission = await PermissionUtils.checkMicrophone();
-      if (!hasPermission) {
-        state.value = VoiceState.needsPermission;
-        return;
-      }
-
-      // Emit event để thông báo mic sắp được sử dụng
-      eventBus.emit(AppEvent(AppEventType.micStarted, null));
-      logger.info('voice controller: Emitted micStarted event');
-
-      await _sttService.startListening();
-      state.value = VoiceState.listening;
-      logger.info('voice controller: Started listening (direct mode)');
-    } catch (e) {
-      logger.error('Error starting voice listening', e);
-      // Nếu start thất bại, emit micStopped để Porcupine có thể resume
-      eventBus.emit(AppEvent(AppEventType.micStopped, null));
-      state.value = VoiceState.error;
-      rethrow;
     }
   }
 
   Future<void> stopListening() async {
     if (_useForegroundService) {
-      // Delegate to foreground service
       FlutterForegroundTask.sendDataToTask({'command': 'stopListening'});
-      return;
-    }
-
-    // Direct mode
-    try {
-      await _sttService.stopListening();
-
-      // Emit event để thông báo mic đã được release
-      eventBus.emit(AppEvent(AppEventType.micStopped, null));
-      logger.info('voice controller: Emitted micStopped event');
-
-      state.value = VoiceState.idle;
-      logger.info('voice controller: Stopped listening (direct mode)');
-    } catch (e) {
-      logger.error('Error stopping voice listening', e);
-      // Vẫn emit micStopped ngay cả khi có lỗi để đảm bảo Porcupine resume
-      eventBus.emit(AppEvent(AppEventType.micStopped, null));
-      state.value = VoiceState.error;
-      rethrow;
     }
   }
 
   Future<void> stopSpeaking() async {
     if (_useForegroundService) {
-      // Delegate to foreground service
       FlutterForegroundTask.sendDataToTask({'command': 'stopSpeaking'});
-      return;
-    }
-
-    // Direct mode
-    try {
-      await _ttsService.stop();
-      state.value = VoiceState.idle;
-      logger.info('Stopped speaking (direct mode)');
-    } catch (e) {
-      logger.error('Error stopping speech', e);
-      state.value = VoiceState.error;
-      rethrow;
     }
   }
 }

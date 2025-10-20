@@ -10,6 +10,12 @@ class AppConstants {
   // API Keys
   static const String openAIKey = 'YOUR_OPENAI_KEY';
   static const String janKey = '1';
+
+  // Isolate Names
+  // Name constants to avoid typo
+  static const String kBgTaskPortName = 'bg_task_port';
+  static const String kForegroundPortName = 'foreground_port';
+
   
   // App Settings
   static const String appName = 'Voice AI Assistant';

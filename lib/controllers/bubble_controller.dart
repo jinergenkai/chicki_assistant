@@ -9,7 +9,6 @@ import '../ui/widgets/bubble_overlay.dart';
 class BubbleController extends GetxController {
   OverlayEntry? _overlayEntry;
   RxBool isVisible = false.obs;
-  // Rx<Offset> position = const Offset(100, 500).obs; // vị trí mặc định
 
   void showBubble(GlobalKey<NavigatorState> navigatorKey) {
     if (isVisible.value) return;

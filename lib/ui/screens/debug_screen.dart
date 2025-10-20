@@ -37,23 +37,35 @@ class DebugScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, idx) {
-        final item = items[idx];
-        return MoonFilledButton(
-          label: Text(item.title),
+    return Column(
+      children: [
+        MoonFilledButton(
+          label: const Text('back to user screen'),
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (ctx) => _DebugScreenWrapper(child: item.screen),
-              ),
-            );
+            Navigator.of(context).pop();
           },
-        );
-      },
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, idx) {
+              final item = items[idx];
+              return MoonFilledButton(
+                label: Text(item.title),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (ctx) => _DebugScreenWrapper(child: item.screen),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

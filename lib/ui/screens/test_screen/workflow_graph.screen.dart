@@ -1,7 +1,6 @@
 import 'package:chicki_buddy/core/logger.dart';
 import 'package:chicki_buddy/voice/graph/workflow_graph.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_flow_chart/flutter_flow_chart.dart';
 
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
