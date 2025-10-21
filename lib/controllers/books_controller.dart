@@ -12,7 +12,6 @@ class BooksController extends GetxController {
   final RxString downloadingBookId = ''.obs;
   final RxDouble downloadProgress = 0.0.obs;
 
-  final VocabularyService vocabularyService = VocabularyService();
   final BookService service = BookService();
   final BookBridgeService bookBridgeService = BookBridgeService();
 
@@ -21,7 +20,6 @@ class BooksController extends GetxController {
   void onInit() {
     super.onInit();
     service.init().then((_) async {
-      await vocabularyService.init();
       books.value = await bookBridgeService.loadAllBooks();
       print(books);
       // await vocabularyService.importFromBooks(books.value);

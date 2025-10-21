@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:chicki_buddy/models/book.dart';
+import 'package:chicki_buddy/ui/screens/book_details_screen.dart';
 import 'package:chicki_buddy/ui/widgets/book_card.dart';
 import 'package:chicki_buddy/voice/models/voice_action_event.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,6 @@ import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:moon_design/moon_design.dart';
 import '../../controllers/books_controller.dart';
-import 'topic_screen.dart';
 
 class BooksScreen extends StatefulWidget {
   const BooksScreen({super.key});
@@ -26,7 +26,7 @@ class _BooksScreenState extends State<BooksScreen> {
 
   void openBook(Book book) {
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => TopicScreen(book: book),
+      builder: (context) => BookDetailsScreen(book: book),
     ));
   }
 

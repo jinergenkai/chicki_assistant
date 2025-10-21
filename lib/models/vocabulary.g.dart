@@ -42,13 +42,15 @@ class VocabularyAdapter extends TypeAdapter<Vocabulary> {
       userNotes: fields[22] as String?,
       imagePath: fields[23] as String?,
       reviewStatus: fields[24] as String?,
+      bookId: fields[25] as String?,
+      topic: fields[26] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Vocabulary obj) {
     writer
-      ..writeByte(25)
+      ..writeByte(27)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -98,7 +100,11 @@ class VocabularyAdapter extends TypeAdapter<Vocabulary> {
       ..writeByte(23)
       ..write(obj.imagePath)
       ..writeByte(24)
-      ..write(obj.reviewStatus);
+      ..write(obj.reviewStatus)
+      ..writeByte(25)
+      ..write(obj.bookId)
+      ..writeByte(26)
+      ..write(obj.topic);
   }
 
   @override
@@ -148,6 +154,8 @@ Vocabulary _$VocabularyFromJson(Map<String, dynamic> json) => Vocabulary(
       userNotes: json['userNotes'] as String?,
       imagePath: json['imagePath'] as String?,
       reviewStatus: json['reviewStatus'] as String?,
+      bookId: json['bookId'] as String?,
+      topic: json['topic'] as String?,
     );
 
 Map<String, dynamic> _$VocabularyToJson(Vocabulary instance) =>
@@ -177,4 +185,6 @@ Map<String, dynamic> _$VocabularyToJson(Vocabulary instance) =>
       'userNotes': instance.userNotes,
       'imagePath': instance.imagePath,
       'reviewStatus': instance.reviewStatus,
+      'bookId': instance.bookId,
+      'topic': instance.topic,
     };

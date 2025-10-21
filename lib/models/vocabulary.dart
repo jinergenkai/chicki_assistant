@@ -83,6 +83,12 @@ class Vocabulary extends HiveObject {
   @HiveField(24)
   String? reviewStatus; // Trạng thái ôn tập SRS: new, learning, reviewing, mastered
 
+  @HiveField(25)
+  String? bookId; // ID sách gốc của từ
+
+  @HiveField(26)
+  String? topic; // Chủ đề của từ trong sách
+
   Vocabulary({
     this.id,
     required this.word,
@@ -110,6 +116,9 @@ class Vocabulary extends HiveObject {
     this.userNotes,
     this.imagePath,
     this.reviewStatus,
+
+    this.bookId,
+    this.topic,
   });
   // NOTE: Update HiveAdapter if you change fields!
 

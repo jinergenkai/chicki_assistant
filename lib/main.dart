@@ -26,11 +26,12 @@ void main() async {
 
   await Hive.initFlutter();
 
-  Hive.registerAdapter(VocabularyAdapter());
-  Hive.registerAdapter(VoiceNoteAdapter());
-
-  await Hive.openBox<VoiceNote>('voiceNoteBox');
-  await Hive.openBox<Vocabulary>('vocabularyBox');
+  // Hive.registerAdapter(VocabularyAdapter());
+  // Hive.registerAdapter(VoiceNoteAdapter());
+  // Hive.registerAdapter(BookAdapter());
+  // await Hive.openBox<VoiceNote>('voiceNoteBox');
+  // await Hive.openBox<Vocabulary>('vocabularyBox');
+  // await Hive.openBox<Book>('books');
 
   // Initialize Notifications
   // await NotificationService().initialize();

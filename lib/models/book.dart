@@ -1,6 +1,5 @@
 import 'package:hive/hive.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'topic.dart';
 
 part 'book.g.dart';
 
@@ -25,9 +24,6 @@ class Book extends HiveObject {
   @HiveField(5)
   String? ownerId; // userId if custom book
 
-  @HiveField(6)
-  List<Topic> topics; // List of topics
-
   Book({
     required this.id,
     required this.title,
@@ -35,7 +31,6 @@ class Book extends HiveObject {
     required this.price,
     required this.isCustom,
     this.ownerId,
-    required this.topics,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) => _$BookFromJson(json);

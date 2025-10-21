@@ -4,6 +4,8 @@ import 'dart:isolate';
 import 'dart:ui';
 import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:chicki_buddy/core/constants.dart';
+import 'package:chicki_buddy/models/book.dart';
+import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/services/book_service.dart';
 import 'package:chicki_buddy/services/llm_intent_classifier_service.dart';
 import 'package:chicki_buddy/services/sherpa-onnx/index.dart';
@@ -11,6 +13,8 @@ import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../core/logger.dart';
 import '../core/app_event_bus.dart';
 import '../services/stt_service.dart';
@@ -60,6 +64,8 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     WidgetsFlutterBinding.ensureInitialized();
 
+    await Hive.initFlutter();
+  
     // Communication is done via FlutterForegroundTask.sendDataToMain
     await initialize();
     _setupSTTListener();

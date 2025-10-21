@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chicki_buddy/utils/gradient.dart';
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
@@ -107,12 +108,12 @@ class _BookCardState extends State<BookCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 10),
-                  Text(
+                  AutoSizeText(
                     widget.desc,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white70,
                         ),
-                    maxLines: 3,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const Spacer(),

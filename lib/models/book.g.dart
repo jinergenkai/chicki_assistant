@@ -23,14 +23,13 @@ class BookAdapter extends TypeAdapter<Book> {
       price: fields[3] as double,
       isCustom: fields[4] as bool,
       ownerId: fields[5] as String?,
-      topics: (fields[6] as List).cast<Topic>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Book obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -42,9 +41,7 @@ class BookAdapter extends TypeAdapter<Book> {
       ..writeByte(4)
       ..write(obj.isCustom)
       ..writeByte(5)
-      ..write(obj.ownerId)
-      ..writeByte(6)
-      ..write(obj.topics);
+      ..write(obj.ownerId);
   }
 
   @override
@@ -69,9 +66,6 @@ Book _$BookFromJson(Map<String, dynamic> json) => Book(
       price: (json['price'] as num).toDouble(),
       isCustom: json['isCustom'] as bool,
       ownerId: json['ownerId'] as String?,
-      topics: (json['topics'] as List<dynamic>)
-          .map((e) => Topic.fromJson(e as Map<String, dynamic>))
-          .toList(),
     );
 
 Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
@@ -81,5 +75,4 @@ Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
       'price': instance.price,
       'isCustom': instance.isCustom,
       'ownerId': instance.ownerId,
-      'topics': instance.topics,
     };
