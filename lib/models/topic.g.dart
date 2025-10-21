@@ -48,3 +48,23 @@ class TopicAdapter extends TypeAdapter<Topic> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+Topic _$TopicFromJson(Map<String, dynamic> json) => Topic(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      vocabList: (json['vocabList'] as List<dynamic>)
+          .map((e) => Vocabulary.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      bookId: json['bookId'] as String,
+    );
+
+Map<String, dynamic> _$TopicToJson(Topic instance) => <String, dynamic>{
+      'id': instance.id,
+      'title': instance.title,
+      'vocabList': instance.vocabList,
+      'bookId': instance.bookId,
+    };

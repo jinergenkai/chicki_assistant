@@ -57,3 +57,29 @@ class BookAdapter extends TypeAdapter<Book> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+Book _$BookFromJson(Map<String, dynamic> json) => Book(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      price: (json['price'] as num).toDouble(),
+      isCustom: json['isCustom'] as bool,
+      ownerId: json['ownerId'] as String?,
+      topics: (json['topics'] as List<dynamic>)
+          .map((e) => Topic.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
+      'id': instance.id,
+      'title': instance.title,
+      'description': instance.description,
+      'price': instance.price,
+      'isCustom': instance.isCustom,
+      'ownerId': instance.ownerId,
+      'topics': instance.topics,
+    };

@@ -1,4 +1,5 @@
 import 'package:chicki_buddy/core/logger.dart';
+import 'package:chicki_buddy/services/book_bridge_service.dart';
 import 'package:chicki_buddy/services/vocabulary.service.dart';
 import 'package:get/get.dart';
 import '../models/book.dart';
@@ -13,21 +14,23 @@ class BooksController extends GetxController {
 
   final VocabularyService vocabularyService = VocabularyService();
   final BookService service = BookService();
+  final BookBridgeService bookBridgeService = BookBridgeService();
+
 
   @override
   void onInit() {
     super.onInit();
     service.init().then((_) async {
       await vocabularyService.init();
-      books.value = await service.loadAllBooks();
+      books.value = await bookBridgeService.loadAllBooks();
       print(books);
-      await vocabularyService.importFromBooks(books.value);
+      // await vocabularyService.importFromBooks(books.value);
       logger.info('Loaded ${books.length} books from service and imported vocabularies to Hive.');
     });
   }
 
   Future<void> reloadBooks() async {
-      books.value = await service.loadAllBooks();
+      books.value = await bookBridgeService.loadAllBooks();
   }
 
   void downloadBook(String bookId) async {

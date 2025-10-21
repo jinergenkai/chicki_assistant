@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:isolate';
 import 'dart:ui';
 import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:chicki_buddy/core/constants.dart';
+import 'package:chicki_buddy/services/book_service.dart';
 import 'package:chicki_buddy/services/llm_intent_classifier_service.dart';
 import 'package:chicki_buddy/services/sherpa-onnx/index.dart';
 import 'package:chicki_buddy/utils/permission_utils.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import '../core/logger.dart';
@@ -14,6 +17,10 @@ import '../services/stt_service.dart';
 import '../services/tts_service.dart';
 import '../services/local_llm_service.dart';
 import '../services/llm_service.dart';
+// Intent system
+import 'package:chicki_buddy/services/intent/intent_system_service.dart';
+import 'package:chicki_buddy/voice/graph/workflow_graph.dart';
+import 'package:chicki_buddy/voice/dispatcher/voice_intent_dispatcher.dart';
 
 enum VoiceState { uninitialized, needsPermission, idle, listening, processing, speaking, detecting, error }
 
@@ -26,6 +33,19 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   final LLMIntentClassifierService _intentClassifier = LLMIntentClassifierService();
 
   final fgReceivePort = ReceivePort();
+  // Intent system instance
+  IntentSystemService? _intentSystem;
+
+  Future<void> _initIntentSystem() async {
+    final jsonStr = await rootBundle.loadString('assets/data/graph.json');
+    final graph = WorkflowGraph.fromJson(jsonDecode(jsonStr));
+    final dispatcher = VoiceIntentDispatcher();
+    _intentSystem = IntentSystemService(
+      workflowGraph: graph,
+      dispatcher: dispatcher,
+    );
+  }
+
   SendPort? bgPort;
 
   StreamSubscription? _wakewordSub;
@@ -45,26 +65,7 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     _setupSTTListener();
     _setupRmsListener();
 
-    foregroundEntry();
-  }
-
-  void foregroundEntry() {
-    // Register for background lookup
-    IsolateNameServer.registerPortWithName(fgReceivePort.sendPort, AppConstants.kForegroundPortName);
-
-    print('[FG] Foreground started');
-
-    fgReceivePort.listen((msg) {
-      print('[FG] Received from BG: $msg');
-    });
-
-    // Find background port and send message
-    bgPort = IsolateNameServer.lookupPortByName(AppConstants.kBgTaskPortName);
-    if (bgPort != null) {
-      bgPort?.send('[FG → BG] Hello Background!');
-    } else {
-      print('[FG] ❌ Background port not found!');
-    }
+    await _initIntentSystem();
   }
 
   @override
@@ -74,10 +75,26 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   }
 
   @override
-  void onReceiveData(Object data) {
+  Future<void> onReceiveData(Object data) async {
     // Handle commands from main isolate
     logger.info('ForegroundTask: Received data: $data');
     if (data is Map) {
+      // Handle bridge service request
+      if (data['bridge'] == 'book') {
+        final action = data['action'] as String?;
+        switch (action) {
+          case 'listBook':
+            _intentSystem?.triggerIntent('listBook').then((event) {
+              FlutterForegroundTask.sendDataToMain({
+                'bridge': 'book',
+                'action': 'listBook',
+                'result': jsonEncode(event.data['books'] ?? []),
+              });
+            });
+            break;
+        }
+        return;
+      }
       // Handle config update
       if (data['config'] != null) {
         final config = AppConfigController.fromJson(data['config']);
@@ -173,7 +190,18 @@ class VoiceForegroundTaskHandler extends TaskHandler {
           final response = await _intentClassifier.classify(text);
           logger.success('LLM intent result: $response');
 
-          bgPort?.send({'command': 'dispatchIntent', 'payload': response});
+          // Xử lý intent trực tiếp bằng intent system (không dùng isolate nữa)
+          if (_intentSystem != null && response['intent'] != null) {
+            _intentSystem!
+                .triggerIntent(
+              response['intent'] as String,
+              slots: response['slots'] is Map ? Map<String, dynamic>.from(response['slots']) : {},
+            )
+                .then((event) {
+              // Emit event về main isolate nếu cần
+              FlutterForegroundTask.sendDataToMain({'voiceAction': event.toJson()});
+            });
+          }
           FlutterForegroundTask.sendDataToMain({'gptResponse': response['intent']});
 
           state = VoiceState.speaking;

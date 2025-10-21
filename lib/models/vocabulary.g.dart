@@ -111,3 +111,70 @@ class VocabularyAdapter extends TypeAdapter<Vocabulary> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+Vocabulary _$VocabularyFromJson(Map<String, dynamic> json) => Vocabulary(
+      id: (json['id'] as num?)?.toInt(),
+      word: json['word'] as String,
+      pronunciation: json['pronunciation'] as String?,
+      originLanguage: json['originLanguage'] as String,
+      targetLanguage: json['targetLanguage'] as String,
+      meaning: json['meaning'] as String?,
+      exampleSentence: json['exampleSentence'] as String?,
+      exampleTranslation: json['exampleTranslation'] as String?,
+      ttsAudioPath: json['ttsAudioPath'] as String?,
+      synonyms: (json['synonyms'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      antonyms: (json['antonyms'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      difficulty: (json['difficulty'] as num?)?.toInt(),
+      familiarity: (json['familiarity'] as num?)?.toDouble(),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      isSync: json['isSync'] as bool? ?? false,
+      isDeleted: json['isDeleted'] as bool? ?? false,
+      pos: json['pos'] as String?,
+      frequencyRank: (json['frequencyRank'] as num?)?.toInt(),
+      sourceList: json['sourceList'] as String?,
+      relatedWords: (json['relatedWords'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      userNotes: json['userNotes'] as String?,
+      imagePath: json['imagePath'] as String?,
+      reviewStatus: json['reviewStatus'] as String?,
+    );
+
+Map<String, dynamic> _$VocabularyToJson(Vocabulary instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'word': instance.word,
+      'pronunciation': instance.pronunciation,
+      'originLanguage': instance.originLanguage,
+      'targetLanguage': instance.targetLanguage,
+      'meaning': instance.meaning,
+      'exampleSentence': instance.exampleSentence,
+      'exampleTranslation': instance.exampleTranslation,
+      'ttsAudioPath': instance.ttsAudioPath,
+      'synonyms': instance.synonyms,
+      'antonyms': instance.antonyms,
+      'tags': instance.tags,
+      'difficulty': instance.difficulty,
+      'familiarity': instance.familiarity,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'isSync': instance.isSync,
+      'isDeleted': instance.isDeleted,
+      'pos': instance.pos,
+      'frequencyRank': instance.frequencyRank,
+      'sourceList': instance.sourceList,
+      'relatedWords': instance.relatedWords,
+      'userNotes': instance.userNotes,
+      'imagePath': instance.imagePath,
+      'reviewStatus': instance.reviewStatus,
+    };

@@ -1,9 +1,12 @@
 import 'package:hive/hive.dart';
+import 'package:json_annotation/json_annotation.dart';
+
 import 'vocabulary.dart';
 
 part 'topic.g.dart';
 
 @HiveType(typeId: 201)
+@JsonSerializable()
 class Topic extends HiveObject {
   @HiveField(0)
   String id; // Unique topic ID
@@ -23,4 +26,7 @@ class Topic extends HiveObject {
     required this.vocabList,
     required this.bookId,
   });
+
+    factory Topic.fromJson(Map<String, dynamic> json) => _$TopicFromJson(json);
+  Map<String, dynamic> toJson() => _$TopicToJson(this);
 }

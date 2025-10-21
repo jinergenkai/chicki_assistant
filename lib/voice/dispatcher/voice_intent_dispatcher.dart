@@ -1,13 +1,27 @@
 import '../models/voice_intent_payload.dart';
 import '../models/voice_action_event.dart';
 import '../models/voice_state_context.dart';
+import 'package:chicki_buddy/services/book_service.dart';
 
 /// Core dispatcher for processing intents and running the graph
 class VoiceIntentDispatcher {
   VoiceStateContext _state = VoiceStateContext(currentScreen: 'idle');
+  final BookService bookService = BookService();
 
   /// Process an incoming intent payload and return a VoiceActionEvent
-  VoiceActionEvent dispatch(VoiceIntentPayload payload) {
+  Future<VoiceActionEvent> dispatch(VoiceIntentPayload payload) async {
+    // Xử lý intent đặc biệt cho book (ví dụ: listBook)
+    if (payload.intent == 'listBook') {
+      // Gọi BookService để lấy danh sách sách thật
+      // (Chỉ dùng sync, nếu cần async thì phải refactor toàn bộ flow)
+      await bookService.init();
+      final books = await bookService.loadAllBooks();
+      return VoiceActionEvent(
+        action: 'listBook',
+        data: {'books': books.map((b) => b.toJson()).toList()},
+        requiresUI: false,
+      );
+    }
     // Example: basic graph logic (replace with full graph runner later)
     switch (_state.currentScreen) {
       case 'idle':

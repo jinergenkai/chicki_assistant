@@ -13,6 +13,9 @@ enum AppEventType {
   // Voice intent and actions
   voiceIntent,
   voiceAction,
+
+  // Book bridge results
+  bookBridgeResult,
 }
 
 class AppEvent {

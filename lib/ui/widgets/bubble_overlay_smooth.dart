@@ -5,7 +5,7 @@ import 'package:moon_design/moon_design.dart';
 import 'package:chicki_buddy/core/logger.dart';
 import '../../voice/simulator/intent_simulator.dart';
 import '../../core/app_event_bus.dart';
-import 'chicky/chicky_rive.dart';
+// import 'chicky/chicky_rive.dart';
 
 /// Floating assistant bubble with inertia & snap
 class SmoothBubbleOverlay {
@@ -52,7 +52,7 @@ class _SmoothBubbleState extends State<SmoothBubble>
   @override
   void initState() {
     super.initState();
-    _chickyWidget = const ChickyRive(state: ChickyState.sleep, size: 80);
+    // _chickyWidget = const ChickyRive(state: ChickyState.sleep, size: 80);
     _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _controller.addListener(() {
       setState(() => _offset = _animation.value);

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:chicki_buddy/services/sherpa-onnx/index.dart';
 import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:get/get.dart';
@@ -207,6 +208,10 @@ class VoiceController extends GetxController {
     }
     if (data['rmsDB'] != null) {
       rmsDB.value = (data['rmsDB'] as num).toDouble();
+    }
+    // Nhận kết quả từ bridge service (ví dụ: loadAllBooks)
+    if (data['bridge'] == 'book' && data['action'] == 'listBook' && data['result'] != null) {
+      eventBus.emit(AppEvent(AppEventType.bookBridgeResult, jsonDecode(data['result'])));
     }
   }
 

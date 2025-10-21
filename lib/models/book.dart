@@ -1,9 +1,11 @@
 import 'package:hive/hive.dart';
+import 'package:json_annotation/json_annotation.dart';
 import 'topic.dart';
 
 part 'book.g.dart';
 
 @HiveType(typeId: 200)
+@JsonSerializable()
 class Book extends HiveObject {
   @HiveField(0)
   String id; // Unique book ID
@@ -35,4 +37,7 @@ class Book extends HiveObject {
     this.ownerId,
     required this.topics,
   });
+
+  factory Book.fromJson(Map<String, dynamic> json) => _$BookFromJson(json);
+  Map<String, dynamic> toJson() => _$BookToJson(this);
 }

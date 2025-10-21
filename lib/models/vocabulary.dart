@@ -1,8 +1,11 @@
 import 'package:hive/hive.dart';
+import 'package:json_annotation/json_annotation.dart';
+
 
 part 'vocabulary.g.dart';
 
 @HiveType(typeId: 100)
+@JsonSerializable()
 class Vocabulary extends HiveObject {
   @HiveField(0)
   int? id; // Primary key local, auto increment optional
@@ -109,4 +112,7 @@ class Vocabulary extends HiveObject {
     this.reviewStatus,
   });
   // NOTE: Update HiveAdapter if you change fields!
+
+    factory Vocabulary.fromJson(Map<String, dynamic> json) => _$VocabularyFromJson(json);
+  Map<String, dynamic> toJson() => _$VocabularyToJson(this);
 }
