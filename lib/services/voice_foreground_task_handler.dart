@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'dart:ui';
 import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:chicki_buddy/core/constants.dart';
+import 'package:chicki_buddy/core/isolate_message.dart';
 import 'package:chicki_buddy/models/book.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/services/book_service.dart';
@@ -21,10 +22,9 @@ import '../services/stt_service.dart';
 import '../services/tts_service.dart';
 import '../services/local_llm_service.dart';
 import '../services/llm_service.dart';
-// Intent system
-import 'package:chicki_buddy/services/intent/intent_system_service.dart';
+// Unified intent system
+import 'package:chicki_buddy/services/unified_intent_handler.dart';
 import 'package:chicki_buddy/voice/graph/workflow_graph.dart';
-import 'package:chicki_buddy/voice/dispatcher/voice_intent_dispatcher.dart';
 
 enum VoiceState { uninitialized, needsPermission, idle, listening, processing, speaking, detecting, error }
 
@@ -37,16 +37,14 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   final LLMIntentClassifierService _intentClassifier = LLMIntentClassifierService();
 
   final fgReceivePort = ReceivePort();
-  // Intent system instance
-  IntentSystemService? _intentSystem;
+  // Unified intent handler instance
+  UnifiedIntentHandler? _intentHandler;
 
   Future<void> _initIntentSystem() async {
     final jsonStr = await rootBundle.loadString('assets/data/graph.json');
     final graph = WorkflowGraph.fromJson(jsonDecode(jsonStr));
-    final dispatcher = VoiceIntentDispatcher();
-    _intentSystem = IntentSystemService(
+    _intentHandler = UnifiedIntentHandler(
       workflowGraph: graph,
-      dispatcher: dispatcher,
     );
   }
 
@@ -77,102 +75,138 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   @override
   void onRepeatEvent(DateTime timestamp) {
     // Periodic event - send status update
-    FlutterForegroundTask.sendDataToMain({'status': 'running', 'state': state.name, 'timestamp': timestamp.toIso8601String()});
+    _sendMessage(IsolateMessage.status('running', extra: {'state': state.name}));
+  }
+  
+  /// Helper to send unified messages
+  void _sendMessage(IsolateMessage message) {
+    FlutterForegroundTask.sendDataToMain(message.toMap());
   }
 
   @override
   Future<void> onReceiveData(Object data) async {
-    // Handle commands from main isolate
-    logger.info('ForegroundTask: Received data: $data');
-    if (data is Map) {
-      // Handle bridge service request
-      if (data['bridge'] == 'book') {
-        final action = data['action'] as String?;
-        switch (action) {
-          case 'listBook':
-            _intentSystem?.triggerIntent('listBook').then((event) {
-              FlutterForegroundTask.sendDataToMain({
-                'bridge': 'book',
-                'action': 'listBook',
-                'result': jsonEncode(event.data['books'] ?? []),
-              });
-            });
-            break;
-        }
-        return;
-      }
-      // Handle config update
-      if (data['config'] != null) {
-        final config = AppConfigController.fromJson(data['config']);
-        SpeechToTextService().setConfig(config);
-        TextToSpeechService().setConfig(config);
-        LocalLLMService().setConfig(config);
-        FlutterForegroundTask.sendDataToMain({'status': 'config_set'});
-      }
-
-      // Handle wakeword detection từ main isolate
-      if (data['wakewordDetected'] == true) {
-        logger.info('ForegroundTask: Wakeword detected from main isolate');
-        if (state == VoiceState.idle) {
-          startListening();
-        }
-        return;
-      }
-
-      // Handle commands
-      final command = data['command'] as String?;
-      switch (command) {
-        case 'startListening':
-          FlutterForegroundTask.sendDataToMain({'status': 'listening'});
-          FlutterForegroundTask.updateService(
-            notificationText: 'Listening...',
-            notificationButtons: [
-              const NotificationButton(id: 'stop', text: 'Stop'),
-            ],
-          );
-          startListening();
-          break;
-        case 'stopListening':
-          FlutterForegroundTask.updateService(
-            notificationText: 'Stopped',
-            notificationButtons: [
-              const NotificationButton(id: 'start', text: 'Start'),
-            ],
-          );
-          stopListening();
-          break;
-        case 'stopSpeaking':
-          stopSpeaking();
-          break;
-        default:
-          if (command != null) {
-            logger.warning('ForegroundTask: Unknown command: $command');
-          }
-      }
+    if (data is! Map) return;
+    
+    // Parse message using unified format
+    final message = IsolateMessage.fromMap(data as Map<String, dynamic>);
+    logger.info('ForegroundTask: Received message: ${message.type.name}');
+    
+    await _handleMessage(message);
+  }
+  
+  Future<void> _handleMessage(IsolateMessage message) async {
+    switch (message.type) {
+      case MessageType.intent:
+        await _handleIntentMessage(message);
+        break;
+        
+      case MessageType.command:
+        await _handleCommandMessage(message);
+        break;
+        
+      case MessageType.config:
+        await _handleConfigMessage(message);
+        break;
+        
+      case MessageType.wakeword:
+        await _handleWakewordMessage(message);
+        break;
+        
+      default:
+        logger.warning('ForegroundTask: Unhandled message type: ${message.type.name}');
+    }
+  }
+  
+  Future<void> _handleIntentMessage(IsolateMessage message) async {
+    final intent = message.data['intent'] as String?;
+    if (intent == null) return;
+    
+    final slots = message.data['slots'] as Map<String, dynamic>? ?? {};
+    final source = message.source == MessageSource.speech
+        ? IntentSource.speech
+        : IntentSource.ui;
+    
+    final result = await _intentHandler?.handleIntent(
+      intent: intent,
+      slots: slots,
+      source: source,
+    );
+    
+    if (result != null) {
+      _sendMessage(IsolateMessage.intentResult(result));
+    }
+  }
+  
+  Future<void> _handleCommandMessage(IsolateMessage message) async {
+    final command = message.data['command'] as String?;
+    if (command == null) return;
+    
+    switch (command) {
+      case 'startListening':
+        _sendMessage(IsolateMessage.status('listening'));
+        FlutterForegroundTask.updateService(
+          notificationText: 'Listening...',
+          notificationButtons: [
+            const NotificationButton(id: 'stop', text: 'Stop'),
+          ],
+        );
+        await startListening();
+        break;
+        
+      case 'stopListening':
+        FlutterForegroundTask.updateService(
+          notificationText: 'Stopped',
+          notificationButtons: [
+            const NotificationButton(id: 'start', text: 'Start'),
+          ],
+        );
+        await stopListening();
+        break;
+        
+      case 'stopSpeaking':
+        await stopSpeaking();
+        break;
+        
+      default:
+        logger.warning('ForegroundTask: Unknown command: $command');
+    }
+  }
+  
+  Future<void> _handleConfigMessage(IsolateMessage message) async {
+    final config = AppConfigController.fromJson(message.data['config']);
+    SpeechToTextService().setConfig(config);
+    TextToSpeechService().setConfig(config);
+    LocalLLMService().setConfig(config);
+    _sendMessage(IsolateMessage.status('config_set'));
+  }
+  
+  Future<void> _handleWakewordMessage(IsolateMessage message) async {
+    logger.info('ForegroundTask: Wakeword detected from main isolate');
+    if (state == VoiceState.idle) {
+      await startListening();
     }
   }
 
   Future<void> initialize() async {
     try {
       state = VoiceState.uninitialized;
-      FlutterForegroundTask.sendDataToMain({'state': state.name});
+      _sendMessage(IsolateMessage.voiceState(state.name));
 
       await PermissionUtils.checkMicrophone();
       state = VoiceState.needsPermission;
-      FlutterForegroundTask.sendDataToMain({'state': state.name});
+      _sendMessage(IsolateMessage.voiceState(state.name));
 
       await _sttService.initialize();
       await _ttsService.initialize();
-      // await _gptService.initialize();
 
       _isInitialized = true;
       logger.info('VoiceForegroundTaskHandler initialized successfully');
       state = VoiceState.idle;
-      FlutterForegroundTask.sendDataToMain({'state': state.name});
+      _sendMessage(IsolateMessage.voiceState(state.name));
     } catch (e) {
       logger.error('Failed to initialize VoiceForegroundTaskHandler', e);
       state = VoiceState.error;
-      FlutterForegroundTask.sendDataToMain({'state': state.name, 'error': e.toString()});
+      _sendMessage(IsolateMessage.voiceState(state.name, error: e.toString()));
       rethrow;
     }
   }
@@ -182,44 +216,48 @@ class VoiceForegroundTaskHandler extends TaskHandler {
       if (text.isNotEmpty) {
         try {
           recognizedText = text;
-          FlutterForegroundTask.sendDataToMain({'recognizedText': text});
+          _sendMessage(IsolateMessage.recognizedText(text));
 
-          // STT đã dừng (tự động sau khi nhận kết quả cuối), gửi micStopped về main
-          FlutterForegroundTask.sendDataToMain({'micLifecycle': 'stopped'});
+          // STT finished, mic stopped
+          _sendMessage(IsolateMessage.micLifecycle('stopped'));
           logger.info('ForegroundTask: STT finished, sent micStopped to main isolate');
 
           state = VoiceState.processing;
-          FlutterForegroundTask.sendDataToMain({'state': state.name});
+          _sendMessage(IsolateMessage.voiceState(state.name));
           logger.info('Processing speech input: $text');
 
-          // Phân tích intent bằng LLM
+          // Classify intent using LLM
           final response = await _intentClassifier.classify(text);
           logger.success('LLM intent result: $response');
 
-          // Xử lý intent trực tiếp bằng intent system (không dùng isolate nữa)
-          if (_intentSystem != null && response['intent'] != null) {
-            _intentSystem!
-                .triggerIntent(
-              response['intent'] as String,
+          // Process intent with unified handler (speech source)
+          String textToSpeak = response['intent'];
+          if (_intentHandler != null && response['intent'] != null) {
+            final result = await _intentHandler!.handleIntent(
+              intent: response['intent'] as String,
               slots: response['slots'] is Map ? Map<String, dynamic>.from(response['slots']) : {},
-            )
-                .then((event) {
-              // Emit event về main isolate nếu cần
-              FlutterForegroundTask.sendDataToMain({'voiceAction': event.toJson()});
-            });
+              source: IntentSource.speech,
+            );
+            
+            // Send result back to main isolate
+            _sendMessage(IsolateMessage.intentResult(result));
+            
+            // Use TTS text if available, otherwise use intent name
+            if (result['action'] == 'speak' && result['text'] != null) {
+              textToSpeak = result['text'];
+            }
           }
-          FlutterForegroundTask.sendDataToMain({'gptResponse': response['intent']});
-
+          
           state = VoiceState.speaking;
-          FlutterForegroundTask.sendDataToMain({'state': state.name});
-          await _ttsService.speak(response['intent']);
+          _sendMessage(IsolateMessage.voiceState(state.name));
+          await _ttsService.speak(textToSpeak);
 
           state = VoiceState.idle;
-          FlutterForegroundTask.sendDataToMain({'state': state.name});
+          _sendMessage(IsolateMessage.voiceState(state.name));
         } catch (e) {
           logger.error('Error processing voice input', e);
           state = VoiceState.error;
-          FlutterForegroundTask.sendDataToMain({'state': state.name, 'error': e.toString()});
+          _sendMessage(IsolateMessage.voiceState(state.name, error: e.toString()));
         }
       }
     });
@@ -228,7 +266,7 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   void _setupRmsListener() {
     _sttService.onRmsChanged.listen((level) {
       rmsDB = level;
-      FlutterForegroundTask.sendDataToMain({'rmsDB': level});
+      _sendMessage(IsolateMessage.rmsLevel(level));
     });
   }
 
@@ -240,22 +278,22 @@ class VoiceForegroundTaskHandler extends TaskHandler {
       final hasPermission = await PermissionUtils.checkMicrophone();
       if (!hasPermission) {
         state = VoiceState.needsPermission;
-        FlutterForegroundTask.sendDataToMain({'state': state.name});
+        _sendMessage(IsolateMessage.voiceState(state.name));
         return;
       }
 
-      // Gửi micStarted về main isolate để pause wakeword
-      FlutterForegroundTask.sendDataToMain({'micLifecycle': 'started'});
+      // Send micStarted to pause wakeword
+      _sendMessage(IsolateMessage.micLifecycle('started'));
       logger.info('ForegroundTask: Sent micStarted to main isolate');
 
       await _sttService.startListening();
       state = VoiceState.listening;
-      FlutterForegroundTask.sendDataToMain({'state': state.name});
+      _sendMessage(IsolateMessage.voiceState(state.name));
       logger.info('VoiceForegroundTaskHandler: Started listening');
     } catch (e) {
       logger.error('Error starting voice listening', e);
       state = VoiceState.error;
-      FlutterForegroundTask.sendDataToMain({'state': state.name, 'error': e.toString()});
+      _sendMessage(IsolateMessage.voiceState(state.name, error: e.toString()));
       rethrow;
     }
   }
@@ -264,19 +302,19 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     try {
       await _sttService.stopListening();
 
-      // Gửi micStopped về main isolate để resume wakeword
-      FlutterForegroundTask.sendDataToMain({'micLifecycle': 'stopped'});
+      // Send micStopped to resume wakeword
+      _sendMessage(IsolateMessage.micLifecycle('stopped'));
       logger.info('ForegroundTask: Sent micStopped to main isolate');
 
       state = VoiceState.idle;
-      FlutterForegroundTask.sendDataToMain({'state': state.name});
+      _sendMessage(IsolateMessage.voiceState(state.name));
       logger.info('VoiceForegroundTaskHandler: Stopped listening');
     } catch (e) {
       logger.error('Error stopping voice listening', e);
-      // Vẫn gửi micStopped để đảm bảo wakeword resume
-      FlutterForegroundTask.sendDataToMain({'micLifecycle': 'stopped'});
+      // Still send micStopped to ensure wakeword resumes
+      _sendMessage(IsolateMessage.micLifecycle('stopped'));
       state = VoiceState.error;
-      FlutterForegroundTask.sendDataToMain({'state': state.name, 'error': e.toString()});
+      _sendMessage(IsolateMessage.voiceState(state.name, error: e.toString()));
       rethrow;
     }
   }
@@ -285,12 +323,12 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     try {
       await _ttsService.stop();
       state = VoiceState.idle;
-      FlutterForegroundTask.sendDataToMain({'state': state.name});
+      _sendMessage(IsolateMessage.voiceState(state.name));
       logger.info('Stopped speaking');
     } catch (e) {
       logger.error('Error stopping speech', e);
       state = VoiceState.error;
-      FlutterForegroundTask.sendDataToMain({'state': state.name, 'error': e.toString()});
+      _sendMessage(IsolateMessage.voiceState(state.name, error: e.toString()));
       rethrow;
     }
   }
@@ -300,7 +338,7 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     await stopListening();
     await stopSpeaking();
     _wakewordSub?.cancel();
-    FlutterForegroundTask.sendDataToMain({'status': 'destroyed'});
+    _sendMessage(IsolateMessage.status('destroyed'));
     logger.info('ForegroundTask: Destroyed and cleaned up');
   }
 }

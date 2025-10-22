@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:chicki_buddy/core/isolate_message.dart';
 import 'package:chicki_buddy/services/sherpa-onnx/index.dart';
 import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:get/get.dart';
@@ -107,7 +108,8 @@ class VoiceController extends GetxController {
 
       _taskDataCallback = (data) {
         if (data is Map && _useForegroundService) {
-          _handleForegroundData(data);
+          final message = IsolateMessage.fromMap(data as Map<String, dynamic>);
+          _handleForegroundMessage(message);
         }
       };
       FlutterForegroundTask.addTaskDataCallback(_taskDataCallback!);
@@ -124,9 +126,8 @@ class VoiceController extends GetxController {
         callback: startVoiceForegroundTask,
       );
 
-      FlutterForegroundTask.sendDataToTask({
-        'config': appConfig.toJson(),
-      });
+      final configMessage = IsolateMessage.config(appConfig.toJson());
+      FlutterForegroundTask.sendDataToTask(configMessage.toMap());
 
       _useForegroundService = true;
       logger.info('Foreground service started (foreground-only mode)');
@@ -179,39 +180,78 @@ class VoiceController extends GetxController {
     }
   }
 
-  void _handleForegroundData(Map data) {
-    // Wakeword, mic lifecycle, state, recognizedText, gptResponse, rmsDB
-    if (data['wakewordDetected'] == true) {
-      logger.info('VoiceController: Wakeword detected from foreground task');
+  void _handleForegroundMessage(IsolateMessage message) {
+    logger.info('VoiceController: Received message: ${message.type.name}');
+    
+    switch (message.type) {
+      case MessageType.voiceState:
+        _handleVoiceStateMessage(message);
+        break;
+        
+      case MessageType.micLifecycle:
+        _handleMicLifecycleMessage(message);
+        break;
+        
+      case MessageType.recognizedText:
+        recognizedText.value = message.data['text'] as String;
+        break;
+        
+      case MessageType.rmsLevel:
+        rmsDB.value = (message.data['level'] as num).toDouble();
+        break;
+        
+      case MessageType.intentResult:
+        _handleIntentResultMessage(message);
+        break;
+        
+      case MessageType.wakeword:
+        logger.info('VoiceController: Wakeword detected from foreground task');
+        break;
+        
+      case MessageType.status:
+        logger.info('VoiceController: Status update: ${message.data['status']}');
+        break;
+        
+      default:
+        logger.info('VoiceController: Unhandled message type: ${message.type.name}');
     }
-    if (data['micLifecycle'] != null) {
-      final lifecycle = data['micLifecycle'] as String;
-      logger.info('VoiceController: Received micLifecycle from foreground: $lifecycle');
-      if (lifecycle == 'started') {
-        eventBus.emit(AppEvent(AppEventType.micStarted, null));
-      } else if (lifecycle == 'stopped') {
-        eventBus.emit(AppEvent(AppEventType.micStopped, null));
-      }
+  }
+  
+  void _handleVoiceStateMessage(IsolateMessage message) {
+    final stateName = message.data['state'] as String;
+    state.value = VoiceState.values.firstWhere(
+      (e) => e.name == stateName,
+      orElse: () => VoiceState.idle,
+    );
+    
+    if (message.data['error'] != null) {
+      logger.error('Voice state error: ${message.data['error']}');
     }
-    if (data['state'] != null) {
-      final stateName = data['state'] as String;
-      state.value = VoiceState.values.firstWhere(
-        (e) => e.name == stateName,
-        orElse: () => VoiceState.idle,
-      );
+  }
+  
+  void _handleMicLifecycleMessage(IsolateMessage message) {
+    final lifecycle = message.data['lifecycle'] as String;
+    logger.info('VoiceController: Mic lifecycle: $lifecycle');
+    
+    if (lifecycle == 'started') {
+      eventBus.emit(AppEvent(AppEventType.micStarted, null));
+    } else if (lifecycle == 'stopped') {
+      eventBus.emit(AppEvent(AppEventType.micStopped, null));
     }
-    if (data['recognizedText'] != null) {
-      recognizedText.value = data['recognizedText'] as String;
+  }
+  
+  void _handleIntentResultMessage(IsolateMessage message) {
+    final result = message.data;
+    logger.info('VoiceController: Intent result: ${result['action']}');
+    
+    // Emit event for UI to handle
+    if (result['requiresUI'] == true) {
+      eventBus.emit(AppEvent(AppEventType.voiceAction, result));
     }
-    if (data['gptResponse'] != null) {
-      gptResponse.value = data['gptResponse'] as String;
-    }
-    if (data['rmsDB'] != null) {
-      rmsDB.value = (data['rmsDB'] as num).toDouble();
-    }
-    // Nhận kết quả từ bridge service (ví dụ: loadAllBooks)
-    if (data['bridge'] == 'book' && data['action'] == 'listBook' && data['result'] != null) {
-      eventBus.emit(AppEvent(AppEventType.bookBridgeResult, jsonDecode(data['result'])));
+    
+    // Update gptResponse if there's text to speak
+    if (result['action'] == 'speak' && result['text'] != null) {
+      gptResponse.value = result['text'] as String;
     }
   }
 
@@ -219,19 +259,22 @@ class VoiceController extends GetxController {
   Future<void> startListening() async {
     if (_useForegroundService) {
       logger.info('startListening to foreground service');
-      FlutterForegroundTask.sendDataToTask({'command': 'startListening'});
+      final message = IsolateMessage.command('startListening');
+      FlutterForegroundTask.sendDataToTask(message.toMap());
     }
   }
 
   Future<void> stopListening() async {
     if (_useForegroundService) {
-      FlutterForegroundTask.sendDataToTask({'command': 'stopListening'});
+      final message = IsolateMessage.command('stopListening');
+      FlutterForegroundTask.sendDataToTask(message.toMap());
     }
   }
 
   Future<void> stopSpeaking() async {
     if (_useForegroundService) {
-      FlutterForegroundTask.sendDataToTask({'command': 'stopSpeaking'});
+      final message = IsolateMessage.command('stopSpeaking');
+      FlutterForegroundTask.sendDataToTask(message.toMap());
     }
   }
 }

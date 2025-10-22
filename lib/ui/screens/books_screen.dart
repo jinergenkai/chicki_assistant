@@ -33,17 +33,51 @@ class _BooksScreenState extends State<BooksScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen for voice action events (e.g. selectBook intent)
-    _voiceActionSub = eventBus.stream.where((e) => e.type == AppEventType.voiceAction).listen((event) {
-      final action = event.payload;
-      if (action is VoiceActionEvent && action.action == 'selectBook' && action.data['bookId'] != null) {
-        final bookId = action.data['bookId'];
-        final book = controller.books.firstWhereOrNull((b) => b.id == bookId);
-        if (book != null) {
-          openBook(book);
-        }
-      }
+    // Listen for voice action events from unified intent handler
+    _voiceActionSub = eventBus.stream
+        .where((e) => e.type == AppEventType.voiceAction)
+        .listen((event) {
+      final action = event.payload as Map<String, dynamic>;
+      _handleVoiceAction(action);
     });
+  }
+
+  void _handleVoiceAction(Map<String, dynamic> action) {
+    final actionType = action['action'] as String?;
+    final data = action['data'] as Map<String, dynamic>?;
+    
+    switch (actionType) {
+      case 'navigateToBook':
+        // Handle book navigation from speech or UI intent
+        if (data != null) {
+          final bookId = data['bookId'] as String?;
+          final bookName = data['bookName'] as String?;
+          
+          // Find book by ID or name
+          Book? book;
+          if (bookId != null) {
+            book = controller.books.firstWhereOrNull((b) => b.id == bookId);
+          } else if (bookName != null) {
+            book = controller.books.firstWhereOrNull(
+              (b) => b.title.toLowerCase().contains(bookName.toLowerCase())
+            );
+          }
+          
+          if (book != null) {
+            openBook(book);
+          }
+        }
+        break;
+        
+      case 'listBook':
+        // Books list is already updated by controller
+        // UI will automatically refresh via Obx
+        break;
+        
+      default:
+        // Ignore other actions
+        break;
+    }
   }
 
   @override
@@ -102,14 +136,21 @@ class _BooksScreenState extends State<BooksScreen> {
                         alignment: Alignment.bottomLeft,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                          child: Text(
-                            'Bookstore',
-                            style: TextStyle(
-                              fontSize: 36 * percent.clamp(0.7, 1.0),
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              shadows: const [Shadow(blurRadius: 12, color: Colors.black26)],
-                            ),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Bookstore',
+                                style: TextStyle(
+                                  fontSize: 36 * percent.clamp(0.7, 1.0),
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: const [Shadow(blurRadius: 12, color: Colors.black26)],
+                                ),
+                              ),
+                              IconButton(onPressed: () => {
+                                controller.reloadBooks()
+                              }, icon: const Icon(Icons.refresh, color: Colors.white,))
+                            ],
                           ),
                         ),
                       ),
@@ -130,10 +171,18 @@ class _BooksScreenState extends State<BooksScreen> {
                 padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 0),
                 child: Scrollbar(
                   // thumbVisibility: true,
-                  child: Obx(() => GridView.builder(
+                  child: Obx(() {
+                    // Show loading indicator while fetching books
+                    if (controller.isLoading.value && controller.books.isEmpty) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                    
+                    return GridView.builder(
                         shrinkWrap: true,
-                        // physics: const AlwaysScrollableScrollPhysics(),
-                        physics: const NeverScrollableScrollPhysics(),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        // physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 16,
@@ -164,7 +213,8 @@ class _BooksScreenState extends State<BooksScreen> {
                             ),
                           );
                         },
-                      )),
+                      );
+                  }),
                 ),
               ),
             ),

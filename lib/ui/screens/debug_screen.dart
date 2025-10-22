@@ -1,3 +1,4 @@
+import 'package:chicki_buddy/ui/screens/books_screen.dart';
 import 'package:chicki_buddy/ui/screens/test_screen/workflow_graph.screen.dart';
 import 'package:chicki_buddy/ui/widgets/moon_icon_button.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +33,10 @@ class DebugScreen extends StatelessWidget {
     _DebugItem(
       title: 'Workflow',
       screen: WorkflowGraphView(),
+    ),
+        _DebugItem(
+      title: 'Book screen',
+      screen: BooksScreen(),
     ),
   ];
 
