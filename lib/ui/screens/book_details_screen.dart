@@ -5,7 +5,6 @@ import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:chicki_buddy/ui/screens/flash_card.screen.dart';
 import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
 import 'package:chicki_buddy/utils/gradient.dart';
-import 'package:chicki_buddy/voice/models/voice_action_event.dart';
 import 'package:flutter/material.dart';
 import '../../models/book.dart';
 import '../../models/topic.dart';
@@ -33,10 +32,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   void initState() {
     super.initState();
     _voiceActionSub = eventBus.stream.where((e) => e.type == AppEventType.voiceAction).listen((event) {
-      final action = event.payload;
-      if (action is VoiceActionEvent && action.action == 'selectTopic' && action.data['topicId'] != null) {
-        openTopic(action.data['topicId']);
-      }
     });
   }
 

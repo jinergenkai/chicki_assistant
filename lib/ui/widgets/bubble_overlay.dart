@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
 import 'package:chicki_buddy/core/logger.dart';
 import '../../core/app_event_bus.dart';
-import '../../voice/simulator/intent_simulator.dart';
 // import 'chicky/chicky_rive.dart';
 
 class BubbleOverlay extends StatefulWidget {

@@ -6,7 +6,6 @@ import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:chicki_buddy/models/book.dart';
 import 'package:chicki_buddy/ui/screens/book_details_screen.dart';
 import 'package:chicki_buddy/ui/widgets/book_card.dart';
-import 'package:chicki_buddy/voice/models/voice_action_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';

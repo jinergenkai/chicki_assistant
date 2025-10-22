@@ -1,7 +1,7 @@
 import 'package:chicki_buddy/ui/screens/assistant_settings_screen.dart';
 import 'package:chicki_buddy/ui/screens/books_screen.dart';
 import 'package:chicki_buddy/ui/screens/chicky_screen.dart';
-import 'package:chicki_buddy/ui/screens/intent_test_screen.dart';
+import 'package:chicki_buddy/ui/screens/debug_screen.dart';
 import 'package:chicki_buddy/ui/screens/user_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
@@ -20,8 +20,8 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = const [
     ChickyScreen(),           
-    IntentTestScreen(),
     // AssistantSettingsScreen(), 
+    DebugScreen(),
     BooksScreen(),
     UserScreen(),
   ];
