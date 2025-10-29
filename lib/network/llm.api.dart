@@ -15,6 +15,7 @@ class LlmApi {
   /// Gọi API chat completions tới OpenAI local
   Future<String> chat({
     required String prompt,
+    String? systemPrompt,
     String? model,
     List<Map<String, String>>? history,
     String? bearerToken,
@@ -25,7 +26,7 @@ class LlmApi {
       final data = {
         "model": model ?? 'gpt-3.5-turbo',
         "messages": [
-          {"role": "system", "content": "act like teacher, friend of user, answer short"},
+          {"role": "system", "content": systemPrompt ?? "act like teacher, friend of user, answer short"},
           // if (history != null) ...history,
           {"role": "user", "content": prompt}
         ]

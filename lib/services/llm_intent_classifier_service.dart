@@ -18,7 +18,7 @@ class LLMIntentClassifierService extends IntentClassifierService {
   @override
   Future<Map<String, dynamic>> classify(String text) async {
     final prompt = _buildPrompt(text);
-    final response = await _llmApi.chat(prompt: prompt);
+    final response = await _llmApi.chat(systemPrompt: prompt, prompt: text);
 
     // Parse response dạng JSON
     try {
@@ -50,20 +50,18 @@ class LLMIntentClassifierService extends IntentClassifierService {
   String _buildPrompt(String text) {
     // Prompt chuẩn cho LLM intent classification
     return '''
-Bạn là hệ thống phân tích ý định người dùng. Dưới đây là các intent hợp lệ:
-- listBook: liệt kê danh sách sách
-- selectBook: chọn sách, slot: bookName
-- listTopic: liệt kê chủ đề
-- selectTopic: chọn chủ đề, slot: topicName
-- startConversation: bắt đầu hội thoại
+You are an intent analysis system. The following are the valid intents:
+- listBook: list available books
+- selectBook: select a specific book, slot: bookName
+- listTopic: list available topics
+- selectTopic: select a specific topic, slot: topicName
+- startConversation: start a conversation
 
-Yêu cầu: Phân tích câu sau và trả về kết quả dạng JSON với intent và slots (nếu có).
-Ví dụ:
-Input: "Tôi muốn đọc sách Harry Potter"
+Task: Analyze the following sentence and return the result in JSON format, including the intent and any relevant slots (if applicable).
+
+Example:
+Input: "I want to read Harry Potter"
 Output: {"intent": "selectBook", "slots": {"bookName": "Harry Potter"}}
-
-Input: "$text"
-Output:
 ''';
   }
 }

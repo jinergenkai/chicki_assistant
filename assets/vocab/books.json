@@ -9,6 +9,7 @@
     "data": {
       "vocabList": [
         {
+          "id": "1",
           "word": "hello",
           "originLanguage": "en",
           "targetLanguage": "vi",
@@ -20,6 +21,7 @@
           "topic": "Greetings"
         },
         {
+          "id": "2",
           "word": "goodbye",
           "originLanguage": "en",
           "targetLanguage": "vi",
@@ -43,22 +45,24 @@
     "data": {
       "vocabList": [
         {
-          "word": "hello",
+          "id": "1",
+          "word": "simutaniously",
           "originLanguage": "en",
           "targetLanguage": "vi",
-          "meaning": "xin chào",
-          "example": "Hello, how are you?",
+          "meaning": "đồng thời",
+          "example": "She can do multiple tasks simultaneously.",
           "audioUrl": null,
           "createdAt": "2025-10-01T10:00:00Z",
           "updatedAt": "2025-10-01T10:00:00Z",
           "topic": "Greetings"
         },
         {
-          "word": "goodbye",
+          "id": "2",
+          "word": "meticulous",
           "originLanguage": "en",
           "targetLanguage": "vi",
-          "meaning": "tạm biệt",
-          "example": "Goodbye! See you soon.",
+          "meaning": "tỉ mỉ",
+          "example": "He is meticulous in his work.",
           "audioUrl": null,
           "createdAt": "2025-10-01T10:01:00Z",
           "updatedAt": "2025-10-01T10:01:00Z",

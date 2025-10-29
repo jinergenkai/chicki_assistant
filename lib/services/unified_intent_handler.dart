@@ -132,7 +132,7 @@ class UnifiedIntentHandler {
       };
     } else {
       return {
-        'action': 'navigateToBook',
+        'action': 'selectBook',
         'data': {'bookId': bookName, 'bookName': bookName},
         'requiresUI': true,
       };

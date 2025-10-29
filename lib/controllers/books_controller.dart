@@ -57,8 +57,8 @@ class BooksController extends GetxController {
         _handleListBookAction(data);
         break;
         
-      case 'navigateToBook':
-        _handleNavigateToBookAction(data);
+      case 'selectBook':
+        _handleSelectBookAction(data);
         break;
         
       default:
@@ -77,7 +77,7 @@ class BooksController extends GetxController {
     }
   }
 
-  void _handleNavigateToBookAction(Map<String, dynamic>? data) {
+  void _handleSelectBookAction(Map<String, dynamic>? data) {
     if (data != null) {
       final bookId = data['bookId'] as String?;
       final bookName = data['bookName'] as String?;

@@ -29,4 +29,18 @@ class AppConstants {
   static const Color backgroundColor = Color.fromARGB(255, 221, 230, 238); // light grey bg
   // static const Color backgroundColor = Color.fromARGB(255, 214, 222, 230); // light grey bg
 
+
+  static const String promptTemplate = '''
+Bạn là hệ thống phân tích ý định người dùng. Dưới đây là các intent hợp lệ:
+- listBook: liệt kê danh sách sách
+- selectBook: chọn sách, slot: bookName
+- listTopic: liệt kê chủ đề
+- selectTopic: chọn chủ đề, slot: topicName
+- startConversation: bắt đầu hội thoại
+
+Yêu cầu: Phân tích câu sau và trả về kết quả dạng JSON với intent và slots (nếu có).
+Ví dụ:
+Input: "Tôi muốn đọc sách Harry Potter"
+Output: {"intent": "selectBook", "slots": {"bookName": "Harry Potter"}}
+''';
 }

@@ -86,7 +86,7 @@ void main() {
         source: IntentSource.ui,
       );
 
-      expect(result['action'], equals('navigateToBook'));
+      expect(result['action'], equals('selectBook'));
       expect(result['data']['bookName'], equals('Test Book'));
       expect(handler.currentBookId, isNotNull);
     });

@@ -74,7 +74,7 @@ class UnifiedIntentUsageExample extends GetxController {
         }
         break;
         
-      case 'navigateToBook':
+      case 'selectBook':
         if (requiresUI && data != null) {
           final bookId = data['bookId'] as String?;
           final bookName = data['bookName'] as String?;

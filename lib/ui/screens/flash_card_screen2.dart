@@ -12,6 +12,7 @@ import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_action_buttons.dar
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_progress_indicator.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_front_side.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_back_side.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 
 class FlashCardScreen2 extends StatefulWidget {
@@ -43,6 +44,7 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   @override
   void initState() {
     super.initState();
+    timeDilation = 1.0;
     _swipeController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -135,41 +137,32 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   }
 
   void _flipCard() {
-    if (_flipController.isAnimating) return;
-    if (_isFlipped) {
-      _flipController.reverse();
-    } else {
-      _flipController.forward();
-    }
+    _flipController.value = _isFlipped ? 0 : 1;
     setState(() {
       _isFlipped = !_isFlipped;
     });
   }
 
   Widget _buildCard(Vocabulary vocab, int index, {bool isTop = true}) {
+    // Only top card responds to flip/drag
     return AnimatedBuilder(
-      animation: _flipController,
+      animation: _stackController,
       builder: (context, child) {
-        return AnimatedBuilder(
-          animation: _stackController,
-          builder: (context, child) {
-            double scale = isTop ? 1.0 : _scaleAnimation.value;
-            double opacity = isTop ? 1.0 : 0.7;
-            return Transform.scale(
-              scale: scale,
-              child: FlashCard(
-                vocab: vocab,
-                flipValue: _flipAnimation.value,
-                onTap: _flipCard,
-                onPanUpdate: isTop ? _handlePanUpdate : null,
-                onPanEnd: isTop ? _handlePanEnd : null,
-                swipeOffset: isTop ? _swipeOffset : Offset.zero,
-                swipeRotation: isTop ? _swipeRotation : 0,
-                frontSide: FlashCardFrontSide(vocab: vocab),
-                backSide: FlashCardBackSide(vocab: vocab),
-              ),
-            );
-          },
+        double scale = isTop ? 1.0 : _scaleAnimation.value;
+        double opacity = isTop ? 1.0 : 0.7;
+        return Transform.scale(
+          scale: scale,
+          child: FlashCard(
+            vocab: vocab,
+            flipValue: isTop ? _flipAnimation.value : 0, // Only top card flips
+            onTap: isTop ? _flipCard : () {},
+            onPanUpdate: isTop ? _handlePanUpdate : null,
+            onPanEnd: isTop ? _handlePanEnd : null,
+            swipeOffset: isTop ? _swipeOffset : Offset.zero,
+            swipeRotation: isTop ? _swipeRotation : 0,
+            frontSide: FlashCardFrontSide(vocab: vocab),
+            backSide: FlashCardBackSide(vocab: vocab),
+          ),
         );
       },
     );
@@ -226,106 +219,62 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      // appBar: AppBar(
-      //   title: Hero(
-      //     tag: 'book_${book.id}',
-      //     child: Text(
-      //       book.title,
-      //       style: const TextStyle(fontWeight: FontWeight.bold),
-      //     ),
-      //   ),
-      //   leading: IconButton(
-      //     icon: const Icon(Icons.arrow_back),
-      //     onPressed: () => clickExit(),
-      //   ),
-      //   backgroundColor: Colors.transparent,
-      //   elevation: 0,
-      //   centerTitle: true,
-      // ),
-            body: Column(
-        children: [
-          Stack(
-            children: [
-              Hero(
-                tag: 'book_${book.id}',
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
+      appBar: AppBar(
+        foregroundColor: Colors.black,
+        title: Hero(
+          tag: 'book_${book.id}',
+          child: SizedBox(
+            // color: Colors.black.withOpacity(0.1),
+            width: double.infinity,
+            child: Text(
+              book.title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: RandomGradient(
-                    book.id,
-                    seed: "bookCardGradient",
-                    child: Container(
-                      margin: const EdgeInsets.only(top: 48, left: 24, right: 24),
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        color: Colors.black.withOpacity(0.1),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(book.title,
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              )),
-                          const SizedBox(height: 8),
-                          AutoSizeText(book.description,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                          softWrap: true,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.white70,
-                              )),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 56,
-                left: 16,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-                  onPressed: () => clickExit(),
-                  tooltip: 'Back',
-                ),
-              ),
-            ],
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
+          // Text(
+          //   book.title,
+          //   style: const TextStyle(fontWeight: FontWeight.bold),
+          // ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => clickExit(),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
           const SizedBox(height: 12),
           Expanded(
             child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-              ),
-              child:
-              SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            _buildProgressIndicator(),
-            const SizedBox(height: 40),
-            Expanded(
-              child: Center(
-                child: _buildCardStack(),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: _buildActionButtons(),
-            ),
-          ],
-        ),
-      )
-            ),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                ),
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      _buildProgressIndicator(),
+                      const SizedBox(height: 20),
+                      Expanded(
+                        child: Center(
+                          child: _buildCardStack(),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: _buildActionButtons(),
+                      ),
+                    ],
+                  ),
+                )),
           ),
         ],
       ),
