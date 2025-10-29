@@ -13,6 +13,9 @@ class BooksController extends GetxController {
   final RxString downloadingBookId = ''.obs;
   final RxDouble downloadProgress = 0.0.obs;
   final RxBool isLoading = false.obs;
+  
+  // New: Observable for navigation requests from voice/UI intents
+  final Rx<Book?> bookToNavigate = Rx<Book?>(null);
 
   final BookService service = BookService();
   final BookBridgeService bookBridgeService = BookBridgeService();
@@ -34,6 +37,7 @@ class BooksController extends GetxController {
 
   void _setupEventListeners() {
     // Listen for voice action results from unified intent handler
+    // ALL voice/intent logic centralized here
     _voiceActionSub = eventBus.stream
         .where((event) => event.type == AppEventType.voiceAction)
         .listen((event) {
@@ -50,23 +54,51 @@ class BooksController extends GetxController {
     
     switch (actionType) {
       case 'listBook':
-        if (data != null && data['books'] != null) {
-          final booksList = (data['books'] as List)
-              .map((b) => Book.fromJson(b as Map<String, dynamic>))
-              .toList();
-          books.value = booksList;
-          isLoading.value = false;
-          logger.info('BooksController: Updated books list with ${booksList.length} books');
-        }
+        _handleListBookAction(data);
         break;
         
       case 'navigateToBook':
-        // This will be handled by BooksScreen to navigate
-        logger.info('BooksController: Navigate to book action received');
+        _handleNavigateToBookAction(data);
         break;
         
       default:
         logger.info('BooksController: Unhandled action: $actionType');
+    }
+  }
+
+  void _handleListBookAction(Map<String, dynamic>? data) {
+    if (data != null && data['books'] != null) {
+      final booksList = (data['books'] as List)
+          .map((b) => Book.fromJson(b as Map<String, dynamic>))
+          .toList();
+      books.value = booksList;
+      isLoading.value = false;
+      logger.info('BooksController: Updated books list with ${booksList.length} books');
+    }
+  }
+
+  void _handleNavigateToBookAction(Map<String, dynamic>? data) {
+    if (data != null) {
+      final bookId = data['bookId'] as String?;
+      final bookName = data['bookName'] as String?;
+      
+      // Find book by ID or name
+      Book? foundBook;
+      if (bookId != null) {
+        foundBook = books.firstWhereOrNull((b) => b.id == bookId);
+      } else if (bookName != null) {
+        foundBook = books.firstWhereOrNull(
+          (b) => b.title.toLowerCase().contains(bookName.toLowerCase())
+        );
+      }
+      
+      if (foundBook != null) {
+        // Update observable - BooksScreen will listen and handle navigation
+        bookToNavigate.value = foundBook;
+        logger.info('BooksController: Setting book to navigate: ${foundBook.title}');
+      } else {
+        logger.warning('BooksController: Book not found for navigation');
+      }
     }
   }
 
@@ -76,7 +108,7 @@ class BooksController extends GetxController {
     logger.info('BooksController: Requesting books via intent system');
     
     // Trigger intent in foreground isolate
-    await IntentBridgeService.triggerUIIntent(
+    IntentBridgeService.triggerUIIntent(
       intent: 'listBook',
     );
     

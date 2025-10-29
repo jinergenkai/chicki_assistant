@@ -1,3 +1,7 @@
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:chicki_buddy/models/book.dart';
+import 'package:chicki_buddy/services/intent_bridge_service.dart';
+import 'package:chicki_buddy/utils/gradient.dart';
 import 'package:flutter/material.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/services/vocabulary.service.dart';
@@ -8,9 +12,11 @@ import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_action_buttons.dar
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_progress_indicator.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_front_side.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_back_side.dart';
+import 'package:go_router/go_router.dart';
 
 class FlashCardScreen2 extends StatefulWidget {
-  const FlashCardScreen2({super.key});
+  final Book book;
+  const FlashCardScreen2({super.key, required this.book});
 
   @override
   State<FlashCardScreen2> createState() => _FlashCardScreen2State();
@@ -201,41 +207,107 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
     );
   }
 
+  // void triggerOpenBook(Book book) {
+  //   Navigator.of(context).push(MaterialPageRoute(
+  //     builder: (context) => FlashCardScreen2(book: book),
+  //   ));
+  // }
+
+  void clickExit() {
+    IntentBridgeService.triggerUIIntent(
+      intent: 'exit',
+    );
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (vocabList.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Flash Cards'),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-        floatingActionButton: AddVocabularyButton(
-          service: service,
-          onAdded: () {
-            setState(() {
-              vocabList = service.getAll();
-            });
-          },
-        ),
-      );
-    }
+    final book = widget.book;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text(
-          'Flash Cards',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: SafeArea(
+      // appBar: AppBar(
+      //   title: Hero(
+      //     tag: 'book_${book.id}',
+      //     child: Text(
+      //       book.title,
+      //       style: const TextStyle(fontWeight: FontWeight.bold),
+      //     ),
+      //   ),
+      //   leading: IconButton(
+      //     icon: const Icon(Icons.arrow_back),
+      //     onPressed: () => clickExit(),
+      //   ),
+      //   backgroundColor: Colors.transparent,
+      //   elevation: 0,
+      //   centerTitle: true,
+      // ),
+            body: Column(
+        children: [
+          Stack(
+            children: [
+              Hero(
+                tag: 'book_${book.id}',
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
+                  child: RandomGradient(
+                    book.id,
+                    seed: "bookCardGradient",
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 48, left: 24, right: 24),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        color: Colors.black.withOpacity(0.1),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(book.title,
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              )),
+                          const SizedBox(height: 8),
+                          AutoSizeText(book.description,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          softWrap: true,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white70,
+                              )),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 56,
+                left: 16,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                  onPressed: () => clickExit(),
+                  tooltip: 'Back',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              ),
+              child:
+              SafeArea(
         child: Column(
           children: [
             const SizedBox(height: 20),
@@ -252,6 +324,10 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
             ),
           ],
         ),
+      )
+            ),
+          ),
+        ],
       ),
       floatingActionButton: AddVocabularyButton(
         service: service,

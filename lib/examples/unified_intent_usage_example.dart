@@ -29,7 +29,7 @@ class UnifiedIntentUsageExample extends GetxController {
     
     // This will trigger the intent in foreground isolate
     // and return full data for UI display
-    await IntentBridgeService.triggerUIIntent(
+    IntentBridgeService.triggerUIIntent(
       intent: 'listBook',
     );
   }
@@ -38,7 +38,7 @@ class UnifiedIntentUsageExample extends GetxController {
   Future<void> onSelectBookButtonPressed(String bookName) async {
     logger.info('User clicked Select Book: $bookName');
     
-    await IntentBridgeService.triggerUIIntent(
+    IntentBridgeService.triggerUIIntent(
       intent: 'selectBook',
       slots: {'bookName': bookName},
     );

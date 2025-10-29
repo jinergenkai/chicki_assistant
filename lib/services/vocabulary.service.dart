@@ -10,9 +10,6 @@ class VocabularyService {
 
   /// Khởi tạo Hive box, gọi 1 lần khi app start
   Future<void> init() async {
-    await Hive.initFlutter();
-
-    Hive.registerAdapter(VocabularyAdapter());
     _box = await Hive.openBox<Vocabulary>(boxName);
   }
 

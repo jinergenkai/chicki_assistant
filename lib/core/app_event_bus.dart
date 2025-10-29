@@ -16,6 +16,9 @@ enum AppEventType {
 
   // Book bridge results
   bookBridgeResult,
+
+  // Intent state
+  intentState,
 }
 
 class AppEvent {

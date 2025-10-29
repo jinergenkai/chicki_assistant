@@ -158,7 +158,7 @@ void main() {
 
     test('should handle unknown intent gracefully', () async {
       final result = await handler.handleIntent(
-        intent: 'unknownIntent',
+        intent: 'unknown',
         source: IntentSource.speech,
       );
 

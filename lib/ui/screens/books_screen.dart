@@ -1,11 +1,13 @@
-// Modern Books Screen with Moon Design grid and download simulation
 
 import 'dart:async';
 
 import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:chicki_buddy/models/book.dart';
+import 'package:chicki_buddy/services/intent_bridge_service.dart';
 import 'package:chicki_buddy/ui/screens/book_details_screen.dart';
+import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
 import 'package:chicki_buddy/ui/widgets/book_card.dart';
+import 'package:chicki_buddy/ui/widgets/flash_card/flash_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
@@ -21,67 +23,41 @@ class BooksScreen extends StatefulWidget {
 
 class _BooksScreenState extends State<BooksScreen> {
   final controller = Get.put(BooksController());
-  StreamSubscription? _voiceActionSub;
+  StreamSubscription? _navigationSub;
 
-  void openBook(Book book) {
+  void triggerOpenBook(Book book) {
+    // Navigator.of(context).push(MaterialPageRoute(
+    //   builder: (context) => BookDetailsScreen(book: book),
+    // ));
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => BookDetailsScreen(book: book),
+      builder: (context) => FlashCardScreen2(book: book),
     ));
+  }
+
+  Future<void> clickOpenBook(Book book) async {
+    IntentBridgeService.triggerUIIntent(
+      intent: 'selectBook',
+      slots: {'bookName': book.id}
+    );
   }
 
   @override
   void initState() {
     super.initState();
-    // Listen for voice action events from unified intent handler
-    _voiceActionSub = eventBus.stream
-        .where((e) => e.type == AppEventType.voiceAction)
-        .listen((event) {
-      final action = event.payload as Map<String, dynamic>;
-      _handleVoiceAction(action);
+    // Listen for navigation requests from controller (voice/intent triggered)
+    // BooksScreen is ONLY responsible for UI navigation, not intent handling
+    _navigationSub = controller.bookToNavigate.listen((book) {
+      if (book != null) {
+        triggerOpenBook(book);
+        // Reset after navigation
+        controller.bookToNavigate.value = null;
+      }
     });
-  }
-
-  void _handleVoiceAction(Map<String, dynamic> action) {
-    final actionType = action['action'] as String?;
-    final data = action['data'] as Map<String, dynamic>?;
-    
-    switch (actionType) {
-      case 'navigateToBook':
-        // Handle book navigation from speech or UI intent
-        if (data != null) {
-          final bookId = data['bookId'] as String?;
-          final bookName = data['bookName'] as String?;
-          
-          // Find book by ID or name
-          Book? book;
-          if (bookId != null) {
-            book = controller.books.firstWhereOrNull((b) => b.id == bookId);
-          } else if (bookName != null) {
-            book = controller.books.firstWhereOrNull(
-              (b) => b.title.toLowerCase().contains(bookName.toLowerCase())
-            );
-          }
-          
-          if (book != null) {
-            openBook(book);
-          }
-        }
-        break;
-        
-      case 'listBook':
-        // Books list is already updated by controller
-        // UI will automatically refresh via Obx
-        break;
-        
-      default:
-        // Ignore other actions
-        break;
-    }
   }
 
   @override
   void dispose() {
-    _voiceActionSub?.cancel();
+    _navigationSub?.cancel();
     super.dispose();
   }
 
@@ -100,7 +76,6 @@ class _BooksScreenState extends State<BooksScreen> {
         ),
       ),
       child: Scaffold(
-        // backgroundColor: Colors.grey[100]?.withValues(alpha: 0.0),
         backgroundColor: Colors.transparent,
         body: CustomScrollView(
           slivers: [
@@ -146,9 +121,10 @@ class _BooksScreenState extends State<BooksScreen> {
                                   shadows: const [Shadow(blurRadius: 12, color: Colors.black26)],
                                 ),
                               ),
-                              IconButton(onPressed: () => {
-                                controller.reloadBooks()
-                              }, icon: const Icon(Icons.refresh, color: Colors.white,))
+                              IconButton(
+                                onPressed: () => controller.reloadBooks(),
+                                icon: const Icon(Icons.refresh, color: Colors.white),
+                              )
                             ],
                           ),
                         ),
@@ -162,14 +138,9 @@ class _BooksScreenState extends State<BooksScreen> {
               child: Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  // borderRadius: BorderRadius.only(
-                  //   topLeft: Radius.circular(32),
-                  //   topRight: Radius.circular(32),
-                  // ),
                 ),
                 padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 0),
                 child: Scrollbar(
-                  // thumbVisibility: true,
                   child: Obx(() {
                     // Show loading indicator while fetching books
                     if (controller.isLoading.value && controller.books.isEmpty) {
@@ -179,40 +150,39 @@ class _BooksScreenState extends State<BooksScreen> {
                     }
                     
                     return GridView.builder(
-                        shrinkWrap: true,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        // physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.8,
-                        ),
-                        itemCount: controller.books.length,
-                        itemBuilder: (context, index) {
-                          final book = controller.books[index];
-                          timeDilation = 4.0;
-                          return GestureDetector(
-                            onLongPress: () async {
-                              await controller.reloadBooks();
-                            },
-                            onTap: () => openBook(book),
-                            child: Hero(
-                              tag: 'book_${book.id}',
-                              child: Obx(() => BookCard(
-                                    id: book.id,
-                                    title: book.title,
-                                    desc: book.description,
-                                    isDownloaded: controller.downloadedBooks.contains(book.id),
-                                    isDownloading: controller.downloadingBookId.value == book.id,
-                                    progress: controller.downloadProgress.value,
-                                    onDownload: () => controller.downloadBook(book.id),
-                                    onRemove: () => controller.removeBook(book.id),
-                                  )),
-                            ),
-                          );
-                        },
-                      );
+                      shrinkWrap: true,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.8,
+                      ),
+                      itemCount: controller.books.length,
+                      itemBuilder: (context, index) {
+                        final book = controller.books[index];
+                        timeDilation = 4.0;
+                        return GestureDetector(
+                          onLongPress: () async {
+                            await controller.reloadBooks();
+                          },
+                          onTap: () => clickOpenBook(book),
+                          child: Hero(
+                            tag: 'book_${book.id}',
+                            child: Obx(() => BookCard(
+                              id: book.id,
+                              title: book.title,
+                              desc: book.description,
+                              isDownloaded: controller.downloadedBooks.contains(book.id),
+                              isDownloading: controller.downloadingBookId.value == book.id,
+                              progress: controller.downloadProgress.value,
+                              onDownload: () => controller.downloadBook(book.id),
+                              onRemove: () => controller.removeBook(book.id),
+                            )),
+                          ),
+                        );
+                      },
+                    );
                   }),
                 ),
               ),
@@ -224,7 +194,6 @@ class _BooksScreenState extends State<BooksScreen> {
   }
 }
 
-// Add this below your BooksScreen widget:
 class _TopCurveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

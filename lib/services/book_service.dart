@@ -14,9 +14,6 @@ class BookService {
   // BookService(this._bookBox);
 
   Future<void> init() async {
-    await Hive.initFlutter();
-
-    // Hive.registerAdapter(BookAdapter());
     _bookBox = await Hive.openBox<Book>(boxName);
   }
 

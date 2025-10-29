@@ -11,12 +11,14 @@ import 'package:chicki_buddy/services/book_service.dart';
 import 'package:chicki_buddy/services/llm_intent_classifier_service.dart';
 import 'package:chicki_buddy/services/notification_manager.dart';
 import 'package:chicki_buddy/services/sherpa-onnx/index.dart';
+import 'package:chicki_buddy/services/vocabulary.service.dart';
 import 'package:chicki_buddy/utils/permission_utils.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import '../core/logger.dart';
 import '../core/app_event_bus.dart';
 import '../services/stt_service.dart';
@@ -63,8 +65,8 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    await Hive.initFlutter();
-  
+    await initHive();
+
     // Communication is done via FlutterForegroundTask.sendDataToMain
     await initialize();
     _setupSTTListener();
@@ -73,12 +75,27 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     await _initIntentSystem();
   }
 
+  Future<void> initHive() async {
+    // Initialize Hive in isolate - path same as main isolate
+    final dir = await getApplicationDocumentsDirectory();
+    Hive.init(dir.path);
+    if (!Hive.isAdapterRegistered(BookAdapter().typeId)) {
+      Hive.registerAdapter(BookAdapter());
+    }
+    if (!Hive.isAdapterRegistered(VocabularyAdapter().typeId)) {
+      Hive.registerAdapter(VocabularyAdapter());
+    }
+
+    await Hive.openBox<Vocabulary>(VocabularyService.boxName);
+    await Hive.openBox<Book>(BookService.boxName);
+  }
+
   @override
   void onRepeatEvent(DateTime timestamp) {
     // Periodic event - send status update
-    _sendMessage(IsolateMessage.status('running', extra: {'state': state.name}));
+    // _sendMessage(IsolateMessage.status('running', extra: {'state': state.name}));
   }
-  
+
   /// Helper to send unified messages
   void _sendMessage(IsolateMessage message) {
     FlutterForegroundTask.sendDataToMain(message.toMap());
@@ -87,106 +104,104 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   @override
   Future<void> onReceiveData(Object data) async {
     if (data is! Map) return;
-    
+
     // Parse message using unified format
     final message = IsolateMessage.fromMap(data as Map<String, dynamic>);
     logger.info('ForegroundTask: Received message: ${message.type.name}');
-    
+
     await _handleMessage(message);
   }
-  
+
   Future<void> _handleMessage(IsolateMessage message) async {
     switch (message.type) {
       case MessageType.intent:
         await _handleIntentMessage(message);
         break;
-        
+
       case MessageType.command:
         await _handleCommandMessage(message);
         break;
-        
+
       case MessageType.config:
         await _handleConfigMessage(message);
         break;
-        
+
       case MessageType.wakeword:
         await _handleWakewordMessage(message);
         break;
-        
+
       default:
         logger.warning('ForegroundTask: Unhandled message type: ${message.type.name}');
     }
   }
-  
+
   Future<void> _handleIntentMessage(IsolateMessage message) async {
     final intent = message.data['intent'] as String?;
     if (intent == null) return;
-    
+
     final slots = message.data['slots'] as Map<String, dynamic>? ?? {};
-    final source = message.source == MessageSource.speech
-        ? IntentSource.speech
-        : IntentSource.ui;
-    
+    final source = message.source == MessageSource.speech ? IntentSource.speech : IntentSource.ui;
+
     final result = await _intentHandler?.handleIntent(
       intent: intent,
       slots: slots,
       source: source,
     );
-    
+
     if (result != null) {
       _sendMessage(IsolateMessage.intentResult(result));
     }
   }
-  
+
   Future<void> _handleCommandMessage(IsolateMessage message) async {
     final command = message.data['command'] as String?;
     if (command == null) return;
-    
+
     switch (command) {
       case 'startListening':
       case 'start_listening':
         _sendMessage(IsolateMessage.status('listening'));
         await startListening();
         break;
-        
+
       case 'stopListening':
       case 'stop_listening':
         await stopListening();
         break;
-        
+
       case 'stopSpeaking':
       case 'stop_speaking':
         await stopSpeaking();
         break;
-        
+
       case 'stop_detecting':
         // Pause wakeword detection
         state = VoiceState.idle;
         NotificationManager.updateForState(state);
         break;
-        
+
       case 'retry':
         // Retry after error
         state = VoiceState.idle;
         NotificationManager.updateForState(state);
         break;
-        
+
       case 'cancel':
         // Cancel current operation
         await stopListening();
         await stopSpeaking();
         break;
-        
+
       case 'open_app':
         // This will be handled by the main app
         logger.info('Open app requested from notification');
         break;
-        
+
       default:
         logger.warning('ForegroundTask: Unknown command: $command');
     }
   }
-  
+
   Future<void> _handleConfigMessage(IsolateMessage message) async {
     final config = AppConfigController.fromJson(message.data['config']);
     SpeechToTextService().setConfig(config);
@@ -194,7 +209,7 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     LocalLLMService().setConfig(config);
     _sendMessage(IsolateMessage.status('config_set'));
   }
-  
+
   Future<void> _handleWakewordMessage(IsolateMessage message) async {
     logger.info('ForegroundTask: Wakeword detected from main isolate');
     if (state == VoiceState.idle) {
@@ -254,23 +269,23 @@ class VoiceForegroundTaskHandler extends TaskHandler {
           // Process intent with unified handler (speech source)
           String textToSpeak = response['intent'];
           String? intentName = response['intent'];
-          
+
           if (_intentHandler != null && response['intent'] != null) {
             final result = await _intentHandler!.handleIntent(
               intent: response['intent'] as String,
               slots: response['slots'] is Map ? Map<String, dynamic>.from(response['slots']) : {},
               source: IntentSource.speech,
             );
-            
+
             // Send result back to main isolate
             _sendMessage(IsolateMessage.intentResult(result));
-            
+
             // Use TTS text if available, otherwise use intent name
             if (result['action'] == 'speak' && result['text'] != null) {
               textToSpeak = result['text'];
             }
           }
-          
+
           state = VoiceState.speaking;
           NotificationManager.updateForState(state, additionalInfo: textToSpeak);
           _sendMessage(IsolateMessage.voiceState(state.name));
@@ -298,7 +313,7 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     _sttService.onRmsChanged.listen((level) {
       rmsDB = level;
       _sendMessage(IsolateMessage.rmsLevel(level));
-      
+
       // Update notification with audio level visualization when listening
       if (state == VoiceState.listening) {
         NotificationManager.showListeningWithLevel(level);
@@ -379,7 +394,7 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   @override
   Future<void> onNotificationButtonPressed(String id) async {
     logger.info('ForegroundTask: Notification button pressed: $id');
-    
+
     // Handle notification button clicks
     final message = IsolateMessage.command(id);
     await _handleCommandMessage(message);

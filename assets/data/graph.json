@@ -4,25 +4,52 @@
       "id": "root",
       "label": "Root",
       "description": "Starting point of all actions",
-      "allowed_intents": ["start_conversation", "listBook", "help"]
+      "allowed_intents": ["listBook", "start_conversation", "help", "exit"]
     },
     {
       "id": "book_context",
       "label": "Book Context",
       "description": "User is inside book-related actions",
-      "allowed_intents": ["listTopic", "selectTopic", "exitBook"]
+      "allowed_intents": ["selectBook","listBook", "start_conversation", "exit", "help"]
+    },
+    {
+      "id": "vocab_session",
+      "label": "Vocabulary Learning",
+      "description": "User is practicing flashcards or vocabulary.",
+      "allowed_intents": [
+        "nextCard",
+        "prevCard",
+        "flipCard",
+        "pronounceWord",
+        "repeatWord",
+        "exampleSentence",
+        "translateWord",
+        "spellWord",
+        "bookmarkWord",
+        "reviewBookmarked",
+        "help",
+        "start_conversation",
+        "exit"
+      ]
     },
     {
       "id": "conversation_mode",
       "label": "Conversation Mode",
-      "description": "Free chat with AI",
-      "allowed_intents": ["stop_conversation"]
+      "description": "Free chat with AI.",
+      "allowed_intents": ["stop_conversation", "help", "exit"]
     }
   ],
   "edges": [
     { "from": "root", "intent": "listBook", "to": "book_context" },
     { "from": "root", "intent": "start_conversation", "to": "conversation_mode" },
-    { "from": "book_context", "intent": "exitBook", "to": "root" },
-    { "from": "conversation_mode", "intent": "stop_conversation", "to": "root" }
-  ]
+    { "from": "book_context", "intent": "listBook", "to": "book_context" },
+    { "from": "book_context", "intent": "selectBook", "to": "vocab_session" },
+    { "from": "book_context", "intent": "exit", "to": "root" },
+    { "from": "book_context", "intent": "start_conversation", "to": "conversation_mode" },
+    { "from": "vocab_session", "intent": "exit", "to": "book_context" },
+    { "from": "vocab_session", "intent": "start_conversation", "to": "conversation_mode" },
+    { "from": "conversation_mode", "intent": "stop_conversation", "to": "book_context" },
+    { "from": "conversation_mode", "intent": "help", "to": "conversation_mode" }
+  ],
+  "universal_intents": ["help", "start_conversation", "exit"]
 }

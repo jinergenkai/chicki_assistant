@@ -10,10 +10,10 @@ enum IntentSource { ui, speech }
 class UnifiedIntentHandler {
   final WorkflowGraph workflowGraph;
   final BookService bookService;
-  
+
   /// Current node in workflow (context tracking)
   String _currentNodeId;
-  
+
   /// Current state for context
   String? currentBookId;
   String? currentTopicId;
@@ -28,10 +28,10 @@ class UnifiedIntentHandler {
 
   /// Get current node
   IntentNode? get currentNode => workflowGraph.nodes[_currentNodeId];
-  
+
   /// Get current node ID
   String get currentNodeId => _currentNodeId;
-  
+
   /// Reset context to root
   void resetContext([String? nodeId]) {
     _currentNodeId = nodeId ?? 'root';
@@ -53,7 +53,7 @@ class UnifiedIntentHandler {
   }) async {
     try {
       logger.info('Handling intent: $intent from ${source.name} with slots: $slots');
-      
+
       // Validate intent against current workflow node
       final availableIntents = getAvailableIntents();
       if (!availableIntents.contains(intent)) {
@@ -61,48 +61,33 @@ class UnifiedIntentHandler {
         return _createErrorResponse(intent, 'Intent not available in current context', source);
       }
 
-      // Update workflow state
+      // Handle specific intents
+      final response = switch (intent) {
+        'listBook' => await _handleListBook(source),
+        'selectBook' => await _handleSelectBook(slots?['bookName'], source),
+        'nextVocab' => await _handleNextVocab(source),
+        'readAloud' => await _handleReadAloud(source),
+        'start_conversation' => await _handleStartConversation(source),
+        'stop_conversation' => await _handleStopConversation(source),
+        'exit' => await _handleExit(source),
+        'help' => await _handleHelp(source),
+        _ => _createUnknownResponse(intent, slots, source),
+      };
+
+      // Nếu là lỗi hoặc unknown thì không update nextNode
+      if (response['action'] == 'error' || response['action'] == 'unknown') {
+        logger.warning('No node update due to error or unknown intent: $intent');
+        return response;
+      }
+
+      // Update workflow state bình thường
       final nextNode = workflowGraph.getNextNode(_currentNodeId, intent);
       if (nextNode != null) {
         _currentNodeId = nextNode.id;
         logger.info('Moved to node: $_currentNodeId');
       }
 
-      // Handle specific intents
-      switch (intent) {
-        case 'listBook':
-          return await _handleListBook(source);
-          
-        case 'selectBook':
-          return await _handleSelectBook(slots?['bookName'], source);
-          
-        case 'listTopic':
-          return await _handleListTopic(source);
-          
-        case 'selectTopic':
-          return await _handleSelectTopic(slots?['topicName'], source);
-          
-        case 'nextVocab':
-          return await _handleNextVocab(source);
-          
-        case 'readAloud':
-          return await _handleReadAloud(source);
-          
-        case 'start_conversation':
-          return await _handleStartConversation(source);
-          
-        case 'stop_conversation':
-          return await _handleStopConversation(source);
-          
-        case 'exitBook':
-          return await _handleExitBook(source);
-          
-        case 'help':
-          return await _handleHelp(source);
-          
-        default:
-          return _createUnknownResponse(intent, slots, source);
-      }
+      return response;
     } catch (e) {
       logger.error('Error handling intent $intent', e);
       return _createErrorResponse(intent, e.toString(), source);
@@ -113,7 +98,7 @@ class UnifiedIntentHandler {
   Future<Map<String, dynamic>> _handleListBook(IntentSource source) async {
     await bookService.init();
     final books = await bookService.loadAllBooks();
-    
+
     if (source == IntentSource.speech) {
       // Speech: Simple TTS response
       return {
@@ -135,10 +120,10 @@ class UnifiedIntentHandler {
     if (bookName == null) {
       return _createErrorResponse('selectBook', 'Book name is required', source);
     }
-    
+
     // Simulate book lookup (replace with actual lookup)
     currentBookId = 'book_${bookName.toLowerCase().replaceAll(' ', '_')}';
-    
+
     if (source == IntentSource.speech) {
       return {
         'action': 'speak',
@@ -148,7 +133,7 @@ class UnifiedIntentHandler {
     } else {
       return {
         'action': 'navigateToBook',
-        'data': {'bookId': currentBookId, 'bookName': bookName},
+        'data': {'bookId': bookName, 'bookName': bookName},
         'requiresUI': true,
       };
     }
@@ -158,10 +143,10 @@ class UnifiedIntentHandler {
     if (currentBookId == null) {
       return _createErrorResponse('listTopic', 'No book selected', source);
     }
-    
+
     // Simulate topic loading
     final topics = ['Animals', 'Colors', 'Numbers', 'Family'];
-    
+
     if (source == IntentSource.speech) {
       return {
         'action': 'speak',
@@ -181,9 +166,9 @@ class UnifiedIntentHandler {
     if (topicName == null) {
       return _createErrorResponse('selectTopic', 'Topic name is required', source);
     }
-    
+
     currentTopicId = 'topic_${topicName.toLowerCase()}';
-    
+
     if (source == IntentSource.speech) {
       return {
         'action': 'speak',
@@ -201,7 +186,7 @@ class UnifiedIntentHandler {
 
   Future<Map<String, dynamic>> _handleNextVocab(IntentSource source) async {
     currentCardIndex = (currentCardIndex ?? 0) + 1;
-    
+
     if (source == IntentSource.speech) {
       return {
         'action': 'speak',
@@ -265,20 +250,20 @@ class UnifiedIntentHandler {
     }
   }
 
-  Future<Map<String, dynamic>> _handleExitBook(IntentSource source) async {
+  Future<Map<String, dynamic>> _handleExit(IntentSource source) async {
     currentBookId = null;
     currentTopicId = null;
     currentCardIndex = null;
-    
+
     if (source == IntentSource.speech) {
       return {
         'action': 'speak',
-        'text': 'Exited book',
+        'text': 'Exited',
         'requiresUI': false,
       };
     } else {
       return {
-        'action': 'exitBook',
+        'action': 'exit',
         'data': {},
         'requiresUI': true,
       };
@@ -287,7 +272,7 @@ class UnifiedIntentHandler {
 
   Future<Map<String, dynamic>> _handleHelp(IntentSource source) async {
     final availableIntents = getAvailableIntents();
-    
+
     if (source == IntentSource.speech) {
       return {
         'action': 'speak',
@@ -329,7 +314,7 @@ class UnifiedIntentHandler {
       };
     } else {
       return {
-        'action': 'unknownIntent',
+        'action': 'unknown',
         'data': {'intent': intent, 'slots': slots ?? {}},
         'requiresUI': false,
       };

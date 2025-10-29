@@ -244,6 +244,9 @@ class VoiceController extends GetxController {
     final result = message.data;
     logger.info('VoiceController: Intent result: ${result['action']}');
     
+    // Emit event state to app
+    eventBus.emit(AppEvent(AppEventType.intentState, result));
+
     // Emit event for UI to handle
     if (result['requiresUI'] == true) {
       eventBus.emit(AppEvent(AppEventType.voiceAction, result));

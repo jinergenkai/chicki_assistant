@@ -7,7 +7,7 @@ import 'package:chicki_buddy/core/logger.dart';
 class IntentBridgeService {
   
   /// Trigger an intent from UI (runs in foreground isolate)
-  static Future<void> triggerUIIntent({
+  static void triggerUIIntent({
     required String intent,
     Map<String, dynamic>? slots,
   }) async {

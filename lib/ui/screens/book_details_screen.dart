@@ -21,11 +21,11 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   StreamSubscription? _voiceActionSub;
 
   void openTopic(String topicId) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const FlashCardScreen2(),
-      ),
-    );
+    // Navigator.of(context).push(
+    //   MaterialPageRoute(
+    //     builder: (_) => const FlashCardScreen2(),
+    //   ),
+    // );
   }
 
   @override

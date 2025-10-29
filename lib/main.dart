@@ -24,10 +24,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Hive.initFlutter();
+  Hive.registerAdapter(VocabularyAdapter());
+  Hive.registerAdapter(BookAdapter());
 
-  // Hive.registerAdapter(VocabularyAdapter());
   // Hive.registerAdapter(VoiceNoteAdapter());
-  // Hive.registerAdapter(BookAdapter());
   // await Hive.openBox<VoiceNote>('voiceNoteBox');
   // await Hive.openBox<Vocabulary>('vocabularyBox');
   // await Hive.openBox<Book>('books');
