@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:chicki_buddy/core/app_event_bus.dart';
@@ -35,10 +34,7 @@ class _BooksScreenState extends State<BooksScreen> {
   }
 
   Future<void> clickOpenBook(Book book) async {
-    IntentBridgeService.triggerUIIntent(
-      intent: 'selectBook',
-      slots: {'bookName': book.id}
-    );
+    IntentBridgeService.triggerUIIntent(intent: 'selectBook', slots: {'bookName': book.id});
   }
 
   @override
@@ -148,7 +144,7 @@ class _BooksScreenState extends State<BooksScreen> {
                         child: CircularProgressIndicator(),
                       );
                     }
-                    
+
                     return GridView.builder(
                       shrinkWrap: true,
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -170,15 +166,15 @@ class _BooksScreenState extends State<BooksScreen> {
                           child: Hero(
                             tag: 'book_${book.id}',
                             child: Obx(() => BookCard(
-                              id: book.id,
-                              title: book.title,
-                              desc: book.description,
-                              isDownloaded: controller.downloadedBooks.contains(book.id),
-                              isDownloading: controller.downloadingBookId.value == book.id,
-                              progress: controller.downloadProgress.value,
-                              onDownload: () => controller.downloadBook(book.id),
-                              onRemove: () => controller.removeBook(book.id),
-                            )),
+                                  id: book.id,
+                                  title: book.title,
+                                  desc: book.description,
+                                  isDownloaded: controller.downloadedBooks.contains(book.id),
+                                  isDownloading: controller.downloadingBookId.value == book.id,
+                                  progress: controller.downloadProgress.value,
+                                  onDownload: () => controller.downloadBook(book.id),
+                                  onRemove: () => controller.removeBook(book.id),
+                                )),
                           ),
                         );
                       },

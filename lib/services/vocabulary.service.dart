@@ -45,6 +45,13 @@ class VocabularyService {
         .toList();
   }
 
+  /// Lấy từ theo bookId
+  List<Vocabulary> getByBookId(String bookId) {
+    return _box.values
+        .where((v) => v.bookId == bookId && !v.isDeleted)
+        .toList();
+  }
+
   /// Mark xóa từ (offline delete)
   Future<void> markDeleted(Vocabulary vocab) async {
     vocab.isDeleted = true;

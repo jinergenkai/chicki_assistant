@@ -8,11 +8,12 @@ class FlashCardFrontSide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    return SizedBox.expand(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
           const Icon(
             Icons.quiz,
             size: 40,
@@ -49,6 +50,7 @@ class FlashCardFrontSide extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -5,10 +5,9 @@ import 'package:chicki_buddy/utils/gradient.dart';
 import 'package:flutter/material.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/services/vocabulary.service.dart';
-import 'package:chicki_buddy/ui/widgets/vocabulary/add_vocabulary_button.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_stack.dart';
-import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_action_buttons.dart';
+import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_action_bar.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_progress_indicator.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_front_side.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_back_side.dart';
@@ -27,6 +26,8 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   final VocabularyService service = VocabularyService();
   List<Vocabulary> vocabList = [];
   int currentIndex = 0;
+  bool isLoading = true;
+  String? errorMessage;
 
   late AnimationController _swipeController;
   late AnimationController _flipController;
@@ -38,13 +39,13 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   late Animation<double> _scaleAnimation;
 
   bool _isFlipped = false;
-  Offset _swipeOffset = Offset.zero;
-  double _swipeRotation = 0;
+  final ValueNotifier<Offset> _swipeOffsetNotifier = ValueNotifier(Offset.zero);
+  final ValueNotifier<double> _swipeRotationNotifier = ValueNotifier(0.0);
 
   @override
   void initState() {
     super.initState();
-    timeDilation = 1.0;
+    // timeDilation = 1.0;
     _swipeController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -88,7 +89,16 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
 
     service.init().then((_) {
       setState(() {
-        vocabList = service.getAll();
+        vocabList = service.getByBookId(widget.book.id);
+        isLoading = false;
+        if (vocabList.isEmpty) {
+          errorMessage = 'No vocabulary found for this book';
+        }
+      });
+    }).catchError((error) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Failed to load vocabulary: $error';
       });
     });
   }
@@ -98,42 +108,46 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
     _swipeController.dispose();
     _flipController.dispose();
     _stackController.dispose();
+    _swipeOffsetNotifier.dispose();
+    _swipeRotationNotifier.dispose();
     super.dispose();
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
-    setState(() {
-      _swipeOffset += details.delta;
-      _swipeRotation = (_swipeOffset.dx / 300).clamp(-0.3, 0.3);
-    });
+    _swipeOffsetNotifier.value += details.delta;
+    _swipeRotationNotifier.value = (_swipeOffsetNotifier.value.dx / 300).clamp(-0.3, 0.3);
   }
 
   void _handlePanEnd(DragEndDetails details) {
     final screenWidth = MediaQuery.of(context).size.width;
-    if (_swipeOffset.dx.abs() > screenWidth * 0.3) {
-      _completeSwipe(_swipeOffset.dx > 0);
+    if (_swipeOffsetNotifier.value.dx.abs() > screenWidth * 0.3) {
+      _completeSwipe(_swipeOffsetNotifier.value.dx > 0);
     } else {
       _resetCard();
     }
   }
 
   void _completeSwipe(bool swipeRight) async {
+    // Track difficulty based on swipe direction
+    final currentVocab = vocabList[currentIndex];
+    // TODO: Save difficulty to database
+    // swipeRight = "Easy/Known", swipeLeft = "Hard/Need review"
+
     await _swipeController.forward();
     setState(() {
       currentIndex = (currentIndex + 1) % vocabList.length;
       _isFlipped = false;
-      _swipeOffset = Offset.zero;
-      _swipeRotation = 0;
     });
+    _swipeOffsetNotifier.value = Offset.zero;
+    _swipeRotationNotifier.value = 0;
     _swipeController.reset();
+    _stackController.reset();
     _stackController.forward();
   }
 
   void _resetCard() {
-    setState(() {
-      _swipeOffset = Offset.zero;
-      _swipeRotation = 0;
-    });
+    _swipeOffsetNotifier.value = Offset.zero;
+    _swipeRotationNotifier.value = 0;
   }
 
   void _flipCard() {
@@ -145,26 +159,48 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
 
   Widget _buildCard(Vocabulary vocab, int index, {bool isTop = true}) {
     // Only top card responds to flip/drag
-    return AnimatedBuilder(
-      animation: _stackController,
-      builder: (context, child) {
-        double scale = isTop ? 1.0 : _scaleAnimation.value;
-        double opacity = isTop ? 1.0 : 0.7;
-        return Transform.scale(
-          scale: scale,
-          child: FlashCard(
-            vocab: vocab,
-            flipValue: isTop ? _flipAnimation.value : 0, // Only top card flips
-            onTap: isTop ? _flipCard : () {},
-            onPanUpdate: isTop ? _handlePanUpdate : null,
-            onPanEnd: isTop ? _handlePanEnd : null,
-            swipeOffset: isTop ? _swipeOffset : Offset.zero,
-            swipeRotation: isTop ? _swipeRotation : 0,
-            frontSide: FlashCardFrontSide(vocab: vocab),
-            backSide: FlashCardBackSide(vocab: vocab),
-          ),
-        );
-      },
+    if (isTop) {
+      return ValueListenableBuilder<Offset>(
+        valueListenable: _swipeOffsetNotifier,
+        builder: (context, swipeOffset, child) {
+          return ValueListenableBuilder<double>(
+            valueListenable: _swipeRotationNotifier,
+            builder: (context, swipeRotation, _) {
+              return FlashCard(
+                vocab: vocab,
+                flipValue: _flipAnimation.value,
+                onTap: _flipCard,
+                onPanUpdate: _handlePanUpdate,
+                onPanEnd: _handlePanEnd,
+                swipeOffset: swipeOffset,
+                swipeRotation: swipeRotation,
+                frontSide: FlashCardFrontSide(vocab: vocab),
+                backSide: FlashCardBackSide(vocab: vocab),
+              );
+            },
+          );
+        },
+      );
+    }
+    // Background cards - static, wrapped in RepaintBoundary
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _stackController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: FlashCard(
+              vocab: vocab,
+              flipValue: 0,
+              onTap: () {},
+              swipeOffset: Offset.zero,
+              swipeRotation: 0,
+              frontSide: FlashCardFrontSide(vocab: vocab),
+              backSide: FlashCardBackSide(vocab: vocab),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -179,7 +215,7 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   }
 
   Widget _buildActionButtons() {
-    return FlashCardActionButtons(
+    return FlashCardActionBar(
       onPrevious: () {
         setState(() {
           currentIndex = (currentIndex - 1 + vocabList.length) % vocabList.length;
@@ -190,6 +226,30 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
       onFlip: _flipCard,
       onNext: () => _completeSwipe(true),
       isFlipped: _isFlipped,
+      onTextToSpeech: () {
+        // TODO: Implement text-to-speech
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Text-to-Speech coming soon!')),
+        );
+      },
+      onFavorite: () {
+        // TODO: Implement favorite toggle
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Favorite feature coming soon!')),
+        );
+      },
+      onEdit: () {
+        // TODO: Implement edit vocabulary
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Edit feature coming soon!')),
+        );
+      },
+      onAddNote: () {
+        // TODO: Implement add note
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Add note feature coming soon!')),
+        );
+      },
     );
   }
 
@@ -217,41 +277,152 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   Widget build(BuildContext context) {
     final book = widget.book;
 
-    return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        foregroundColor: Colors.black,
-        title: Hero(
-          tag: 'book_${book.id}',
-          child: SizedBox(
-            // color: Colors.black.withOpacity(0.1),
-            width: double.infinity,
-            child: Text(
-              book.title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+    Widget bodyContent;
+    if (isLoading) {
+      bodyContent = const Center(child: CircularProgressIndicator());
+    } else if (errorMessage != null || vocabList.isEmpty) {
+      bodyContent = Center(
+        child: Text(
+          errorMessage ?? 'No vocabulary found for this book',
+          style: const TextStyle(fontSize: 16),
+          textAlign: TextAlign.center,
+        ),
+      );
+    } else {
+      bodyContent = Column(
+        children: [
+          _buildProgressIndicator(),
+          const SizedBox(height: 20),
+          Expanded(
+            child: Center(
+              child: _buildCardStack(),
             ),
           ),
-          // Text(
-          //   book.title,
-          //   style: const TextStyle(fontWeight: FontWeight.bold),
-          // ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24, top: 12),
+              child: _buildActionButtons(),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(68),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Colors.grey.shade50,
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: AppBar(
+            foregroundColor: Colors.black87,
+            title: Hero(
+              tag: 'book_${book.id}',
+              child: Material(
+                color: Colors.transparent,
+                child: Text(
+                  book.title,
+                  style: TextStyle(
+                    color: Colors.grey.shade900,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    letterSpacing: -0.5,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            leading: Container(
+              margin: const EdgeInsets.only(left: 8, top: 8, bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.grey.shade800),
+                onPressed: () => clickExit(),
+              ),
+            ),
+            actions: [
+              if (!isLoading && vocabList.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.blue.shade400,
+                        Colors.blue.shade600,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        _showAddVocabularyDialog();
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                            SizedBox(width: 6),
+                            Text(
+                              'Add',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            toolbarHeight: 68,
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => clickExit(),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
       ),
       body: Column(
         children: [
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Expanded(
             child: Container(
                 decoration: const BoxDecoration(
@@ -259,32 +430,93 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
                   borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                 ),
                 child: SafeArea(
-                  child: Column(
-                    children: [
-                      _buildProgressIndicator(),
-                      const SizedBox(height: 20),
-                      Expanded(
-                        child: Center(
-                          child: _buildCardStack(),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: _buildActionButtons(),
-                      ),
-                    ],
-                  ),
+                  child: bodyContent,
                 )),
           ),
         ],
       ),
-      floatingActionButton: AddVocabularyButton(
-        service: service,
-        onAdded: () {
-          setState(() {
-            vocabList = service.getAll();
-          });
-        },
+    );
+  }
+
+  void _showAddVocabularyDialog() {
+    final wordController = TextEditingController();
+    final meaningController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Add Vocabulary',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: wordController,
+              decoration: InputDecoration(
+                labelText: 'Word',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.abc_rounded),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: meaningController,
+              decoration: InputDecoration(
+                labelText: 'Meaning',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.translate_rounded),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final word = wordController.text.trim();
+              final meaning = meaningController.text.trim();
+              if (word.isEmpty) return;
+
+              final vocab = Vocabulary(
+                word: word,
+                originLanguage: 'en',
+                targetLanguage: 'vi',
+                meaning: meaning.isEmpty ? null : meaning,
+                bookId: widget.book.id,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              );
+
+              await service.upsertVocabulary(vocab);
+              Navigator.of(context).pop();
+              setState(() {
+                vocabList = service.getByBookId(widget.book.id);
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue.shade500,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('Add'),
+          ),
+        ],
       ),
     );
   }
