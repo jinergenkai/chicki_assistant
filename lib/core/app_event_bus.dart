@@ -19,6 +19,7 @@ enum AppEventType {
 
   // Intent state
   intentState,
+  handlerState,
 }
 
 class AppEvent {

@@ -203,7 +203,11 @@ class VoiceController extends GetxController {
       case MessageType.intentResult:
         _handleIntentResultMessage(message);
         break;
-        
+
+      case MessageType.handlerState:
+        _handleHandlerStateMessage(message);
+        break;
+
       case MessageType.wakeword:
         logger.info('VoiceController: Wakeword detected from foreground task');
         break;
@@ -243,7 +247,7 @@ class VoiceController extends GetxController {
   void _handleIntentResultMessage(IsolateMessage message) {
     final result = message.data;
     logger.info('VoiceController: Intent result: ${result['action']}');
-    
+
     // Emit event state to app
     eventBus.emit(AppEvent(AppEventType.intentState, result));
 
@@ -251,11 +255,19 @@ class VoiceController extends GetxController {
     if (result['requiresUI'] == true) {
       eventBus.emit(AppEvent(AppEventType.voiceAction, result));
     }
-    
+
     // Update gptResponse if there's text to speak
     if (result['action'] == 'speak' && result['text'] != null) {
       gptResponse.value = result['text'] as String;
     }
+  }
+
+  void _handleHandlerStateMessage(IsolateMessage message) {
+    final state = message.data;
+    logger.info('VoiceController: Handler state update: $state');
+
+    // Emit handler state for debug widget
+    eventBus.emit(AppEvent(AppEventType.handlerState, state));
   }
 
   /// Gửi lệnh sang foreground isolate

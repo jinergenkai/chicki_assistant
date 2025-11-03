@@ -1,7 +1,16 @@
 import 'package:chicki_buddy/voice/graph/workflow_graph.dart';
 import 'package:chicki_buddy/voice/graph/intent_node.dart';
 import 'package:chicki_buddy/services/book_service.dart';
+import 'package:chicki_buddy/services/vocabulary.service.dart';
+import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/core/logger.dart';
+
+// Import all intent handler extensions
+import 'extensions/flash_card_handlers.dart';
+import 'extensions/book_handlers.dart';
+import 'extensions/vocabulary_handlers.dart';
+import 'extensions/conversation_handlers.dart';
+import 'extensions/general_handlers.dart';
 
 enum IntentSource { ui, speech }
 
@@ -10,6 +19,7 @@ enum IntentSource { ui, speech }
 class UnifiedIntentHandler {
   final WorkflowGraph workflowGraph;
   final BookService bookService;
+  final VocabularyService vocabularyService;
 
   /// Current node in workflow (context tracking)
   String _currentNodeId;
@@ -18,12 +28,19 @@ class UnifiedIntentHandler {
   String? currentBookId;
   String? currentTopicId;
   int? currentCardIndex;
+  List<Vocabulary>? currentVocabList;
+  bool isCardFlipped = false;
+
+  /// Store current books list for number-based selection
+  List<dynamic>? currentBooksList;
 
   UnifiedIntentHandler({
     required this.workflowGraph,
     BookService? bookService,
+    VocabularyService? vocabularyService,
     String? initialNodeId,
   })  : bookService = bookService ?? BookService(),
+        vocabularyService = vocabularyService ?? VocabularyService(),
         _currentNodeId = initialNodeId ?? 'root';
 
   /// Get current node
@@ -38,6 +55,9 @@ class UnifiedIntentHandler {
     currentBookId = null;
     currentTopicId = null;
     currentCardIndex = null;
+    currentVocabList = null;
+    currentBooksList = null;
+    isCardFlipped = false;
   }
 
   /// Get available intents for current context
@@ -54,29 +74,62 @@ class UnifiedIntentHandler {
     try {
       logger.info('Handling intent: $intent from ${source.name} with slots: $slots');
 
-      // Validate intent against current workflow node
-      final availableIntents = getAvailableIntents();
-      if (!availableIntents.contains(intent)) {
-        logger.warning('Intent $intent not available in current context $_currentNodeId. Available: $availableIntents');
-        return _createErrorResponse(intent, 'Intent not available in current context', source);
+      // System intents always allowed (context management)
+      List<String> systemIntents = ['syncFlashCardContext', 'exitFlashCard'];
+
+      // Validate intent against current workflow node (skip for system intents)
+      if (!systemIntents.contains(intent)) {
+        final availableIntents = getAvailableIntents();
+        if (!availableIntents.contains(intent)) {
+          logger.warning('Intent $intent not available in current context $_currentNodeId. Available: $availableIntents');
+          return createErrorResponse(intent, 'Intent not available in current context', source);
+        }
       }
 
-      // Handle specific intents
+      // Handle specific intents using extension methods
       final response = switch (intent) {
-        'listBook' => await _handleListBook(source),
-        'selectBook' => await _handleSelectBook(slots?['bookName'], source),
-        'nextVocab' => await _handleNextVocab(source),
-        'readAloud' => await _handleReadAloud(source),
-        'start_conversation' => await _handleStartConversation(source),
-        'stop_conversation' => await _handleStopConversation(source),
-        'exit' => await _handleExit(source),
-        'help' => await _handleHelp(source),
-        _ => _createUnknownResponse(intent, slots, source),
+        'listBook' => await handleListBook(source),
+        'selectBook' => await handleSelectBook(slots?['bookId'] ?? slots?['bookName'], source),
+        'syncFlashCardContext' => await syncFlashCardContext(slots?['bookId'], source),
+        'exitFlashCard' => await exitFlashCardContext(source),
+        'nextCard' => await handleNextCard(source),
+        'prevCard' => await handlePrevCard(source),
+        'flipCard' => await handleFlipCard(source),
+        'pronounceWord' => await handlePronounceWord(source),
+        'repeatWord' => await handleRepeatWord(source),
+        'exampleSentence' => await handleExampleSentence(source),
+        'translateWord' => await handleTranslateWord(source),
+        'spellWord' => await handleSpellWord(source),
+        'bookmarkWord' => await handleBookmarkWord(source),
+        'reviewBookmarked' => await handleReviewBookmarked(source),
+        'nextVocab' => await handleNextVocab(source),
+        'readAloud' => await handleReadAloud(source),
+        'startConversation' => await handleStartConversation(source),
+        'stopConversation' => await handleStopConversation(source),
+        'exit' => await handleExit(source),
+        'help' => await handleHelp(source),
+        _ => createUnknownResponse(intent, slots, source),
       };
 
-      // Nếu là lỗi hoặc unknown thì không update nextNode
-      if (response['action'] == 'error' || response['action'] == 'unknown') {
-        logger.warning('No node update due to error or unknown intent: $intent');
+      // Nếi là lỗi, unknown, hoặc system intent thì không update nextNode
+      systemIntents = ['syncFlashCardContext', 'exitFlashCard'];
+      if (response['action'] == 'error' ||
+          response['action'] == 'unknown' ||
+          systemIntents.contains(intent)) {
+        if (response['action'] == 'error' || response['action'] == 'unknown') {
+          logger.warning('No node update due to error or unknown intent: $intent');
+        }
+
+        // Check for forced node update (for system intents)
+        if (response.containsKey('_forceNodeUpdate')) {
+          final forcedNodeId = response['_forceNodeUpdate'] as String;
+          if (workflowGraph.nodes.containsKey(forcedNodeId)) {
+            _currentNodeId = forcedNodeId;
+            logger.info('Forced node update to: $_currentNodeId');
+          }
+          response.remove('_forceNodeUpdate'); // Clean up internal marker
+        }
+
         return response;
       }
 
@@ -90,206 +143,12 @@ class UnifiedIntentHandler {
       return response;
     } catch (e) {
       logger.error('Error handling intent $intent', e);
-      return _createErrorResponse(intent, e.toString(), source);
+      return createErrorResponse(intent, e.toString(), source);
     }
   }
 
-  // Intent handlers
-  Future<Map<String, dynamic>> _handleListBook(IntentSource source) async {
-    await bookService.init();
-    final books = await bookService.loadAllBooks();
-
-    if (source == IntentSource.speech) {
-      // Speech: Simple TTS response
-      return {
-        'action': 'speak',
-        'text': 'I found ${books.length} books available',
-        'requiresUI': false,
-      };
-    } else {
-      // UI: Full data for display
-      return {
-        'action': 'listBook',
-        'data': {'books': books.map((b) => b.toJson()).toList()},
-        'requiresUI': true,
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleSelectBook(String? bookName, IntentSource source) async {
-    if (bookName == null) {
-      return _createErrorResponse('selectBook', 'Book name is required', source);
-    }
-
-    // Simulate book lookup (replace with actual lookup)
-    currentBookId = 'book_${bookName.toLowerCase().replaceAll(' ', '_')}';
-
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'Opening $bookName',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'selectBook',
-        'data': {'bookId': bookName, 'bookName': bookName},
-        'requiresUI': true,
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleListTopic(IntentSource source) async {
-    if (currentBookId == null) {
-      return _createErrorResponse('listTopic', 'No book selected', source);
-    }
-
-    // Simulate topic loading
-    final topics = ['Animals', 'Colors', 'Numbers', 'Family'];
-
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'Available topics: ${topics.join(', ')}',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'listTopic',
-        'data': {'bookId': currentBookId, 'topics': topics},
-        'requiresUI': true,
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleSelectTopic(String? topicName, IntentSource source) async {
-    if (topicName == null) {
-      return _createErrorResponse('selectTopic', 'Topic name is required', source);
-    }
-
-    currentTopicId = 'topic_${topicName.toLowerCase()}';
-
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'Selected topic: $topicName',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'navigateToTopic',
-        'data': {'topicId': currentTopicId, 'topicName': topicName},
-        'requiresUI': true,
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleNextVocab(IntentSource source) async {
-    currentCardIndex = (currentCardIndex ?? 0) + 1;
-
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'Next vocabulary card',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'showCard',
-        'data': {'cardIndex': currentCardIndex},
-        'requiresUI': true,
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleReadAloud(IntentSource source) async {
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'Reading current vocabulary',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'readAloud',
-        'data': {'cardIndex': currentCardIndex},
-        'requiresUI': true,
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleStartConversation(IntentSource source) async {
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'Starting conversation mode. How can I help you?',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'startConversation',
-        'data': {},
-        'requiresUI': true,
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleStopConversation(IntentSource source) async {
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'Conversation ended',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'stopConversation',
-        'data': {},
-        'requiresUI': true,
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleExit(IntentSource source) async {
-    currentBookId = null;
-    currentTopicId = null;
-    currentCardIndex = null;
-
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'Exited',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'exit',
-        'data': {},
-        'requiresUI': true,
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleHelp(IntentSource source) async {
-    final availableIntents = getAvailableIntents();
-
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'Available commands: ${availableIntents.join(', ')}',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'help',
-        'data': {'availableIntents': availableIntents},
-        'requiresUI': true,
-      };
-    }
-  }
-
-  // Helper methods
-  Map<String, dynamic> _createErrorResponse(String intent, String error, IntentSource source) {
+  // Helper methods (public for extensions to use)
+  Map<String, dynamic> createErrorResponse(String intent, String error, IntentSource source) {
     if (source == IntentSource.speech) {
       return {
         'action': 'speak',
@@ -305,7 +164,7 @@ class UnifiedIntentHandler {
     }
   }
 
-  Map<String, dynamic> _createUnknownResponse(String intent, Map<String, dynamic>? slots, IntentSource source) {
+  Map<String, dynamic> createUnknownResponse(String intent, Map<String, dynamic>? slots, IntentSource source) {
     if (source == IntentSource.speech) {
       return {
         'action': 'speak',

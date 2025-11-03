@@ -19,6 +19,7 @@ import 'package:chicki_buddy/core/app_router.dart';
 import 'package:get/get.dart';
 import 'package:chicki_buddy/controllers/chat_controller.dart';
 import 'package:chicki_buddy/controllers/voice_controller.dart';
+import 'package:chicki_buddy/controllers/books_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,11 +36,12 @@ void main() async {
   // Initialize Notifications
   // await NotificationService().initialize();
 
-  // Inject AppConfigController
+  // Inject AppConfigController and core services
   Get.put(AppConfigController(), permanent: true);
   Get.put(PorcupineWakewordService(), permanent: true);
   Get.put(VoiceController(), permanent: true);
   Get.put(BubbleController(), permanent: true);
+  Get.put(BooksController(), permanent: true); // Global for voice commands
 
   FlutterForegroundTask.initCommunicationPort();
 

@@ -150,6 +150,12 @@ class VoiceForegroundTaskHandler extends TaskHandler {
 
     if (result != null) {
       _sendMessage(IsolateMessage.intentResult(result));
+
+      // Emit current handler state for debug widget
+      if (_intentHandler != null) {
+        final currentState = _intentHandler!.getCurrentState();
+        _sendMessage(IsolateMessage.handlerState(currentState));
+      }
     }
   }
 

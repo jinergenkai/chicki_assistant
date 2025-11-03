@@ -5,20 +5,20 @@ import 'package:chicki_buddy/core/logger.dart';
 /// Bridge service to communicate with foreground task for intent handling
 /// This allows UI controllers to trigger intents that run in foreground isolate
 class IntentBridgeService {
-  
+
   /// Trigger an intent from UI (runs in foreground isolate)
-  static void triggerUIIntent({
+  static Future<void> triggerUIIntent({
     required String intent,
     Map<String, dynamic>? slots,
   }) async {
     logger.info('Triggering UI intent: $intent with slots: $slots');
-    
+
     final message = IsolateMessage.intent(
       intent: intent,
       slots: slots,
       source: MessageSource.ui,
     );
-    
+
     FlutterForegroundTask.sendDataToTask(message.toMap());
   }
   

@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:chicki_buddy/core/logger.dart';
 import 'package:chicki_buddy/core/app_event_bus.dart';
+import 'package:chicki_buddy/core/app_router.dart';
 import 'package:chicki_buddy/services/book_bridge_service.dart';
 import 'package:chicki_buddy/services/intent_bridge_service.dart';
+import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/book.dart';
 import '../services/book_service.dart';
@@ -77,11 +80,20 @@ class BooksController extends GetxController {
     }
   }
 
-  void _handleSelectBookAction(Map<String, dynamic>? data) {
+  void _handleSelectBookAction(Map<String, dynamic>? data) async {
     if (data != null) {
       final bookId = data['bookId'] as String?;
       final bookName = data['bookName'] as String?;
-      
+
+      // If books list is empty, load it first (for voice commands from non-books screen)
+      if (books.isEmpty) {
+        logger.info('BooksController: Books list empty, loading via service...');
+        await service.init();
+        final loadedBooks = await service.loadAllBooks();
+        books.value = loadedBooks;
+        logger.info('BooksController: Loaded ${loadedBooks.length} books');
+      }
+
       // Find book by ID or name
       Book? foundBook;
       if (bookId != null) {
@@ -91,13 +103,23 @@ class BooksController extends GetxController {
           (b) => b.title.toLowerCase().contains(bookName.toLowerCase())
         );
       }
-      
+
       if (foundBook != null) {
-        // Update observable - BooksScreen will listen and handle navigation
+        // Update observable for BooksScreen (if mounted)
         bookToNavigate.value = foundBook;
-        logger.info('BooksController: Setting book to navigate: ${foundBook.title}');
+
+        // Also navigate directly using global navigatorKey (for voice from any screen)
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          logger.info('BooksController: Navigating to FlashCard for book: ${foundBook.title}');
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (context) => FlashCardScreen2(book: foundBook!),
+          ));
+        } else {
+          logger.warning('BooksController: Navigator context not available');
+        }
       } else {
-        logger.warning('BooksController: Book not found for navigation');
+        logger.warning('BooksController: Book not found for navigation (bookId: $bookId, bookName: $bookName)');
       }
     }
   }

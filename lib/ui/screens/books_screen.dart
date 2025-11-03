@@ -21,7 +21,7 @@ class BooksScreen extends StatefulWidget {
 }
 
 class _BooksScreenState extends State<BooksScreen> {
-  final controller = Get.put(BooksController());
+  final controller = Get.find<BooksController>(); // Use existing global instance
   StreamSubscription? _navigationSub;
 
   void triggerOpenBook(Book book) {
@@ -34,7 +34,13 @@ class _BooksScreenState extends State<BooksScreen> {
   }
 
   Future<void> clickOpenBook(Book book) async {
-    IntentBridgeService.triggerUIIntent(intent: 'selectBook', slots: {'bookName': book.id});
+    // Direct navigation - FlashCardController will handle loading via intent
+    triggerOpenBook(book);
+  }
+
+  Future<void> voiceOpenBook(Book book) async {
+    // For voice commands, trigger intent which will be handled by controller
+    await IntentBridgeService.triggerUIIntent(intent: 'selectBook', slots: {'bookId': book.id});
   }
 
   @override

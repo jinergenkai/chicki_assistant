@@ -4,13 +4,13 @@
       "id": "root",
       "label": "Root",
       "description": "Starting point of all actions",
-      "allowed_intents": ["listBook", "start_conversation", "help", "exit"]
+      "allowed_intents": ["listBook", "startConversation", "help", "exit"]
     },
     {
       "id": "book_context",
       "label": "Book Context",
       "description": "User is inside book-related actions",
-      "allowed_intents": ["selectBook","listBook", "start_conversation", "exit", "help"]
+      "allowed_intents": ["selectBook","listBook", "startConversation", "exit", "help"]
     },
     {
       "id": "vocab_session",
@@ -28,7 +28,7 @@
         "bookmarkWord",
         "reviewBookmarked",
         "help",
-        "start_conversation",
+        "startConversation",
         "exit"
       ]
     },
@@ -36,20 +36,20 @@
       "id": "conversation_mode",
       "label": "Conversation Mode",
       "description": "Free chat with AI.",
-      "allowed_intents": ["stop_conversation", "help", "exit"]
+      "allowed_intents": ["stopConversation", "help", "exit"]
     }
   ],
   "edges": [
     { "from": "root", "intent": "listBook", "to": "book_context" },
-    { "from": "root", "intent": "start_conversation", "to": "conversation_mode" },
+    { "from": "root", "intent": "startConversation", "to": "conversation_mode" },
     { "from": "book_context", "intent": "listBook", "to": "book_context" },
     { "from": "book_context", "intent": "selectBook", "to": "vocab_session" },
     { "from": "book_context", "intent": "exit", "to": "root" },
-    { "from": "book_context", "intent": "start_conversation", "to": "conversation_mode" },
+    { "from": "book_context", "intent": "startConversation", "to": "conversation_mode" },
     { "from": "vocab_session", "intent": "exit", "to": "book_context" },
-    { "from": "vocab_session", "intent": "start_conversation", "to": "conversation_mode" },
-    { "from": "conversation_mode", "intent": "stop_conversation", "to": "book_context" },
+    { "from": "vocab_session", "intent": "startConversation", "to": "conversation_mode" },
+    { "from": "conversation_mode", "intent": "stopConversation", "to": "book_context" },
     { "from": "conversation_mode", "intent": "help", "to": "conversation_mode" }
   ],
-  "universal_intents": ["help", "start_conversation", "exit"]
+  "universal_intents": ["help", "startConversation", "exit"]
 }

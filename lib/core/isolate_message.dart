@@ -17,7 +17,8 @@ enum MessageType {
   // Intent messages
   intent,           // Intent request (from UI or speech)
   intentResult,     // Intent execution result
-  
+  handlerState,     // Intent handler state (for debug)
+
   // Command messages
   command,          // Control commands (startListening, stopListening, etc.)
   
@@ -187,6 +188,14 @@ class IsolateMessage {
     return IsolateMessage(
       type: MessageType.intentResult,
       data: result,
+      source: MessageSource.system,
+    );
+  }
+
+  static IsolateMessage handlerState(Map<String, dynamic> state) {
+    return IsolateMessage(
+      type: MessageType.handlerState,
+      data: state,
       source: MessageSource.system,
     );
   }

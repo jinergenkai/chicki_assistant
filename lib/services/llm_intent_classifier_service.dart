@@ -56,6 +56,7 @@ You are an intent analysis system. The following are the valid intents:
 - listTopic: list available topics
 - selectTopic: select a specific topic, slot: topicName
 - startConversation: start a conversation
+- stopConversation: stop a conversation
 
 Task: Analyze the following sentence and return the result in JSON format, including the intent and any relevant slots (if applicable).
 

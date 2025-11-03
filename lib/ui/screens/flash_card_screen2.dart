@@ -4,7 +4,7 @@ import 'package:chicki_buddy/services/intent_bridge_service.dart';
 import 'package:chicki_buddy/utils/gradient.dart';
 import 'package:flutter/material.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
-import 'package:chicki_buddy/services/vocabulary.service.dart';
+import 'package:chicki_buddy/controllers/flash_card_controller.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_stack.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_action_bar.dart';
@@ -13,6 +13,7 @@ import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_front_side.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_back_side.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
+import 'package:get/get.dart';
 
 class FlashCardScreen2 extends StatefulWidget {
   final Book book;
@@ -23,35 +24,28 @@ class FlashCardScreen2 extends StatefulWidget {
 }
 
 class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProviderStateMixin {
-  final VocabularyService service = VocabularyService();
-  List<Vocabulary> vocabList = [];
-  int currentIndex = 0;
-  bool isLoading = true;
-  String? errorMessage;
+  late FlashCardController controller;
 
   late AnimationController _swipeController;
-  late AnimationController _flipController;
   late AnimationController _stackController;
 
   late Animation<Offset> _swipeAnimation;
   late Animation<double> _rotationAnimation;
-  late Animation<double> _flipAnimation;
   late Animation<double> _scaleAnimation;
 
-  bool _isFlipped = false;
   final ValueNotifier<Offset> _swipeOffsetNotifier = ValueNotifier(Offset.zero);
   final ValueNotifier<double> _swipeRotationNotifier = ValueNotifier(0.0);
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize controller
+    controller = Get.put(FlashCardController(book: widget.book), tag: 'flashcard_${widget.book.id}');
+
     // timeDilation = 1.0;
     _swipeController = AnimationController(
       duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _flipController = AnimationController(
-      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     _stackController = AnimationController(
@@ -72,13 +66,6 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
       parent: _swipeController,
       curve: Curves.easeInOut,
     ));
-    _flipAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(
-      parent: _flipController,
-      curve: Curves.easeInOut,
-    ));
     _scaleAnimation = Tween<double>(
       begin: 0.9,
       end: 1.0,
@@ -86,30 +73,15 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
       parent: _stackController,
       curve: Curves.easeOut,
     ));
-
-    service.init().then((_) {
-      setState(() {
-        vocabList = service.getByBookId(widget.book.id);
-        isLoading = false;
-        if (vocabList.isEmpty) {
-          errorMessage = 'No vocabulary found for this book';
-        }
-      });
-    }).catchError((error) {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'Failed to load vocabulary: $error';
-      });
-    });
   }
 
   @override
   void dispose() {
     _swipeController.dispose();
-    _flipController.dispose();
     _stackController.dispose();
     _swipeOffsetNotifier.dispose();
     _swipeRotationNotifier.dispose();
+    Get.delete<FlashCardController>(tag: 'flashcard_${widget.book.id}');
     super.dispose();
   }
 
@@ -129,15 +101,14 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
 
   void _completeSwipe(bool swipeRight) async {
     // Track difficulty based on swipe direction
-    final currentVocab = vocabList[currentIndex];
-    // TODO: Save difficulty to database
     // swipeRight = "Easy/Known", swipeLeft = "Hard/Need review"
+    // TODO: Save difficulty to database
 
     await _swipeController.forward();
-    setState(() {
-      currentIndex = (currentIndex + 1) % vocabList.length;
-      _isFlipped = false;
-    });
+
+    // Trigger nextCard intent instead of direct state update
+    controller.nextCard();
+
     _swipeOffsetNotifier.value = Offset.zero;
     _swipeRotationNotifier.value = 0;
     _swipeController.reset();
@@ -151,10 +122,9 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   }
 
   void _flipCard() {
-    _flipController.value = _isFlipped ? 0 : 1;
-    setState(() {
-      _isFlipped = !_isFlipped;
-    });
+    // Trigger flipCard intent
+    // Animation will be updated automatically via ever() listener
+    controller.flipCard();
   }
 
   Widget _buildCard(Vocabulary vocab, int index, {bool isTop = true}) {
@@ -166,9 +136,9 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
           return ValueListenableBuilder<double>(
             valueListenable: _swipeRotationNotifier,
             builder: (context, swipeRotation, _) {
-              return FlashCard(
+              return Obx(() => FlashCard(
                 vocab: vocab,
-                flipValue: _flipAnimation.value,
+                flipValue: controller.isFlipped.value ? 1.0 : 0.0,
                 onTap: _flipCard,
                 onPanUpdate: _handlePanUpdate,
                 onPanEnd: _handlePanEnd,
@@ -176,7 +146,7 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
                 swipeRotation: swipeRotation,
                 frontSide: FlashCardFrontSide(vocab: vocab),
                 backSide: FlashCardBackSide(vocab: vocab),
-              );
+              ));
             },
           );
         },
@@ -205,38 +175,32 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   }
 
   Widget _buildCardStack() {
-    return FlashCardStack(
-      vocabList: vocabList,
-      currentIndex: currentIndex,
+    return Obx(() => FlashCardStack(
+      vocabList: controller.vocabList,
+      currentIndex: controller.currentIndex.value,
       scaleValue: _scaleAnimation.value,
       opacityValue: 0.7,
       cardBuilder: (vocab, index, {isTop = true}) => _buildCard(vocab, index, isTop: isTop),
-    );
+    ));
   }
 
   Widget _buildActionButtons() {
-    return FlashCardActionBar(
+    return Obx(() => FlashCardActionBar(
       onPrevious: () {
-        setState(() {
-          currentIndex = (currentIndex - 1 + vocabList.length) % vocabList.length;
-          _isFlipped = false;
-        });
-        _flipController.reset();
+        // Trigger prevCard intent
+        // prevCard handler will reset isFlipped to false
+        controller.prevCard();
       },
       onFlip: _flipCard,
       onNext: () => _completeSwipe(true),
-      isFlipped: _isFlipped,
+      isFlipped: controller.isFlipped.value,
       onTextToSpeech: () {
-        // TODO: Implement text-to-speech
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Text-to-Speech coming soon!')),
-        );
+        // Trigger pronounceWord intent
+        controller.pronounceWord();
       },
       onFavorite: () {
-        // TODO: Implement favorite toggle
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Favorite feature coming soon!')),
-        );
+        // Trigger bookmark intent
+        controller.toggleBookmark();
       },
       onEdit: () {
         // TODO: Implement edit vocabulary
@@ -250,14 +214,14 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
           const SnackBar(content: Text('Add note feature coming soon!')),
         );
       },
-    );
+    ));
   }
 
   Widget _buildProgressIndicator() {
-    return FlashCardProgressIndicator(
-      currentIndex: currentIndex,
-      totalCount: vocabList.length,
-    );
+    return Obx(() => FlashCardProgressIndicator(
+      currentIndex: controller.currentIndex.value,
+      totalCount: controller.vocabList.length,
+    ));
   }
 
   // void triggerOpenBook(Book book) {
@@ -277,37 +241,43 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   Widget build(BuildContext context) {
     final book = widget.book;
 
-    Widget bodyContent;
-    if (isLoading) {
-      bodyContent = const Center(child: CircularProgressIndicator());
-    } else if (errorMessage != null || vocabList.isEmpty) {
-      bodyContent = Center(
-        child: Text(
-          errorMessage ?? 'No vocabulary found for this book',
-          style: const TextStyle(fontSize: 16),
-          textAlign: TextAlign.center,
-        ),
-      );
-    } else {
-      bodyContent = Column(
-        children: [
-          _buildProgressIndicator(),
-          const SizedBox(height: 20),
-          Expanded(
-            child: Center(
-              child: _buildCardStack(),
-            ),
+    return Obx(() {
+      Widget bodyContent;
+      if (controller.isLoading.value) {
+        bodyContent = const Center(child: CircularProgressIndicator());
+      } else if (controller.errorMessage.value != null || controller.vocabList.isEmpty) {
+        bodyContent = Center(
+          child: Text(
+            controller.errorMessage.value ?? 'No vocabulary found for this book',
+            style: const TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
           ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 24, top: 12),
-              child: _buildActionButtons(),
+        );
+      } else {
+        bodyContent = Column(
+          children: [
+            _buildProgressIndicator(),
+            const SizedBox(height: 20),
+            Expanded(
+              child: Center(
+                child: _buildCardStack(),
+              ),
             ),
-          ),
-        ],
-      );
-    }
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 24, top: 12),
+                child: _buildActionButtons(),
+              ),
+            ),
+          ],
+        );
+      }
 
+      return _buildScaffold(book, bodyContent);
+    });
+  }
+
+  Widget _buildScaffold(Book book, Widget bodyContent) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: PreferredSize(
@@ -362,7 +332,7 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
               ),
             ),
             actions: [
-              if (!isLoading && vocabList.isNotEmpty)
+              if (!controller.isLoading.value && controller.vocabList.isNotEmpty)
                 Container(
                   margin: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
                   decoration: BoxDecoration(
@@ -500,11 +470,10 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
                 updatedAt: DateTime.now(),
               );
 
-              await service.upsertVocabulary(vocab);
+              // TODO: Trigger addVocabulary intent to add vocab via foreground isolate
+              // For now, reload vocabulary list
               Navigator.of(context).pop();
-              setState(() {
-                vocabList = service.getByBookId(widget.book.id);
-              });
+              controller.loadVocabularyViaIntent();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue.shade500,
