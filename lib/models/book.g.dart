@@ -23,13 +23,22 @@ class BookAdapter extends TypeAdapter<Book> {
       price: fields[3] as double,
       isCustom: fields[4] as bool,
       ownerId: fields[5] as String?,
+      createdAt: fields[6] as DateTime?,
+      updatedAt: fields[7] as DateTime?,
+      lastOpenedAt: fields[8] as DateTime?,
+      version: fields[9] as String?,
+      isPublic: fields[10] as bool,
+      coverImagePath: fields[11] as String?,
+      author: fields[12] as String?,
+      category: fields[13] as String?,
+      jsonHash: fields[14] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Book obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +50,25 @@ class BookAdapter extends TypeAdapter<Book> {
       ..writeByte(4)
       ..write(obj.isCustom)
       ..writeByte(5)
-      ..write(obj.ownerId);
+      ..write(obj.ownerId)
+      ..writeByte(6)
+      ..write(obj.createdAt)
+      ..writeByte(7)
+      ..write(obj.updatedAt)
+      ..writeByte(8)
+      ..write(obj.lastOpenedAt)
+      ..writeByte(9)
+      ..write(obj.version)
+      ..writeByte(10)
+      ..write(obj.isPublic)
+      ..writeByte(11)
+      ..write(obj.coverImagePath)
+      ..writeByte(12)
+      ..write(obj.author)
+      ..writeByte(13)
+      ..write(obj.category)
+      ..writeByte(14)
+      ..write(obj.jsonHash);
   }
 
   @override
@@ -66,6 +93,21 @@ Book _$BookFromJson(Map<String, dynamic> json) => Book(
       price: (json['price'] as num).toDouble(),
       isCustom: json['isCustom'] as bool,
       ownerId: json['ownerId'] as String?,
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.parse(json['createdAt'] as String),
+      updatedAt: json['updatedAt'] == null
+          ? null
+          : DateTime.parse(json['updatedAt'] as String),
+      lastOpenedAt: json['lastOpenedAt'] == null
+          ? null
+          : DateTime.parse(json['lastOpenedAt'] as String),
+      version: json['version'] as String?,
+      isPublic: json['isPublic'] as bool? ?? false,
+      coverImagePath: json['coverImagePath'] as String?,
+      author: json['author'] as String?,
+      category: json['category'] as String?,
+      jsonHash: json['jsonHash'] as String?,
     );
 
 Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
@@ -75,4 +117,13 @@ Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
       'price': instance.price,
       'isCustom': instance.isCustom,
       'ownerId': instance.ownerId,
+      'createdAt': instance.createdAt?.toIso8601String(),
+      'updatedAt': instance.updatedAt?.toIso8601String(),
+      'lastOpenedAt': instance.lastOpenedAt?.toIso8601String(),
+      'version': instance.version,
+      'isPublic': instance.isPublic,
+      'coverImagePath': instance.coverImagePath,
+      'author': instance.author,
+      'category': instance.category,
+      'jsonHash': instance.jsonHash,
     };

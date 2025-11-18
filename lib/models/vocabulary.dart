@@ -89,6 +89,25 @@ class Vocabulary extends HiveObject {
   @HiveField(26)
   String? topic; // Chủ đề của từ trong sách
 
+  // --- SRS (Spaced Repetition System) Fields ---
+  @HiveField(27)
+  DateTime? nextReviewDate; // Ngày review tiếp theo theo SRS algorithm
+
+  @HiveField(28)
+  int? reviewCount; // Số lần đã review từ này
+
+  @HiveField(29)
+  DateTime? lastReviewedAt; // Lần review cuối cùng
+
+  @HiveField(30)
+  double? easeFactor; // EaseFactor cho SM-2 algorithm (default: 2.5)
+
+  @HiveField(31)
+  int? interval; // Interval hiện tại (số ngày) cho SRS
+
+  @HiveField(32)
+  int? orderIndex; // Thứ tự của vocab trong book (để sort)
+
   Vocabulary({
     this.id,
     required this.word,
@@ -108,7 +127,7 @@ class Vocabulary extends HiveObject {
     required this.updatedAt,
     this.isSync = false,
     this.isDeleted = false,
-    // --- Added fields ---
+    // --- Advanced fields ---
     this.pos,
     this.frequencyRank,
     this.sourceList,
@@ -116,9 +135,15 @@ class Vocabulary extends HiveObject {
     this.userNotes,
     this.imagePath,
     this.reviewStatus,
-
     this.bookId,
     this.topic,
+    // --- SRS fields ---
+    this.nextReviewDate,
+    this.reviewCount,
+    this.lastReviewedAt,
+    this.easeFactor,
+    this.interval,
+    this.orderIndex,
   });
   // NOTE: Update HiveAdapter if you change fields!
 

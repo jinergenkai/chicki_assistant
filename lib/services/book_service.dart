@@ -86,4 +86,80 @@ class BookService {
   Book? getBook(String bookId) {
     return _bookBox.get(bookId);
   }
+
+  /// Create a new custom book with validation
+  Future<Book> createNewBook({
+    required String title,
+    required String description,
+    String? ownerId,
+    String? coverImagePath,
+    String? author,
+    String? category,
+  }) async {
+    // Validate: Check for duplicate title
+    final existingBooks = loadCustomBooks();
+    if (existingBooks.any((b) => b.title.toLowerCase() == title.toLowerCase())) {
+      throw Exception('Book with title "$title" already exists');
+    }
+
+    final now = DateTime.now();
+    final book = Book(
+      id: 'custom_${now.millisecondsSinceEpoch}',
+      title: title.trim(),
+      description: description.trim(),
+      price: 0,
+      isCustom: true,
+      ownerId: ownerId,
+      createdAt: now,
+      updatedAt: now,
+      version: '1.0',
+      isPublic: false,
+      coverImagePath: coverImagePath,
+      author: author,
+      category: category,
+    );
+
+    await _bookBox.put(book.id, book);
+    return book;
+  }
+
+  /// Mark a book as opened (update lastOpenedAt for recent books tracking)
+  Future<void> markBookOpened(String bookId) async {
+    final book = _bookBox.get(bookId);
+    if (book != null) {
+      book.lastOpenedAt = DateTime.now();
+      await _bookBox.put(bookId, book);
+    }
+  }
+
+  /// Get recently opened books (sorted by lastOpenedAt)
+  List<Book> getRecentBooks({int limit = 5}) {
+    final books = _bookBox.values.toList();
+
+    // Filter books that have been opened
+    final openedBooks = books.where((b) => b.lastOpenedAt != null).toList();
+
+    // Sort by lastOpenedAt descending (most recent first)
+    openedBooks.sort((a, b) => b.lastOpenedAt!.compareTo(a.lastOpenedAt!));
+
+    return openedBooks.take(limit).toList();
+  }
+
+  /// Get books by category
+  List<Book> getBooksByCategory(String category) {
+    return _bookBox.values
+        .where((b) => b.category?.toLowerCase() == category.toLowerCase())
+        .toList();
+  }
+
+  /// Get all categories
+  List<String> getAllCategories() {
+    final categories = _bookBox.values
+        .where((b) => b.category != null)
+        .map((b) => b.category!)
+        .toSet()
+        .toList();
+    categories.sort();
+    return categories;
+  }
 }
