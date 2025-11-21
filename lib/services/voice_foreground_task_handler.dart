@@ -253,64 +253,71 @@ class VoiceForegroundTaskHandler extends TaskHandler {
 
   void _setupSTTListener() {
     _sttService.onTextRecognized.listen((text) async {
-      if (text.isNotEmpty) {
-        try {
-          recognizedText = text;
-          NotificationManager.showRecognizedText(text);
-          _sendMessage(IsolateMessage.recognizedText(text));
+      // Always send micStopped when STT finishes (even on error/empty)
+      _sendMessage(IsolateMessage.micLifecycle('stopped'));
+      logger.info('ForegroundTask: STT finished, sent micStopped to main isolate');
 
-          // STT finished, mic stopped
-          _sendMessage(IsolateMessage.micLifecycle('stopped'));
-          logger.info('ForegroundTask: STT finished, sent micStopped to main isolate');
+      if (text.isEmpty) {
+        // Empty text means STT error or no speech detected
+        logger.warning('STT returned empty text (error or timeout)');
+        state = VoiceState.idle;
+        NotificationManager.updateForState(state, additionalInfo: 'No speech detected');
+        _sendMessage(IsolateMessage.voiceState(state.name));
+        return;
+      }
 
-          state = VoiceState.processing;
-          NotificationManager.updateForState(state, additionalInfo: text);
-          _sendMessage(IsolateMessage.voiceState(state.name));
-          logger.info('Processing speech input: $text');
+      try {
+        recognizedText = text;
+        NotificationManager.showRecognizedText(text);
+        _sendMessage(IsolateMessage.recognizedText(text));
 
-          // Classify intent using LLM
-          final response = await _intentClassifier.classify(text);
-          logger.success('LLM intent result: $response');
+        state = VoiceState.processing;
+        NotificationManager.updateForState(state, additionalInfo: text);
+        _sendMessage(IsolateMessage.voiceState(state.name));
+        logger.info('Processing speech input: $text');
 
-          // Process intent with unified handler (speech source)
-          String textToSpeak = response['intent'];
-          String? intentName = response['intent'];
+        // Classify intent using LLM
+        final response = await _intentClassifier.classify(text);
+        logger.success('LLM intent result: $response');
 
-          if (_intentHandler != null && response['intent'] != null) {
-            final result = await _intentHandler!.handleIntent(
-              intent: response['intent'] as String,
-              slots: response['slots'] is Map ? Map<String, dynamic>.from(response['slots']) : {},
-              source: IntentSource.speech,
-            );
+        // Process intent with unified handler (speech source)
+        String textToSpeak = response['intent'];
+        String? intentName = response['intent'];
 
-            // Send result back to main isolate
-            _sendMessage(IsolateMessage.intentResult(result));
+        if (_intentHandler != null && response['intent'] != null) {
+          final result = await _intentHandler!.handleIntent(
+            intent: response['intent'] as String,
+            slots: response['slots'] is Map ? Map<String, dynamic>.from(response['slots']) : {},
+            source: IntentSource.speech,
+          );
 
-            // Use TTS text if available, otherwise use intent name
-            if (result['action'] == 'speak' && result['text'] != null) {
-              textToSpeak = result['text'];
-            }
+          // Send result back to main isolate
+          _sendMessage(IsolateMessage.intentResult(result));
+
+          // Use TTS text if available, otherwise use intent name
+          if (result['action'] == 'speak' && result['text'] != null) {
+            textToSpeak = result['text'];
           }
-
-          state = VoiceState.speaking;
-          NotificationManager.updateForState(state, additionalInfo: textToSpeak);
-          _sendMessage(IsolateMessage.voiceState(state.name));
-          await _ttsService.speak(textToSpeak);
-
-          // Show result in notification
-          if (intentName != null) {
-            NotificationManager.showIntentResult(intentName, textToSpeak);
-          }
-
-          state = VoiceState.idle;
-          NotificationManager.updateForState(state);
-          _sendMessage(IsolateMessage.voiceState(state.name));
-        } catch (e) {
-          logger.error('Error processing voice input', e);
-          state = VoiceState.error;
-          NotificationManager.updateForState(state, additionalInfo: e.toString());
-          _sendMessage(IsolateMessage.voiceState(state.name, error: e.toString()));
         }
+
+        state = VoiceState.speaking;
+        NotificationManager.updateForState(state, additionalInfo: textToSpeak);
+        _sendMessage(IsolateMessage.voiceState(state.name));
+        await _ttsService.speak(textToSpeak);
+
+        // Show result in notification
+        if (intentName != null) {
+          NotificationManager.showIntentResult(intentName, textToSpeak);
+        }
+
+        state = VoiceState.idle;
+        NotificationManager.updateForState(state);
+        _sendMessage(IsolateMessage.voiceState(state.name));
+      } catch (e) {
+        logger.error('Error processing voice input', e);
+        state = VoiceState.error;
+        NotificationManager.updateForState(state, additionalInfo: e.toString());
+        _sendMessage(IsolateMessage.voiceState(state.name, error: e.toString()));
       }
     });
   }
@@ -351,6 +358,11 @@ class VoiceForegroundTaskHandler extends TaskHandler {
       logger.info('VoiceForegroundTaskHandler: Started listening');
     } catch (e) {
       logger.error('Error starting voice listening', e);
+
+      // Send micStopped to resume wakeword
+      _sendMessage(IsolateMessage.micLifecycle('stopped'));
+      logger.info('ForegroundTask: Error occurred, sent micStopped to resume wakeword');
+
       state = VoiceState.error;
       NotificationManager.updateForState(state, additionalInfo: e.toString());
       _sendMessage(IsolateMessage.voiceState(state.name, error: e.toString()));

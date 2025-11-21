@@ -20,6 +20,7 @@ class TextToSpeechService implements TTSService {
   late final FlutterTts _tts;
   bool _isInitialized = false;
   AppConfigController? _appConfig;
+  Completer<void>? _speakCompleter;
 
   void setConfig(AppConfigController config) {
     _appConfig = config;
@@ -56,12 +57,20 @@ class TextToSpeechService implements TTSService {
       _tts.setCompletionHandler(() {
         _isSpeaking = false;
         logger.info('Finished speaking');
+        if (_speakCompleter != null && !_speakCompleter!.isCompleted) {
+          _speakCompleter!.complete();
+          _speakCompleter = null;
+        }
       });
 
       // Set error handler
       _tts.setErrorHandler((message) {
         _isSpeaking = false;
         logger.error('TTS error: $message');
+        if (_speakCompleter != null && !_speakCompleter!.isCompleted) {
+          _speakCompleter!.completeError(Exception('TTS error: $message'));
+          _speakCompleter = null;
+        }
       });
 
       // Set progress handler
@@ -95,15 +104,24 @@ class TextToSpeechService implements TTSService {
         await stop();
       }
 
+      // Create completer to wait for TTS completion
+      _speakCompleter = Completer<void>();
       _isSpeaking = true;
       logger.info('Speaking: $text');
 
       final result = await _tts.speak(text);
       if (result != 1) {
+        _isSpeaking = false;
+        _speakCompleter = null;
         throw Exception('Failed to start speaking');
       }
+
+      // Wait for TTS to actually finish (completion handler will complete this)
+      await _speakCompleter!.future;
+      logger.info('TTS speak() completed');
     } catch (e) {
       _isSpeaking = false;
+      _speakCompleter = null;
       logger.error('Error while speaking', e);
       rethrow;
     }
@@ -115,6 +133,12 @@ class TextToSpeechService implements TTSService {
       final result = await _tts.stop();
       _isSpeaking = false;
       logger.info('Stopped speaking');
+
+      // Complete the speak completer if it's pending
+      if (_speakCompleter != null && !_speakCompleter!.isCompleted) {
+        _speakCompleter!.complete();
+        _speakCompleter = null;
+      }
 
       if (result != 1) {
         throw Exception('Failed to stop speaking');
@@ -154,6 +178,10 @@ class TextToSpeechService implements TTSService {
 
   Future<void> dispose() async {
     _isSpeaking = false;
+    if (_speakCompleter != null && !_speakCompleter!.isCompleted) {
+      _speakCompleter!.complete();
+      _speakCompleter = null;
+    }
     await _tts.stop();
   }
 }

@@ -59,7 +59,7 @@ dependencies:
   android_id: ^0.4.0
   json_serializable: ^6.9.0
   auto_size_text: ^3.0.0
-  # rive: ^0.14.0-dev.6
+  rive: ^0.14.0-dev.6
   # media_kit: ^1.2.0
   # media_kit_libs_audio: ^1.0.6
   

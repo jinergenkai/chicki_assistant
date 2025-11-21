@@ -43,9 +43,12 @@ class SpeechToTextService implements STTService {
       await PermissionUtils.checkMicrophone();
 
       _isInitialized = await _speech.initialize(
-        onError: (errorNotification) => logger.error(
-          'Speech recognition error: ${errorNotification.errorMsg}',
-        ),
+        onError: (errorNotification) => {
+          logger.error(
+            'Speech recognition error: ${errorNotification.errorMsg}',
+          ),
+          stopListening()
+        },
         onStatus: (status) => logger.info('Speech recognition status: $status'),
         debugLogging: true,
         // finalTimeout: const Duration(seconds: 20),

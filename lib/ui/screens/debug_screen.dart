@@ -26,10 +26,10 @@ class DebugScreen extends StatelessWidget {
       title: 'Test Buddy',
       screen: TestBuddyScreen(),
     ),
-    // _DebugItem(
-    //   title: 'Chicky Mascot',
-    //   screen: ChickyMascotScreen(),
-    // ),
+    _DebugItem(
+      title: 'Chicky Mascot',
+      screen: ChickyMascotScreen(),
+    ),
     _DebugItem(
       title: 'Workflow',
       screen: WorkflowGraphView(),

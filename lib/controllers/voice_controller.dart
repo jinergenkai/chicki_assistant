@@ -227,7 +227,7 @@ class VoiceController extends GetxController {
       (e) => e.name == stateName,
       orElse: () => VoiceState.idle,
     );
-    
+
     if (message.data['error'] != null) {
       logger.error('Voice state error: ${message.data['error']}');
     }
