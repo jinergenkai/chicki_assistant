@@ -20,6 +20,10 @@ import 'package:get/get.dart';
 import 'package:chicki_buddy/controllers/chat_controller.dart';
 import 'package:chicki_buddy/controllers/voice_controller.dart';
 import 'package:chicki_buddy/controllers/books_controller.dart';
+import 'package:chicki_buddy/services/test_data_service.dart';
+import 'package:chicki_buddy/services/unified_intent_handler_service.dart';
+import 'package:chicki_buddy/services/data/book_data_service.dart';
+import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,9 +43,34 @@ void main() async {
   // Inject AppConfigController and core services
   Get.put(AppConfigController(), permanent: true);
   Get.put(PorcupineWakewordService(), permanent: true);
+  
+  // Data services MUST be initialized BEFORE controllers that depend on them
+  await Get.putAsync(() async {
+    final service = BookDataService();
+    await service.onInit();
+    return service;
+  }, permanent: true);
+  
+  await Get.putAsync(() async {
+    final service = VocabularyDataService();
+    await service.onInit();
+    return service;
+  }, permanent: true);
+  
+  // Data access and intent handling (main isolate only)
+  await Get.putAsync(() async {
+    final service = UnifiedIntentHandlerService();
+    await service.onInit();
+    return service;
+  }, permanent: true);
+  
+  // Controllers that depend on data services
   Get.put(VoiceController(), permanent: true);
   Get.put(BubbleController(), permanent: true);
   Get.put(BooksController(), permanent: true); // Global for voice commands
+  
+  // Test services
+  Get.put(TestDataService(), permanent: true); // Test offscreen data access
 
   FlutterForegroundTask.initCommunicationPort();
 

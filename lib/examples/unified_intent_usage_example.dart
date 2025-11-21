@@ -1,4 +1,3 @@
-import 'package:chicki_buddy/services/intent_bridge_service.dart';
 import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:chicki_buddy/core/logger.dart';
 import 'package:get/get.dart';
@@ -29,19 +28,19 @@ class UnifiedIntentUsageExample extends GetxController {
     
     // This will trigger the intent in foreground isolate
     // and return full data for UI display
-    IntentBridgeService.triggerUIIntent(
-      intent: 'listBook',
-    );
+    // IntentBridgeService.triggerUIIntent(
+    //   intent: 'listBook',
+    // );
   }
   
   /// Example: User clicks "Select Book" with a specific book
   Future<void> onSelectBookButtonPressed(String bookName) async {
     logger.info('User clicked Select Book: $bookName');
     
-    IntentBridgeService.triggerUIIntent(
-      intent: 'selectBook',
-      slots: {'bookName': bookName},
-    );
+    // IntentBridgeService.triggerUIIntent(
+    //   intent: 'selectBook',
+    //   slots: {'bookName': bookName},
+    // );
   }
   
   /// Example: User says "List my books" (handled automatically by speech system)

@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:chicki_buddy/models/book.dart';
-import 'package:chicki_buddy/services/intent_bridge_service.dart';
 import 'package:chicki_buddy/ui/screens/book_details_screen.dart';
 import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
 import 'package:chicki_buddy/ui/widgets/book_card.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card.dart';
+import 'package:chicki_buddy/ui/widgets/recent_books_section.dart';
+import 'package:chicki_buddy/services/data/book_data_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
@@ -22,7 +23,9 @@ class BooksScreen extends StatefulWidget {
 
 class _BooksScreenState extends State<BooksScreen> {
   final controller = Get.find<BooksController>(); // Use existing global instance
+  late BookDataService bookDataService;
   StreamSubscription? _navigationSub;
+  List<Book> recentBooks = [];
 
   void triggerOpenBook(Book book) {
     // Navigator.of(context).push(MaterialPageRoute(
@@ -34,18 +37,19 @@ class _BooksScreenState extends State<BooksScreen> {
   }
 
   Future<void> clickOpenBook(Book book) async {
-    // Direct navigation - FlashCardController will handle loading via intent
+    // Direct navigation - no intent needed for UI actions
     triggerOpenBook(book);
-  }
-
-  Future<void> voiceOpenBook(Book book) async {
-    // For voice commands, trigger intent which will be handled by controller
-    await IntentBridgeService.triggerUIIntent(intent: 'selectBook', slots: {'bookId': book.id});
   }
 
   @override
   void initState() {
     super.initState();
+    
+    bookDataService = Get.find<BookDataService>();
+
+    // Load recent books
+    _loadRecentBooks();
+
     // Listen for navigation requests from controller (voice/intent triggered)
     // BooksScreen is ONLY responsible for UI navigation, not intent handling
     _navigationSub = controller.bookToNavigate.listen((book) {
@@ -54,6 +58,13 @@ class _BooksScreenState extends State<BooksScreen> {
         // Reset after navigation
         controller.bookToNavigate.value = null;
       }
+    });
+  }
+
+  Future<void> _loadRecentBooks() async {
+    await bookDataService.loadRecentBooks(limit: 10);
+    setState(() {
+      recentBooks = bookDataService.recentBooks.toList();
     });
   }
 
@@ -141,7 +152,7 @@ class _BooksScreenState extends State<BooksScreen> {
                 decoration: const BoxDecoration(
                   color: Colors.white,
                 ),
-                padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 0),
+                padding: const EdgeInsets.only(top: 20, left: 0, right: 0, bottom: 0),
                 child: Scrollbar(
                   child: Obx(() {
                     // Show loading indicator while fetching books
@@ -151,7 +162,51 @@ class _BooksScreenState extends State<BooksScreen> {
                       );
                     }
 
-                    return GridView.builder(
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Recent Books Section
+                        RecentBooksSection(
+                          recentBooks: recentBooks,
+                          onBookTap: clickOpenBook,
+                        ),
+
+                        // All Books Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.library_books_rounded,
+                                color: Colors.blue,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'ALL BOOKS',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '(${controller.books.length})',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Grid View of all books
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: GridView.builder(
                       shrinkWrap: true,
                       physics: const AlwaysScrollableScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -161,29 +216,33 @@ class _BooksScreenState extends State<BooksScreen> {
                         childAspectRatio: 0.8,
                       ),
                       itemCount: controller.books.length,
-                      itemBuilder: (context, index) {
-                        final book = controller.books[index];
-                        timeDilation = 4.0;
-                        return GestureDetector(
-                          onLongPress: () async {
-                            await controller.reloadBooks();
-                          },
-                          onTap: () => clickOpenBook(book),
-                          child: Hero(
-                            tag: 'book_${book.id}',
-                            child: Obx(() => BookCard(
-                                  id: book.id,
-                                  title: book.title,
-                                  desc: book.description,
-                                  isDownloaded: controller.downloadedBooks.contains(book.id),
-                                  isDownloading: controller.downloadingBookId.value == book.id,
-                                  progress: controller.downloadProgress.value,
-                                  onDownload: () => controller.downloadBook(book.id),
-                                  onRemove: () => controller.removeBook(book.id),
-                                )),
+                            itemBuilder: (context, index) {
+                              final book = controller.books[index];
+                              timeDilation = 4.0;
+                              return GestureDetector(
+                                onLongPress: () async {
+                                  await controller.reloadBooks();
+                                  _loadRecentBooks(); // Refresh recent books too
+                                },
+                                onTap: () => clickOpenBook(book),
+                                child: Hero(
+                                  tag: 'book_${book.id}',
+                                  child: Obx(() => BookCard(
+                                        id: book.id,
+                                        title: book.title,
+                                        desc: book.description,
+                                        isDownloaded: controller.downloadedBooks.contains(book.id),
+                                        isDownloading: controller.downloadingBookId.value == book.id,
+                                        progress: controller.downloadProgress.value,
+                                        onDownload: () => controller.downloadBook(book.id),
+                                        onRemove: () => controller.removeBook(book.id),
+                                      )),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ),
+                      ],
                     );
                   }),
                 ),

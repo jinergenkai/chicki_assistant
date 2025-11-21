@@ -9,11 +9,16 @@ import 'test_screen/model_test.screen.dart';
 import 'test_screen/sherpa_tts_test_screen.dart';
 import 'test_screen/test_buddy.screen.dart';
 import 'test_screen/chicky_mascot.screen.dart';
+import 'test_screen/offscreen_test.screen.dart';
 
 class DebugScreen extends StatelessWidget {
   const DebugScreen({super.key});
 
   final List<_DebugItem> items = const [
+    _DebugItem(
+      title: '🧪 Offscreen Test (NEW)',
+      screen: OffscreenTestScreen(),
+    ),
     _DebugItem(
       title: 'Model Test',
       screen: ModelTestScreen(),

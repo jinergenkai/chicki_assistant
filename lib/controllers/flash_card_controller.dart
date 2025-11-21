@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:chicki_buddy/core/logger.dart';
 import 'package:chicki_buddy/core/app_event_bus.dart';
-import 'package:chicki_buddy/services/intent_bridge_service.dart';
-import 'package:chicki_buddy/services/vocabulary.service.dart';
+import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
+import 'package:chicki_buddy/services/data/book_data_service.dart';
 import 'package:chicki_buddy/models/book.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:get/get.dart';
@@ -15,7 +15,8 @@ class FlashCardController extends GetxController {
   final Rx<String?> errorMessage = Rx<String?>(null);
 
   final Book book;
-  final VocabularyService _vocabularyService = VocabularyService();
+  late VocabularyDataService _vocabularyDataService;
+  late BookDataService _bookDataService;
   StreamSubscription? _voiceActionSub;
 
   FlashCardController({required this.book});
@@ -23,41 +24,28 @@ class FlashCardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _vocabularyDataService = Get.find<VocabularyDataService>();
+    _bookDataService = Get.find<BookDataService>();
+    
     _setupEventListeners();
-    loadVocabularyViaIntent();
-    _syncContextWithHandler();
+    _markBookAsOpened(); // Track recent books
+    loadVocabulary();
+  }
+
+  /// Mark book as opened for recent books tracking
+  Future<void> _markBookAsOpened() async {
+    try {
+      await _bookDataService.selectBook(book.id);
+      logger.info('FlashCardController: Marked book ${book.id} as opened');
+    } catch (e) {
+      logger.warning('FlashCardController: Failed to mark book as opened: $e');
+    }
   }
 
   @override
   void onClose() {
     _voiceActionSub?.cancel();
-    _resetHandlerContext();
     super.onClose();
-  }
-
-  /// Sync context with intent handler when entering flashcard screen
-  /// This allows voice commands to work properly in flashcard context
-  void _syncContextWithHandler() {
-    logger.info('FlashCardController: Syncing context with handler for book ${book.id}');
-
-    // Send a "context sync" intent (doesn't trigger navigation)
-    // This updates handler's currentBookId, currentVocabList, etc.
-    IntentBridgeService.triggerUIIntent(
-      intent: 'syncFlashCardContext',
-      slots: {
-        'bookId': book.id,
-        'silent': true, // Don't return requiresUI
-      },
-    );
-  }
-
-  /// Reset handler context when leaving flashcard screen
-  void _resetHandlerContext() {
-    logger.info('FlashCardController: Resetting handler context');
-
-    IntentBridgeService.triggerUIIntent(
-      intent: 'exitFlashCard',
-    );
   }
 
   void _setupEventListeners() {
@@ -77,58 +65,25 @@ class FlashCardController extends GetxController {
     logger.info('FlashCardController: Handling voice action: $actionType');
 
     switch (actionType) {
-      case 'selectBook':
-      case 'loadVocabulary':
-        if (data != null && data['vocabularies'] != null) {
-          final vocabs = (data['vocabularies'] as List)
-              .map((v) => Vocabulary.fromJson(v as Map<String, dynamic>))
-              .toList();
-          vocabList.value = vocabs;
-          currentIndex.value = data['currentIndex'] as int? ?? 0;
-          isLoading.value = false;
-          isFlipped.value = false;
-
-          if (vocabs.isEmpty) {
-            errorMessage.value = 'No vocabulary found for this book';
-          } else {
-            errorMessage.value = null;
-          }
-
-          logger.info('FlashCardController: Loaded ${vocabs.length} vocabularies');
-        }
-        break;
-
       case 'nextCard':
-        if (data != null) {
-          currentIndex.value = data['currentIndex'] as int;
-          isFlipped.value = data['isFlipped'] as bool? ?? false;
-          logger.info('FlashCardController: Next card, index: ${currentIndex.value}');
-        }
+        // Voice triggered nextCard - update UI
+        nextCard();
         break;
 
       case 'prevCard':
-        if (data != null) {
-          currentIndex.value = data['currentIndex'] as int;
-          isFlipped.value = data['isFlipped'] as bool? ?? false;
-          logger.info('FlashCardController: Prev card, index: ${currentIndex.value}');
-        }
+        // Voice triggered prevCard - update UI
+        prevCard();
         break;
 
       case 'flipCard':
-        if (data != null) {
-          isFlipped.value = data['isFlipped'] as bool;
-          logger.info('FlashCardController: Flip card, isFlipped: ${isFlipped.value}');
-        }
+        // Voice triggered flipCard - update UI
+        flipCard();
         break;
 
       case 'toggleBookmark':
-        if (data != null && data['vocabulary'] != null) {
-          final updatedVocab = Vocabulary.fromJson(data['vocabulary'] as Map<String, dynamic>);
-          final index = vocabList.indexWhere((v) => v.id == updatedVocab.id);
-          if (index != -1) {
-            vocabList[index] = updatedVocab;
-            logger.info('FlashCardController: Bookmark toggled for vocab ${updatedVocab.word}');
-          }
+        // Voice triggered bookmark - reload current vocab
+        if (vocabList.isNotEmpty) {
+          loadVocabulary();
         }
         break;
 
@@ -144,28 +99,25 @@ class FlashCardController extends GetxController {
     }
   }
 
-  /// Load vocabulary for the book directly from service
-  /// (UI navigation already happened, no need to trigger selectBook intent)
-  Future<void> loadVocabularyViaIntent() async {
+  /// Load vocabulary for the book directly from service (UI action, no intent)
+  Future<void> loadVocabulary() async {
     isLoading.value = true;
     errorMessage.value = null;
-    logger.info('FlashCardController: Loading vocabulary for book ${book.id} directly');
+    logger.info('FlashCardController: Loading vocabulary for book ${book.id}');
 
     try {
-      await _vocabularyService.init();
-      final vocabs = _vocabularyService.getByBookId(book.id);
-
-      vocabList.value = vocabs;
+      await _vocabularyDataService.loadByBookId(book.id);
+      vocabList.value = _vocabularyDataService.currentBookVocabs.toList();
       currentIndex.value = 0;
       isFlipped.value = false;
       isLoading.value = false;
 
-      if (vocabs.isEmpty) {
+      if (vocabList.isEmpty) {
         errorMessage.value = 'No vocabulary found for this book';
         logger.warning('FlashCardController: No vocabulary found for book ${book.id}');
       } else {
         errorMessage.value = null;
-        logger.info('FlashCardController: Loaded ${vocabs.length} vocabularies');
+        logger.info('FlashCardController: Loaded ${vocabList.length} vocabularies');
       }
     } catch (e) {
       errorMessage.value = 'Failed to load vocabulary: $e';
@@ -174,64 +126,68 @@ class FlashCardController extends GetxController {
     }
   }
 
-  /// Navigate to next card via intent
-  Future<void> nextCard() async {
+  /// Navigate to next card (UI action, no intent needed)
+  void nextCard() {
     if (vocabList.isEmpty) return;
-
-    logger.info('FlashCardController: Triggering nextCard intent');
-    await IntentBridgeService.triggerUIIntent(
-      intent: 'nextCard',
-    );
+    
+    if (currentIndex.value < vocabList.length - 1) {
+      currentIndex.value++;
+      isFlipped.value = false;
+      logger.info('FlashCardController: Next card ${currentIndex.value + 1}/${vocabList.length}');
+    }
   }
 
-  /// Navigate to previous card via intent
-  Future<void> prevCard() async {
+  /// Navigate to previous card (UI action, no intent needed)
+  void prevCard() {
     if (vocabList.isEmpty) return;
-
-    logger.info('FlashCardController: Triggering prevCard intent');
-    await IntentBridgeService.triggerUIIntent(
-      intent: 'prevCard',
-    );
+    
+    if (currentIndex.value > 0) {
+      currentIndex.value--;
+      isFlipped.value = false;
+      logger.info('FlashCardController: Prev card ${currentIndex.value + 1}/${vocabList.length}');
+    }
   }
 
-  /// Flip current card via intent
-  Future<void> flipCard() async {
+  /// Flip current card (UI action, no intent needed)
+  void flipCard() {
     if (vocabList.isEmpty) return;
-
-    logger.info('FlashCardController: Triggering flipCard intent');
-    await IntentBridgeService.triggerUIIntent(
-      intent: 'flipCard',
-    );
+    
+    isFlipped.value = !isFlipped.value;
+    logger.info('FlashCardController: Flip card, isFlipped: ${isFlipped.value}');
   }
 
-  /// Toggle bookmark for current card via intent
+  /// Toggle bookmark for current card (UI action, no intent needed)
   Future<void> toggleBookmark() async {
     if (vocabList.isEmpty) return;
-
-    logger.info('FlashCardController: Triggering bookmarkWord intent');
-    await IntentBridgeService.triggerUIIntent(
-      intent: 'bookmarkWord',
-    );
+    
+    final currentVocab = vocabList[currentIndex.value];
+    final tags = currentVocab.tags ?? [];
+    
+    if (tags.contains('bookmarked')) {
+      tags.remove('bookmarked');
+    } else {
+      tags.add('bookmarked');
+    }
+    
+    await _vocabularyDataService.updateVocab(currentVocab);
+    logger.info('FlashCardController: Bookmark toggled for vocab ${currentVocab.word}');
   }
 
-  /// Pronounce current word via intent
+  /// Pronounce current word (UI action, handled by TTS service)
   Future<void> pronounceWord() async {
     if (vocabList.isEmpty) return;
-
-    logger.info('FlashCardController: Triggering pronounceWord intent');
-    await IntentBridgeService.triggerUIIntent(
-      intent: 'pronounceWord',
-    );
+    
+    final currentVocab = vocabList[currentIndex.value];
+    // TTS will be handled by TTSService, not via intent
+    logger.info('FlashCardController: Pronounce word: ${currentVocab.word}');
   }
 
-  /// Show example sentence via intent
+  /// Show example sentence (UI action)
   Future<void> showExample() async {
     if (vocabList.isEmpty) return;
-
-    logger.info('FlashCardController: Triggering exampleSentence intent');
-    await IntentBridgeService.triggerUIIntent(
-      intent: 'exampleSentence',
-    );
+    
+    final currentVocab = vocabList[currentIndex.value];
+    logger.info('FlashCardController: Show example for: ${currentVocab.word}');
   }
 
   /// Get current vocabulary

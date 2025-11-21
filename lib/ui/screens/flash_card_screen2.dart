@@ -1,6 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chicki_buddy/models/book.dart';
-import 'package:chicki_buddy/services/intent_bridge_service.dart';
 import 'package:chicki_buddy/utils/gradient.dart';
 import 'package:flutter/material.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
@@ -11,9 +10,12 @@ import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_action_bar.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_progress_indicator.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_front_side.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_back_side.dart';
+import 'package:chicki_buddy/ui/widgets/flash_card/srs_review_buttons.dart';
+import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 class FlashCardScreen2 extends StatefulWidget {
   final Book book;
@@ -25,6 +27,7 @@ class FlashCardScreen2 extends StatefulWidget {
 
 class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProviderStateMixin {
   late FlashCardController controller;
+  late VocabularyDataService vocabDataService;
 
   late AnimationController _swipeController;
   late AnimationController _stackController;
@@ -40,8 +43,9 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   void initState() {
     super.initState();
 
-    // Initialize controller
+    // Initialize controller and service
     controller = Get.put(FlashCardController(book: widget.book), tag: 'flashcard_${widget.book.id}');
+    vocabDataService = Get.find<VocabularyDataService>();
 
     // timeDilation = 1.0;
     _swipeController = AnimationController(
@@ -125,6 +129,69 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
     // Trigger flipCard intent
     // Animation will be updated automatically via ever() listener
     controller.flipCard();
+  }
+
+  Future<void> _handleQualitySelected(int quality) async {
+    if (controller.vocabList.isEmpty) return;
+
+    final currentVocab = controller.vocabList[controller.currentIndex.value];
+
+    try {
+      // Review vocabulary with SRS algorithm
+      await vocabDataService.reviewVocab(currentVocab, quality);
+
+      // Show feedback toast
+      String message;
+      if (quality < 3) {
+        message = '😫 Review again tomorrow';
+      } else {
+        final nextReview = currentVocab.nextReviewDate;
+        if (nextReview != null) {
+          final daysUntil = nextReview.difference(DateTime.now()).inDays;
+          if (daysUntil == 0) {
+            message = '😊 Review later today';
+          } else if (daysUntil == 1) {
+            message = '😊 Review tomorrow';
+          } else {
+            message = '😄 Review in $daysUntil days';
+          }
+        } else {
+          message = '✅ Reviewed!';
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text(message)),
+              ],
+            ),
+            backgroundColor: quality < 3 ? Colors.orange.shade700 : Colors.green.shade600,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+
+      // Auto move to next card after a short delay
+      await Future.delayed(const Duration(milliseconds: 300));
+      _completeSwipe(true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildCard(Vocabulary vocab, int index, {bool isTop = true}) {
@@ -231,9 +298,7 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
   // }
 
   void clickExit() {
-    IntentBridgeService.triggerUIIntent(
-      intent: 'exit',
-    );
+    // Direct navigation, no intent needed for UI
     Navigator.of(context).pop();
   }
 
@@ -265,10 +330,16 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
             ),
             Center(
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 24, top: 12),
+                padding: const EdgeInsets.only(bottom: 12, top: 12),
                 child: _buildActionButtons(),
               ),
             ),
+            // SRS Review Buttons (only show when flipped)
+            Obx(() => SRSReviewButtons(
+              isVisible: controller.isFlipped.value && controller.vocabList.isNotEmpty,
+              onQualitySelected: _handleQualitySelected,
+            )),
+            const SizedBox(height: 24),
           ],
         );
       }
@@ -473,7 +544,7 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
               // TODO: Trigger addVocabulary intent to add vocab via foreground isolate
               // For now, reload vocabulary list
               Navigator.of(context).pop();
-              controller.loadVocabularyViaIntent();
+              controller.loadVocabulary();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue.shade500,
