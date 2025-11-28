@@ -9,6 +9,7 @@ import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/models/voice_note.dart';
 import 'package:chicki_buddy/services/wakeword/porcupine_wakeword_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -42,7 +43,7 @@ void main() async {
 
   // Inject AppConfigController and core services
   Get.put(AppConfigController(), permanent: true);
-  Get.put(PorcupineWakewordService(), permanent: true);
+  // Get.put(PorcupineWakewordService(), permanent: true);
   
   // Data services MUST be initialized BEFORE controllers that depend on them
   await Get.putAsync(() async {
@@ -70,7 +71,7 @@ void main() async {
   Get.put(BooksController(), permanent: true); // Global for voice commands
   
   // Test services
-  Get.put(TestDataService(), permanent: true); // Test offscreen data access
+  // Get.put(TestDataService(), permanent: true); // Test offscreen data access
 
   FlutterForegroundTask.initCommunicationPort();
 
@@ -177,6 +178,11 @@ class MyApp extends StatelessWidget {
           routeInformationProvider: appRouter.routeInformationProvider,
           debugShowCheckedModeBanner: false,
           locale: Locale(appConfig.language.value.isNotEmpty ? appConfig.language.value : 'en'),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           supportedLocales: const [
             Locale('en'),
             Locale('vi'),

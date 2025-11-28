@@ -1,9 +1,13 @@
 import 'package:chicki_buddy/core/constants.dart';
 import 'package:chicki_buddy/ui/widgets/moon_icon_button.dart';
 import 'package:chicki_buddy/ui/widgets/moons_card.dart';
+import 'package:chicki_buddy/ui/widgets/dashboard/learning_heatmap.dart';
+import 'package:chicki_buddy/ui/widgets/dashboard/stats_card.dart';
+import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:moon_design/moon_design.dart';
+import 'package:get/get.dart';
 
 import 'debug_screen.dart';
 
@@ -16,11 +20,16 @@ class UserScreen extends StatefulWidget {
 
 class _UserScreenState extends State<UserScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  late final AppConfigController appConfig;
+
+  @override
+  void initState() {
+    super.initState();
+    appConfig = Get.find<AppConfigController>();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Dummy data
-    const int streak = 7;
     final List<Map<String, dynamic>> badges = [
       {'label': 'Premium', 'color': Colors.amber[600]},
       {'label': 'Online', 'color': Colors.green[300]},
@@ -165,56 +174,173 @@ class _UserScreenState extends State<UserScreen> {
         ),
         // Dưới: main content
         Expanded(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            child: ListView(
+            child: Column(
               children: [
-                // Streak progress
+                // Dashboard Stats Section
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Dashboard',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+
+                // Stats Grid
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.3,
+                  children: [
+                    Obx(() => StatsCard(
+                      title: 'Streak',
+                      value: '${appConfig.currentStreak.value}',
+                      icon: LucideIcons.flame,
+                      color: Colors.orange,
+                      subtitle: 'days in a row',
+                    )),
+                    Obx(() => StatsCard(
+                      title: 'Total Words',
+                      value: '${appConfig.totalVocabLearned.value}',
+                      icon: LucideIcons.bookOpen,
+                      color: Colors.blue,
+                      subtitle: 'learned',
+                    )),
+                    Obx(() => StatsCard(
+                      title: 'Reviews',
+                      value: '${appConfig.totalReviewCount.value}',
+                      icon: LucideIcons.repeat,
+                      color: Colors.green,
+                      subtitle: 'completed',
+                    )),
+                    Obx(() => StatsCard(
+                      title: 'Level',
+                      value: '${appConfig.level.value}',
+                      icon: LucideIcons.trophy,
+                      color: Colors.amber,
+                      subtitle: '${appConfig.totalXP.value} XP',
+                    )),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Learning Heatmap
+                const MoonsCard(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: LearningHeatmap(),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Mastery Breakdown
                 MoonsCard(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Streak', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: LinearProgressIndicator(
-                            value: streak / 30,
-                            minHeight: 12,
-                            backgroundColor: Colors.grey[300],
-                            color: Colors.orange[400],
+                        const Text(
+                          'Mastery Breakdown',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        const Text('$streak ngày liên tiếp', style: TextStyle(fontSize: 12)),
+                        const SizedBox(height: 16),
+                        _buildMasteryBar(
+                          'Mastered',
+                          0.6,
+                          Colors.green,
+                          '60%',
+                        ),
+                        const SizedBox(height: 12),
+                        _buildMasteryBar(
+                          'Reviewing',
+                          0.25,
+                          Colors.blue,
+                          '25%',
+                        ),
+                        const SizedBox(height: 12),
+                        _buildMasteryBar(
+                          'Learning',
+                          0.15,
+                          Colors.orange,
+                          '15%',
+                        ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                // Contact support
-                MoonsCard(
-                  child: ListTile(
-                    leading: const Icon(Icons.support_agent, color: Colors.blue),
-                    title: const Text('Liên hệ hỗ trợ'),
-                    subtitle: const Text('Nhận trợ giúp từ đội ngũ'),
-                    onTap: () {},
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Request new feature
-                MoonsCard(
-                  child: ListTile(
-                    leading: const Icon(Icons.lightbulb, color: Colors.amber),
-                    title: const Text('Đề xuất tính năng mới'),
-                    subtitle: const Text('Gửi ý tưởng cho ứng dụng'),
-                    onTap: () {},
-                  ),
-                ),
+
+                // const SizedBox(height: 20),
+                // // Contact support
+                // MoonsCard(
+                //   child: ListTile(
+                //     leading: const Icon(Icons.support_agent, color: Colors.blue),
+                //     title: const Text('Liên hệ hỗ trợ'),
+                //     subtitle: const Text('Nhận trợ giúp từ đội ngũ'),
+                //     onTap: () {},
+                //   ),
+                // ),
+                // const SizedBox(height: 8),
+                // // Request new feature
+                // MoonsCard(
+                //   child: ListTile(
+                //     leading: const Icon(Icons.lightbulb, color: Colors.amber),
+                //     title: const Text('Đề xuất tính năng mới'),
+                //     subtitle: const Text('Gửi ý tưởng cho ứng dụng'),
+                //     onTap: () {},
+                //   ),
+                // ),
               ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMasteryBar(String label, double value, Color color, String percentage) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              percentage,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: value,
+            minHeight: 10,
+            backgroundColor: Colors.grey.shade200,
+            valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
       ],

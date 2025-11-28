@@ -61,7 +61,7 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     _setupRmsListener();
     
     // Start test timer for offscreen verification
-    _startTestTimer();
+    // _startTestTimer();
   }
 
   Future<void> initHive() async {

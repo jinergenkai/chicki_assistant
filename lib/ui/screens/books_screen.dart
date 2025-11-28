@@ -7,7 +7,11 @@ import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
 import 'package:chicki_buddy/ui/widgets/book_card.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card.dart';
 import 'package:chicki_buddy/ui/widgets/recent_books_section.dart';
+import 'package:chicki_buddy/ui/widgets/create_book_dialog.dart';
 import 'package:chicki_buddy/services/data/book_data_service.dart';
+import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
+import 'package:chicki_buddy/services/vocabulary.service.dart';
+import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
@@ -24,15 +28,19 @@ class BooksScreen extends StatefulWidget {
 class _BooksScreenState extends State<BooksScreen> {
   final controller = Get.find<BooksController>(); // Use existing global instance
   late BookDataService bookDataService;
+  late VocabularyDataService vocabDataService;
   StreamSubscription? _navigationSub;
   List<Book> recentBooks = [];
+  String? _selectedCategory;
+  List<String> _categories = [];
+
+  // Cache vocab stats for each book
+  Map<String, Map<String, int>> bookStats = {};
 
   void triggerOpenBook(Book book) {
-    // Navigator.of(context).push(MaterialPageRoute(
-    //   builder: (context) => BookDetailsScreen(book: book),
-    // ));
+    // Navigate to BookDetailsScreen instead of directly to FlashCard
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => FlashCardScreen2(book: book),
+      builder: (context) => BookDetailsScreen(book: book),
     ));
   }
 
@@ -44,11 +52,18 @@ class _BooksScreenState extends State<BooksScreen> {
   @override
   void initState() {
     super.initState();
-    
-    bookDataService = Get.find<BookDataService>();
 
-    // Load recent books
+    bookDataService = Get.find<BookDataService>();
+    vocabDataService = Get.find<VocabularyDataService>();
+
+    // Load recent books and categories
     _loadRecentBooks();
+    _loadCategories();
+
+    // Wait for books to load, then load stats
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBookStats();
+    });
 
     // Listen for navigation requests from controller (voice/intent triggered)
     // BooksScreen is ONLY responsible for UI navigation, not intent handling
@@ -66,6 +81,70 @@ class _BooksScreenState extends State<BooksScreen> {
     setState(() {
       recentBooks = bookDataService.recentBooks.toList();
     });
+  }
+
+  Future<void> _loadCategories() async {
+    // Get categories from all books
+    final allCategories = controller.books
+        .where((b) => b.category != null && b.category!.isNotEmpty)
+        .map((b) => b.category!)
+        .toSet()
+        .toList();
+    allCategories.sort();
+
+    setState(() {
+      _categories = ['All', ...allCategories];
+    });
+  }
+
+  Future<void> _loadBookStats() async {
+    // Load vocab stats for all books
+    print('📊 Loading book stats for ${controller.books.length} books...');
+
+    for (var book in controller.books) {
+      final allVocabs = await _getVocabsForBook(book.id);
+      final masteredCount = allVocabs.where((v) => v.reviewStatus == 'mastered').length;
+
+      bookStats[book.id] = {
+        'total': allVocabs.length,
+        'mastered': masteredCount,
+      };
+
+      print('📖 ${book.title}: ${allVocabs.length} words, $masteredCount mastered');
+    }
+
+    print('✅ Book stats loaded: ${bookStats.length} books');
+    if (mounted) setState(() {});
+  }
+
+  Future<List<Vocabulary>> _getVocabsForBook(String bookId) async {
+    // Use cached vocabs if already loaded
+    final vocabService = VocabularyService();
+    await vocabService.init();
+    return vocabService.getByBookId(bookId);
+  }
+
+  List<Book> get _filteredBooks {
+    if (_selectedCategory == null || _selectedCategory == 'All') {
+      return controller.books;
+    }
+    return controller.books
+        .where((b) => b.category == _selectedCategory)
+        .toList();
+  }
+
+  Future<void> _showCreateBookDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => const CreateBookDialog(),
+    );
+
+    if (result == true) {
+      // Reload books after creation
+      await controller.reloadBooks();
+      _loadRecentBooks();
+      _loadCategories();
+    }
   }
 
   @override
@@ -137,6 +216,11 @@ class _BooksScreenState extends State<BooksScreen> {
                               IconButton(
                                 onPressed: () => controller.reloadBooks(),
                                 icon: const Icon(Icons.refresh, color: Colors.white),
+                              ),
+                              IconButton(
+                                onPressed: _showCreateBookDialog,
+                                icon: const Icon(Icons.add_circle_outline, color: Colors.white),
+                                iconSize: 28,
                               )
                             ],
                           ),
@@ -171,6 +255,43 @@ class _BooksScreenState extends State<BooksScreen> {
                           onBookTap: clickOpenBook,
                         ),
 
+                        // Category Filter
+                        if (_categories.isNotEmpty)
+                          Container(
+                            height: 50,
+                            margin: const EdgeInsets.only(top: 8, bottom: 8),
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: _categories.length,
+                              itemBuilder: (context, index) {
+                                final category = _categories[index];
+                                final isSelected = _selectedCategory == category ||
+                                    (category == 'All' && _selectedCategory == null);
+                                
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    label: Text(category),
+                                    selected: isSelected,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        _selectedCategory = category == 'All' ? null : category;
+                                      });
+                                    },
+                                    backgroundColor: Colors.grey.shade100,
+                                    selectedColor: Colors.blue.shade100,
+                                    labelStyle: TextStyle(
+                                      color: isSelected ? Colors.blue.shade700 : Colors.grey.shade700,
+                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                    ),
+                                    checkmarkColor: Colors.blue.shade700,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
                         // All Books Header
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -183,17 +304,17 @@ class _BooksScreenState extends State<BooksScreen> {
                               ),
                               const SizedBox(width: 8),
                               const Text(
-                                'ALL BOOKS',
+                                'All Books',
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black87,
-                                  letterSpacing: 0.5,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1A1A1A),
+                                  letterSpacing: -0.3,
                                 ),
                               ),
                               const Spacer(),
                               Text(
-                                '(${controller.books.length})',
+                                '(${_filteredBooks.length})',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey.shade600,
@@ -215,9 +336,9 @@ class _BooksScreenState extends State<BooksScreen> {
                         mainAxisSpacing: 16,
                         childAspectRatio: 0.8,
                       ),
-                      itemCount: controller.books.length,
+                      itemCount: _filteredBooks.length,
                             itemBuilder: (context, index) {
-                              final book = controller.books[index];
+                              final book = _filteredBooks[index];
                               timeDilation = 4.0;
                               return GestureDetector(
                                 onLongPress: () async {
@@ -227,16 +348,23 @@ class _BooksScreenState extends State<BooksScreen> {
                                 onTap: () => clickOpenBook(book),
                                 child: Hero(
                                   tag: 'book_${book.id}',
-                                  child: Obx(() => BookCard(
-                                        id: book.id,
-                                        title: book.title,
-                                        desc: book.description,
-                                        isDownloaded: controller.downloadedBooks.contains(book.id),
-                                        isDownloading: controller.downloadingBookId.value == book.id,
-                                        progress: controller.downloadProgress.value,
-                                        onDownload: () => controller.downloadBook(book.id),
-                                        onRemove: () => controller.removeBook(book.id),
-                                      )),
+                                  child: Obx(() {
+                                    final stats = bookStats[book.id];
+                                    return BookCard(
+                                      id: book.id,
+                                      title: book.title,
+                                      desc: book.description,
+                                      isDownloaded: controller.downloadedBooks.contains(book.id),
+                                      isDownloading: controller.downloadingBookId.value == book.id,
+                                      progress: controller.downloadProgress.value,
+                                      onDownload: () => controller.downloadBook(book.id),
+                                      onRemove: () => controller.removeBook(book.id),
+                                      totalVocabs: stats?['total'],
+                                      masteredVocabs: stats?['mastered'],
+                                      lastOpenedAt: book.lastOpenedAt,
+                                      category: book.category,
+                                    );
+                                  }),
                                 ),
                               );
                             },
