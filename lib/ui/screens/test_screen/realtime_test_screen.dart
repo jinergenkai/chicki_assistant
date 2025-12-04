@@ -149,7 +149,7 @@ class _RealtimeTestScreenState extends State<RealtimeTestScreen> {
   Future<void> initRealtimeClient() async {
     try {
       client = RealtimeClient(
-        apiKey: 'a', // chỉ dùng dev/demo
+        apiKey: '', // chỉ dùng dev/demo
       );
 
       await client.updateSession(

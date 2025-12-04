@@ -185,7 +185,7 @@ class _VoiceRealtimeTestScreenState extends State<VoiceRealtimeTestScreen> {
   Future<void> _initRealtimeClient() async {
     try {
       client = RealtimeClient(
-        apiKey: 'a',
+        apiKey: '',
       );
 
       await client.updateSession(

@@ -3,6 +3,19 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'book.g.dart';
 
+/// Source of the book
+@HiveType(typeId: 201)
+enum BookSource {
+  @HiveField(0)
+  statics, // From assets JSON
+  
+  @HiveField(1)
+  userCreated, // User created custom book
+  
+  @HiveField(2)
+  imported, // Downloaded/imported from friends
+}
+
 @HiveType(typeId: 200)
 @JsonSerializable()
 class Book extends HiveObject {
@@ -51,6 +64,13 @@ class Book extends HiveObject {
   @HiveField(14)
   String? jsonHash; // SHA-256 hash of exported JSON for integrity verification
 
+  @HiveField(15, defaultValue: BookSource.userCreated)
+  @JsonKey(defaultValue: BookSource.userCreated)
+  BookSource source; // Source of the book (static/userCreated/imported)
+
+  @HiveField(16)
+  String? originalOwnerId; // Track original creator (for imported books)
+
   Book({
     required this.id,
     required this.title,
@@ -67,7 +87,9 @@ class Book extends HiveObject {
     this.author,
     this.category,
     this.jsonHash,
-  });
+    BookSource? source,
+    this.originalOwnerId,
+  }) : source = source ?? BookSource.userCreated; // Default to userCreated for backward compatibility
 
   factory Book.fromJson(Map<String, dynamic> json) => _$BookFromJson(json);
   Map<String, dynamic> toJson() => _$BookToJson(this);

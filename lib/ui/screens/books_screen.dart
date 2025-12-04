@@ -6,9 +6,7 @@ import 'package:chicki_buddy/ui/screens/book_details_screen.dart';
 import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
 import 'package:chicki_buddy/ui/widgets/book_card.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card.dart';
-import 'package:chicki_buddy/ui/widgets/recent_books_section.dart';
 import 'package:chicki_buddy/ui/widgets/create_book_dialog.dart';
-import 'package:chicki_buddy/services/data/book_data_service.dart';
 import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
 import 'package:chicki_buddy/services/vocabulary.service.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
@@ -27,10 +25,8 @@ class BooksScreen extends StatefulWidget {
 
 class _BooksScreenState extends State<BooksScreen> {
   final controller = Get.find<BooksController>(); // Use existing global instance
-  late BookDataService bookDataService;
   late VocabularyDataService vocabDataService;
   StreamSubscription? _navigationSub;
-  List<Book> recentBooks = [];
   String? _selectedCategory;
   List<String> _categories = [];
 
@@ -53,11 +49,9 @@ class _BooksScreenState extends State<BooksScreen> {
   void initState() {
     super.initState();
 
-    bookDataService = Get.find<BookDataService>();
     vocabDataService = Get.find<VocabularyDataService>();
 
-    // Load recent books and categories
-    _loadRecentBooks();
+    // Load categories
     _loadCategories();
 
     // Wait for books to load, then load stats
@@ -73,13 +67,6 @@ class _BooksScreenState extends State<BooksScreen> {
         // Reset after navigation
         controller.bookToNavigate.value = null;
       }
-    });
-  }
-
-  Future<void> _loadRecentBooks() async {
-    await bookDataService.loadRecentBooks(limit: 10);
-    setState(() {
-      recentBooks = bookDataService.recentBooks.toList();
     });
   }
 
@@ -117,6 +104,15 @@ class _BooksScreenState extends State<BooksScreen> {
     if (mounted) setState(() {});
   }
 
+  /// Handle pull-to-refresh
+  Future<void> _handleRefresh() async {
+    print('🔄 Pull-to-refresh triggered');
+    await controller.reloadBooks();
+    await _loadCategories();
+    await _loadBookStats();
+    print('✅ Refresh completed');
+  }
+
   Future<List<Vocabulary>> _getVocabsForBook(String bookId) async {
     // Use cached vocabs if already loaded
     final vocabService = VocabularyService();
@@ -142,7 +138,6 @@ class _BooksScreenState extends State<BooksScreen> {
     if (result == true) {
       // Reload books after creation
       await controller.reloadBooks();
-      _loadRecentBooks();
       _loadCategories();
     }
   }
@@ -169,16 +164,19 @@ class _BooksScreenState extends State<BooksScreen> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: CustomScrollView(
-          slivers: [
+        body: RefreshIndicator(
+          onRefresh: _handleRefresh,
+          child: CustomScrollView(
+            slivers: [
             SliverAppBar(
-              expandedHeight: 120,
+              expandedHeight: 140,
               backgroundColor: Colors.transparent,
               elevation: 0,
               pinned: false,
+              toolbarHeight: 68,
               flexibleSpace: LayoutBuilder(
                 builder: (context, constraints) {
-                  double percent = (constraints.maxHeight - kToolbarHeight) / (180 - kToolbarHeight);
+                  double percent = (constraints.maxHeight - 68) / (140 - 68);
                   return Stack(
                     fit: StackFit.expand,
                     children: [
@@ -198,30 +196,103 @@ class _BooksScreenState extends State<BooksScreen> {
                           fit: BoxFit.cover,
                         ),
                       ),
+                      // Modern gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.1),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Modern shadow at bottom
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          height: 8,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.05),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                       Align(
                         alignment: Alignment.bottomLeft,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                           child: Row(
                             children: [
                               Text(
                                 'Bookstore',
                                 style: TextStyle(
                                   fontSize: 36 * percent.clamp(0.7, 1.0),
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
                                   color: Colors.white,
-                                  shadows: const [Shadow(blurRadius: 12, color: Colors.black26)],
+                                  letterSpacing: -0.5,
+                                  shadows: const [
+                                    Shadow(blurRadius: 8, color: Colors.black26, offset: Offset(0, 2))
+                                  ],
                                 ),
                               ),
-                              IconButton(
-                                onPressed: () => controller.reloadBooks(),
-                                icon: const Icon(Icons.refresh, color: Colors.white),
+                              const Spacer(),
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.white.withOpacity(0.25),
+                                      Colors.white.withOpacity(0.15),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.15),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: _showCreateBookDialog,
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'Add',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15,
+                                              letterSpacing: 0.3,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
-                              IconButton(
-                                onPressed: _showCreateBookDialog,
-                                icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-                                iconSize: 28,
-                              )
                             ],
                           ),
                         ),
@@ -249,12 +320,6 @@ class _BooksScreenState extends State<BooksScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Recent Books Section
-                        RecentBooksSection(
-                          recentBooks: recentBooks,
-                          onBookTap: clickOpenBook,
-                        ),
-
                         // Category Filter
                         if (_categories.isNotEmpty)
                           Container(
@@ -329,28 +394,28 @@ class _BooksScreenState extends State<BooksScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: GridView.builder(
                       shrinkWrap: true,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
+                      physics: const NeverScrollableScrollPhysics(), // Let CustomScrollView handle scroll
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 200, // Max width per card
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
-                        childAspectRatio: 0.8,
+                        childAspectRatio: 0.67, // 180:270 ratio
                       ),
                       itemCount: _filteredBooks.length,
                             itemBuilder: (context, index) {
                               final book = _filteredBooks[index];
                               timeDilation = 4.0;
-                              return GestureDetector(
-                                onLongPress: () async {
-                                  await controller.reloadBooks();
-                                  _loadRecentBooks(); // Refresh recent books too
-                                },
-                                onTap: () => clickOpenBook(book),
-                                child: Hero(
-                                  tag: 'book_${book.id}',
-                                  child: Obx(() {
-                                    final stats = bookStats[book.id];
-                                    return BookCard(
+                              return Center( // Center card in grid cell
+                                child: GestureDetector(
+                                  onLongPress: () async {
+                                    await controller.reloadBooks();
+                                  },
+                                  onTap: () => clickOpenBook(book),
+                                  child: Hero(
+                                    tag: 'book_${book.id}',
+                                    child: Obx(() {
+                                      final stats = bookStats[book.id];
+                                      return BookCard(
                                       id: book.id,
                                       title: book.title,
                                       desc: book.description,
@@ -364,7 +429,8 @@ class _BooksScreenState extends State<BooksScreen> {
                                       lastOpenedAt: book.lastOpenedAt,
                                       category: book.category,
                                     );
-                                  }),
+                                    }),
+                                  ),
                                 ),
                               );
                             },
@@ -377,6 +443,7 @@ class _BooksScreenState extends State<BooksScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

@@ -32,13 +32,17 @@ class BookAdapter extends TypeAdapter<Book> {
       author: fields[12] as String?,
       category: fields[13] as String?,
       jsonHash: fields[14] as String?,
+      source: fields[15] == null
+          ? BookSource.userCreated
+          : fields[15] as BookSource?,
+      originalOwnerId: fields[16] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Book obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -68,7 +72,11 @@ class BookAdapter extends TypeAdapter<Book> {
       ..writeByte(13)
       ..write(obj.category)
       ..writeByte(14)
-      ..write(obj.jsonHash);
+      ..write(obj.jsonHash)
+      ..writeByte(15)
+      ..write(obj.source)
+      ..writeByte(16)
+      ..write(obj.originalOwnerId);
   }
 
   @override
@@ -78,6 +86,50 @@ class BookAdapter extends TypeAdapter<Book> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is BookAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class BookSourceAdapter extends TypeAdapter<BookSource> {
+  @override
+  final int typeId = 201;
+
+  @override
+  BookSource read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return BookSource.statics;
+      case 1:
+        return BookSource.userCreated;
+      case 2:
+        return BookSource.imported;
+      default:
+        return BookSource.statics;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, BookSource obj) {
+    switch (obj) {
+      case BookSource.statics:
+        writer.writeByte(0);
+        break;
+      case BookSource.userCreated:
+        writer.writeByte(1);
+        break;
+      case BookSource.imported:
+        writer.writeByte(2);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BookSourceAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
@@ -108,6 +160,9 @@ Book _$BookFromJson(Map<String, dynamic> json) => Book(
       author: json['author'] as String?,
       category: json['category'] as String?,
       jsonHash: json['jsonHash'] as String?,
+      source: $enumDecodeNullable(_$BookSourceEnumMap, json['source']) ??
+          BookSource.userCreated,
+      originalOwnerId: json['originalOwnerId'] as String?,
     );
 
 Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
@@ -126,4 +181,12 @@ Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
       'author': instance.author,
       'category': instance.category,
       'jsonHash': instance.jsonHash,
+      'source': _$BookSourceEnumMap[instance.source]!,
+      'originalOwnerId': instance.originalOwnerId,
     };
+
+const _$BookSourceEnumMap = {
+  BookSource.statics: 'statics',
+  BookSource.userCreated: 'userCreated',
+  BookSource.imported: 'imported',
+};

@@ -23,9 +23,16 @@ class BookService {
     final List<dynamic> jsonList = json.decode(data);
     final vocabService = VocabularyService();
     await vocabService.init();
+    
     for (final e in jsonList) {
       final bookId = e['id'];
-      if (e['data'] != null && e['data']['vocabList'] is List) {
+      
+      // ✅ Only load vocabs if book doesn't exist in DB yet
+      // This prevents overwriting user-added vocabs on reload
+      final existingBook = _bookBox.get(bookId);
+      
+      if (existingBook == null && e['data'] != null && e['data']['vocabList'] is List) {
+        // First time loading this static book - load vocabs from JSON
         for (final v in e['data']['vocabList']) {
           final vocab = Vocabulary(
             word: v['word'],
@@ -41,18 +48,25 @@ class BookService {
           );
           await vocabService.upsertVocabulary(vocab);
         }
+        
+        // Save static book to DB to mark it as loaded
+        final staticBook = Book(
+          id: e['id'],
+          title: e['title'],
+          description: e['description'],
+          price: (e['price'] is int) ? (e['price'] as int).toDouble() : e['price'],
+          isCustom: false,
+          ownerId: e['ownerId'],
+          source: BookSource.statics, // Mark as static book
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await _bookBox.put(bookId, staticBook);
       }
     }
-    return jsonList
-        .map((e) => Book(
-              id: e['id'],
-              title: e['title'],
-              description: e['description'],
-              price: (e['price'] is int) ? (e['price'] as int).toDouble() : e['price'],
-              isCustom: e['isCustom'] ?? false,
-              ownerId: e['ownerId'],
-            ))
-        .toList();
+    
+    // Return all books from DB (includes static books with any user modifications)
+    return _bookBox.values.where((b) => b.source == BookSource.statics).toList();
   }
 
   /// Load custom books from Hive
@@ -117,6 +131,7 @@ class BookService {
       coverImagePath: coverImagePath,
       author: author,
       category: category,
+      source: BookSource.userCreated, // Mark as user created
     );
 
     await _bookBox.put(book.id, book);

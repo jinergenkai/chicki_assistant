@@ -4,6 +4,7 @@ import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:chicki_buddy/services/data/book_data_service.dart';
 import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
 import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
+import 'package:chicki_buddy/ui/widgets/vocabulary/add_vocabulary_dialog.dart';
 import 'package:chicki_buddy/utils/gradient.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -66,6 +67,21 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         builder: (_) => FlashCardScreen2(book: widget.book),
       ),
     );
+  }
+
+  Future<void> _showAddVocabDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AddVocabularyDialog(
+        bookId: widget.book.id,
+        onAdded: _loadVocabularies,
+      ),
+    );
+
+    if (result == true) {
+      // Refresh vocab list
+      await _loadVocabularies();
+    }
   }
 
   void _showMoreMenu() {
@@ -488,9 +504,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Add vocab
-                },
+                onPressed: _showAddVocabDialog,
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('ADD VOCAB'),
                 style: OutlinedButton.styleFrom(
