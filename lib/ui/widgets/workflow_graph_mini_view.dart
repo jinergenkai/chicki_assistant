@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:chicki_buddy/core/app_event_bus.dart';
-import 'package:chicki_buddy/services/intent_bridge_service.dart';
 import 'package:chicki_buddy/voice/graph/workflow_graph.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -56,9 +55,9 @@ class _WorkflowGraphMiniViewState extends State<WorkflowGraphMiniView> {
   }
 
   Future<void> _moveToNext(String intent) async {
-    IntentBridgeService.triggerUIIntent(
-      intent: intent,
-    );
+    // IntentBridgeService.triggerUIIntent(
+    //   intent: intent,
+    // );
   }
 
   @override

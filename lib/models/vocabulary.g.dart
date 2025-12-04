@@ -44,13 +44,19 @@ class VocabularyAdapter extends TypeAdapter<Vocabulary> {
       reviewStatus: fields[24] as String?,
       bookId: fields[25] as String?,
       topic: fields[26] as String?,
+      nextReviewDate: fields[27] as DateTime?,
+      reviewCount: fields[28] as int?,
+      lastReviewedAt: fields[29] as DateTime?,
+      easeFactor: fields[30] as double?,
+      interval: fields[31] as int?,
+      orderIndex: fields[32] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Vocabulary obj) {
     writer
-      ..writeByte(27)
+      ..writeByte(33)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -104,7 +110,19 @@ class VocabularyAdapter extends TypeAdapter<Vocabulary> {
       ..writeByte(25)
       ..write(obj.bookId)
       ..writeByte(26)
-      ..write(obj.topic);
+      ..write(obj.topic)
+      ..writeByte(27)
+      ..write(obj.nextReviewDate)
+      ..writeByte(28)
+      ..write(obj.reviewCount)
+      ..writeByte(29)
+      ..write(obj.lastReviewedAt)
+      ..writeByte(30)
+      ..write(obj.easeFactor)
+      ..writeByte(31)
+      ..write(obj.interval)
+      ..writeByte(32)
+      ..write(obj.orderIndex);
   }
 
   @override
@@ -156,6 +174,16 @@ Vocabulary _$VocabularyFromJson(Map<String, dynamic> json) => Vocabulary(
       reviewStatus: json['reviewStatus'] as String?,
       bookId: json['bookId'] as String?,
       topic: json['topic'] as String?,
+      nextReviewDate: json['nextReviewDate'] == null
+          ? null
+          : DateTime.parse(json['nextReviewDate'] as String),
+      reviewCount: (json['reviewCount'] as num?)?.toInt(),
+      lastReviewedAt: json['lastReviewedAt'] == null
+          ? null
+          : DateTime.parse(json['lastReviewedAt'] as String),
+      easeFactor: (json['easeFactor'] as num?)?.toDouble(),
+      interval: (json['interval'] as num?)?.toInt(),
+      orderIndex: (json['orderIndex'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$VocabularyToJson(Vocabulary instance) =>
@@ -187,4 +215,10 @@ Map<String, dynamic> _$VocabularyToJson(Vocabulary instance) =>
       'reviewStatus': instance.reviewStatus,
       'bookId': instance.bookId,
       'topic': instance.topic,
+      'nextReviewDate': instance.nextReviewDate?.toIso8601String(),
+      'reviewCount': instance.reviewCount,
+      'lastReviewedAt': instance.lastReviewedAt?.toIso8601String(),
+      'easeFactor': instance.easeFactor,
+      'interval': instance.interval,
+      'orderIndex': instance.orderIndex,
     };

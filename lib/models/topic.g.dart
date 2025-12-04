@@ -19,23 +19,32 @@ class TopicAdapter extends TypeAdapter<Topic> {
     return Topic(
       id: fields[0] as String,
       title: fields[1] as String,
-      vocabList: (fields[2] as List).cast<Vocabulary>(),
+      vocabIds: (fields[2] as List).cast<String>(),
       bookId: fields[3] as String,
+      createdAt: fields[4] as DateTime?,
+      orderIndex: fields[5] as int?,
+      description: fields[6] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Topic obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.title)
       ..writeByte(2)
-      ..write(obj.vocabList)
+      ..write(obj.vocabIds)
       ..writeByte(3)
-      ..write(obj.bookId);
+      ..write(obj.bookId)
+      ..writeByte(4)
+      ..write(obj.createdAt)
+      ..writeByte(5)
+      ..write(obj.orderIndex)
+      ..writeByte(6)
+      ..write(obj.description);
   }
 
   @override
@@ -56,15 +65,22 @@ class TopicAdapter extends TypeAdapter<Topic> {
 Topic _$TopicFromJson(Map<String, dynamic> json) => Topic(
       id: json['id'] as String,
       title: json['title'] as String,
-      vocabList: (json['vocabList'] as List<dynamic>)
-          .map((e) => Vocabulary.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      vocabIds:
+          (json['vocabIds'] as List<dynamic>).map((e) => e as String).toList(),
       bookId: json['bookId'] as String,
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.parse(json['createdAt'] as String),
+      orderIndex: (json['orderIndex'] as num?)?.toInt(),
+      description: json['description'] as String?,
     );
 
 Map<String, dynamic> _$TopicToJson(Topic instance) => <String, dynamic>{
       'id': instance.id,
       'title': instance.title,
-      'vocabList': instance.vocabList,
+      'vocabIds': instance.vocabIds,
       'bookId': instance.bookId,
+      'createdAt': instance.createdAt?.toIso8601String(),
+      'orderIndex': instance.orderIndex,
+      'description': instance.description,
     };

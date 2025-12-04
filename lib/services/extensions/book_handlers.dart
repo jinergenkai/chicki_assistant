@@ -1,16 +1,33 @@
 import 'package:chicki_buddy/services/unified_intent_handler.dart';
 import 'package:chicki_buddy/services/utils/text_matcher.dart';
 import 'package:chicki_buddy/core/logger.dart';
+import 'package:chicki_buddy/core/app_event_bus.dart';
+import 'package:get/get.dart';
+import 'package:chicki_buddy/services/data/book_data_service.dart';
+import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
 
 /// Extension for book and topic related intent handlers
 extension BookHandlers on UnifiedIntentHandler {
   /// Handle list book intent
   Future<Map<String, dynamic>> handleListBook(IntentSource source) async {
-    await bookService.init();
-    final books = await bookService.loadAllBooks();
+    // Use BookDataService instead of direct bookService
+    final bookDataService = Get.find<BookDataService>();
+    await bookDataService.loadBooks();
+    final books = bookDataService.books;
 
     // Store books list for number-based selection
     currentBooksList = books;
+    
+    // Emit event for voice action
+    if (source == IntentSource.speech) {
+      eventBus.emit(AppEvent(
+        AppEventType.voiceAction,
+        {
+          'action': 'listBook',
+          'data': {'books': books.map((b) => b.toJson()).toList()},
+        },
+      ));
+    }
 
     if (source == IntentSource.speech) {
       // Speech: Numbered list for easy selection
@@ -49,17 +66,16 @@ extension BookHandlers on UnifiedIntentHandler {
     String? actualBookName;
     dynamic selectedBook;
 
+    // Use BookDataService
+    final bookDataService = Get.find<BookDataService>();
+    final vocabDataService = Get.find<VocabularyDataService>();
+    
     // === UI Source: Direct ID lookup (no fuzzy needed) ===
     if (source == IntentSource.ui) {
       logger.info('UI selection: trying direct bookId lookup for "$bookIdOrName"');
 
       // Try to find book by exact ID first
-      await bookService.init();
-      final allBooks = await bookService.loadAllBooks();
-      selectedBook = allBooks.cast<dynamic?>().firstWhere(
-        (book) => book?.id == bookIdOrName,
-        orElse: () => null,
-      );
+      selectedBook = bookDataService.getBook(bookIdOrName);
 
       if (selectedBook != null) {
         actualBookId = selectedBook.id;
@@ -74,8 +90,8 @@ extension BookHandlers on UnifiedIntentHandler {
     else {
       if (currentBooksList == null || currentBooksList!.isEmpty) {
         // Try to load books if not available
-        await bookService.init();
-        currentBooksList = await bookService.loadAllBooks();
+        await bookDataService.loadBooks();
+        currentBooksList = bookDataService.books;
       }
 
       if (currentBooksList == null || currentBooksList!.isEmpty) {
@@ -121,13 +137,27 @@ extension BookHandlers on UnifiedIntentHandler {
 
     currentBookId = actualBookId;
 
-    // Load vocabulary list for this book
-    await vocabularyService.init();
-    currentVocabList = vocabularyService.getByBookId(actualBookId!);
+    // Load vocabulary list for this book using VocabularyDataService
+    await vocabDataService.loadByBookId(actualBookId!);
+    currentVocabList = vocabDataService.currentBookVocabs;
     currentCardIndex = 0;
     isCardFlipped = false;
 
     logger.info('Loaded ${currentVocabList?.length ?? 0} vocabularies for book $actualBookId');
+
+    // Emit event for voice action
+    if (source == IntentSource.speech) {
+      eventBus.emit(AppEvent(
+        AppEventType.voiceAction,
+        {
+          'action': 'selectBook',
+          'data': {
+            'bookId': actualBookId,
+            'bookName': actualBookName,
+          },
+        },
+      ));
+    }
 
     if (source == IntentSource.speech) {
       return {

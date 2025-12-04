@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:chicki_buddy/services/intent_bridge_service.dart';
 import 'package:chicki_buddy/ui/widgets/chicky/chicky_rive.dart';
 import 'package:chicki_buddy/ui/widgets/workflow_graph_mini_view.dart';
 import 'package:flutter/material.dart';

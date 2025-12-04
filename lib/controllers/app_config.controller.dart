@@ -31,6 +31,28 @@ class AppConfigController extends GetxController {
   // Wakeword
   var enableWakewordBackground = false.obs;
 
+  // ===== USER LEARNING DATA (for Dashboard & Analytics) =====
+  // Recent Books Tracking
+  var recentBookIds = <String>[].obs;                      // Max 10 recent books
+  var bookOpenTimestamps = <String, int>{}.obs;            // bookId -> millisSinceEpoch
+  var lastOpenedBookId = ''.obs;
+
+  // Daily Learning Stats (for heatmap & analytics)
+  var dailyVocabLearned = <String, int>{}.obs;             // 'yyyy-MM-dd' -> vocab count learned that day
+  var dailyReviewCount = <String, int>{}.obs;              // 'yyyy-MM-dd' -> review count
+  var dailyStudyMinutes = <String, int>{}.obs;             // 'yyyy-MM-dd' -> minutes spent studying
+
+  // Streak & Overall Progress
+  var currentStreak = 0.obs;                               // Current learning streak (consecutive days)
+  var longestStreak = 0.obs;                               // Longest streak achieved
+  var lastActiveDate = ''.obs;                             // 'yyyy-MM-dd' format
+  var totalVocabLearned = 0.obs;                           // Total vocabulary learned (all time)
+  var totalReviewCount = 0.obs;                            // Total reviews completed (all time)
+
+  // Gamification (optional)
+  var totalXP = 0.obs;
+  var level = 1.obs;
+
   // Load config từ Hive hoặc dùng default
   Future<void> loadConfig() async {
     final box = await Hive.openBox(hiveBoxName);
@@ -58,6 +80,21 @@ class AppConfigController extends GetxController {
       defaultLanguage.value = config['defaultLanguage'] ?? 'en-US';
       themeMode.value = config['themeMode'] ?? 'system';
       language.value = config['language'] ?? '';
+
+      // Learning Data
+      recentBookIds.value = List<String>.from(config['recentBookIds'] ?? []);
+      bookOpenTimestamps.value = Map<String, int>.from(config['bookOpenTimestamps'] ?? {});
+      lastOpenedBookId.value = config['lastOpenedBookId'] ?? '';
+      dailyVocabLearned.value = Map<String, int>.from(config['dailyVocabLearned'] ?? {});
+      dailyReviewCount.value = Map<String, int>.from(config['dailyReviewCount'] ?? {});
+      dailyStudyMinutes.value = Map<String, int>.from(config['dailyStudyMinutes'] ?? {});
+      currentStreak.value = config['currentStreak'] ?? 0;
+      longestStreak.value = config['longestStreak'] ?? 0;
+      lastActiveDate.value = config['lastActiveDate'] ?? '';
+      totalVocabLearned.value = config['totalVocabLearned'] ?? 0;
+      totalReviewCount.value = config['totalReviewCount'] ?? 0;
+      totalXP.value = config['totalXP'] ?? 0;
+      level.value = config['level'] ?? 1;
     } else {
       // Lấy theme và locale mặc định từ hệ thống
       themeMode.value = Get.isDarkMode ? 'dark' : 'light';
@@ -94,6 +131,21 @@ class AppConfigController extends GetxController {
 
       // Wakeword
       'enableWakewordBackground': enableWakewordBackground.value,
+
+      // Learning Data
+      'recentBookIds': recentBookIds.toList(),
+      'bookOpenTimestamps': Map<String, int>.from(bookOpenTimestamps),
+      'lastOpenedBookId': lastOpenedBookId.value,
+      'dailyVocabLearned': Map<String, int>.from(dailyVocabLearned),
+      'dailyReviewCount': Map<String, int>.from(dailyReviewCount),
+      'dailyStudyMinutes': Map<String, int>.from(dailyStudyMinutes),
+      'currentStreak': currentStreak.value,
+      'longestStreak': longestStreak.value,
+      'lastActiveDate': lastActiveDate.value,
+      'totalVocabLearned': totalVocabLearned.value,
+      'totalReviewCount': totalReviewCount.value,
+      'totalXP': totalXP.value,
+      'level': level.value,
     });
   }
 
@@ -119,6 +171,20 @@ class AppConfigController extends GetxController {
         'themeMode': themeMode.value,
         'language': language.value,
         'enableWakewordBackground': enableWakewordBackground.value,
+        // Learning data
+        'recentBookIds': recentBookIds.toList(),
+        'bookOpenTimestamps': Map<String, int>.from(bookOpenTimestamps),
+        'lastOpenedBookId': lastOpenedBookId.value,
+        'dailyVocabLearned': Map<String, int>.from(dailyVocabLearned),
+        'dailyReviewCount': Map<String, int>.from(dailyReviewCount),
+        'dailyStudyMinutes': Map<String, int>.from(dailyStudyMinutes),
+        'currentStreak': currentStreak.value,
+        'longestStreak': longestStreak.value,
+        'lastActiveDate': lastActiveDate.value,
+        'totalVocabLearned': totalVocabLearned.value,
+        'totalReviewCount': totalReviewCount.value,
+        'totalXP': totalXP.value,
+        'level': level.value,
       };
 
   // ✅ Tạo lại controller từ JSON khi ở isolate
@@ -142,5 +208,19 @@ class AppConfigController extends GetxController {
     themeMode.value = json['themeMode'] ?? 'system';
     language.value = json['language'] ?? '';
     enableWakewordBackground.value = json['enableWakewordBackground'] ?? false;
+    // Learning data
+    recentBookIds.value = List<String>.from(json['recentBookIds'] ?? []);
+    bookOpenTimestamps.value = Map<String, int>.from(json['bookOpenTimestamps'] ?? {});
+    lastOpenedBookId.value = json['lastOpenedBookId'] ?? '';
+    dailyVocabLearned.value = Map<String, int>.from(json['dailyVocabLearned'] ?? {});
+    dailyReviewCount.value = Map<String, int>.from(json['dailyReviewCount'] ?? {});
+    dailyStudyMinutes.value = Map<String, int>.from(json['dailyStudyMinutes'] ?? {});
+    currentStreak.value = json['currentStreak'] ?? 0;
+    longestStreak.value = json['longestStreak'] ?? 0;
+    lastActiveDate.value = json['lastActiveDate'] ?? '';
+    totalVocabLearned.value = json['totalVocabLearned'] ?? 0;
+    totalReviewCount.value = json['totalReviewCount'] ?? 0;
+    totalXP.value = json['totalXP'] ?? 0;
+    level.value = json['level'] ?? 1;
   }
 }
