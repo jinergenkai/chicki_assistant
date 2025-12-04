@@ -131,6 +131,7 @@ flutter:
     - assets/hey_chicky.ppn
     - assets/overlay.jpg
     - assets/black_overlay.jpg
+    - assets/avatar/
 
   fonts:
     - family: DMSans

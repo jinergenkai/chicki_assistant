@@ -197,39 +197,58 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                     book.id,
                     seed: "bookCardGradient",
                     child: Container(
-                      padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  book.title,
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.more_vert, color: Colors.white),
-                                onPressed: _showMoreMenu,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          AutoSizeText(
-                            book.description,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.white70,
-                            ),
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
                         ],
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    book.title,
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                                    onPressed: _showMoreMenu,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            AutoSizeText(
+                              book.description,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white70,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -238,9 +257,22 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
               Positioned(
                 top: 56,
                 left: 16,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-                  onPressed: () => Navigator.of(context).pop(),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
                 ),
               ),
             ],
@@ -483,18 +515,51 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   Widget _buildActionButtons() {
     return Column(
       children: [
-        SizedBox(
+        // Start Learning button with gradient
+        Container(
           width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _startLearning,
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('START LEARNING'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade600,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.blue.shade400,
+                Colors.blue.shade600,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blue.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _startLearning,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
+                    SizedBox(width: 8),
+                    Text(
+                      'START LEARNING',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -505,13 +570,21 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _showAddVocabDialog,
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('ADD VOCAB'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                icon: const Icon(Icons.add_rounded, size: 20),
+                label: const Text(
+                  'ADD VOCAB',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    letterSpacing: 0.3,
                   ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  side: BorderSide(color: Colors.grey.shade300, width: 1.5),
                 ),
               ),
             ),
@@ -521,13 +594,21 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                 onPressed: () {
                   // TODO: Export
                 },
-                icon: const Icon(Icons.file_download_rounded),
-                label: const Text('EXPORT'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                icon: const Icon(Icons.file_download_rounded, size: 20),
+                label: const Text(
+                  'EXPORT',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    letterSpacing: 0.3,
                   ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  side: BorderSide(color: Colors.grey.shade300, width: 1.5),
                 ),
               ),
             ),
@@ -543,8 +624,14 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [

@@ -150,20 +150,8 @@ class _BooksScreenState extends State<BooksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color.fromARGB(255, 195, 66, 218),
-            Colors.blue,
-            Color.fromARGB(255, 18, 176, 220),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
+        backgroundColor: Colors.white,
         body: RefreshIndicator(
           onRefresh: _handleRefresh,
           child: CustomScrollView(
@@ -183,7 +171,7 @@ class _BooksScreenState extends State<BooksScreen> {
                       Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Color.fromARGB(255, 195, 66, 218), Colors.blue, Color.fromARGB(255, 18, 176, 220)],
+                            colors: [Color.fromARGB(255, 194, 251, 255), Colors.blue, Color.fromARGB(255, 18, 176, 220)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -260,7 +248,7 @@ class _BooksScreenState extends State<BooksScreen> {
                                   borderRadius: BorderRadius.circular(14),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.15),
+                                      color: Colors.black.withOpacity(0.05),
                                       blurRadius: 8,
                                       offset: const Offset(0, 3),
                                     ),
@@ -404,7 +392,7 @@ class _BooksScreenState extends State<BooksScreen> {
                       itemCount: _filteredBooks.length,
                             itemBuilder: (context, index) {
                               final book = _filteredBooks[index];
-                              timeDilation = 4.0;
+                              // timeDilation = 4.0;
                               return Center( // Center card in grid cell
                                 child: GestureDetector(
                                   onLongPress: () async {
@@ -445,7 +433,6 @@ class _BooksScreenState extends State<BooksScreen> {
           ],
         ),
         ),
-      ),
     );
   }
 }

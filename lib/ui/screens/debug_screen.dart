@@ -2,6 +2,7 @@ import 'package:chicki_buddy/ui/screens/books_screen.dart';
 import 'package:chicki_buddy/ui/screens/test_screen/realtime_test_screen.dart';
 import 'package:chicki_buddy/ui/screens/test_screen/voice_realtime_test_screen.dart';
 import 'package:chicki_buddy/ui/screens/test_screen/workflow_graph.screen.dart';
+import 'package:chicki_buddy/ui/screens/ui_design_showcase_screen.dart';
 import 'package:chicki_buddy/ui/widgets/moon_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
@@ -17,11 +18,15 @@ class DebugScreen extends StatelessWidget {
   const DebugScreen({super.key});
 
   final List<_DebugItem> items = const [
-        _DebugItem(
+    _DebugItem(
+      title: '🎨 UI Design Showcase',
+      screen: UIDesignShowcaseScreen(),
+    ),
+    _DebugItem(
       title: 'chatpgt-realtime',
       screen: RealtimeTestScreen(),
     ),
-            _DebugItem(
+    _DebugItem(
       title: 'realtime converstation',
       screen: VoiceRealtimeTestScreen(),
     ),
