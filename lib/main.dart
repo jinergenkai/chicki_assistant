@@ -7,6 +7,8 @@ import 'package:chicki_buddy/core/app_lifecycle.dart';
 import 'package:chicki_buddy/models/book.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:chicki_buddy/models/voice_note.dart';
+import 'package:chicki_buddy/models/journal_entry.dart';
+import 'package:chicki_buddy/models/story_chapter.dart';
 import 'package:chicki_buddy/services/wakeword/porcupine_wakeword_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -23,8 +25,11 @@ import 'package:chicki_buddy/controllers/voice_controller.dart';
 import 'package:chicki_buddy/controllers/books_controller.dart';
 import 'package:chicki_buddy/services/test_data_service.dart';
 import 'package:chicki_buddy/services/unified_intent_handler_service.dart';
-import 'package:chicki_buddy/services/data/book_data_service.dart';
-import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
+import 'package:chicki_buddy/services/book_service.dart';
+import 'package:chicki_buddy/services/vocabulary.service.dart';
+import 'package:chicki_buddy/services/journal_service.dart';
+import 'package:chicki_buddy/services/story_service.dart';
+import 'package:chicki_buddy/services/book_import_export_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
@@ -34,6 +39,9 @@ void main() async {
   Hive.registerAdapter(VocabularyAdapter());
   Hive.registerAdapter(BookAdapter());
   Hive.registerAdapter(BookSourceAdapter());
+  Hive.registerAdapter(BookTypeAdapter());
+  Hive.registerAdapter(JournalEntryAdapter());
+  Hive.registerAdapter(StoryChapterAdapter());
 
   // Hive.registerAdapter(VoiceNoteAdapter());
   // await Hive.openBox<VoiceNote>('voiceNoteBox');
@@ -47,19 +55,34 @@ void main() async {
   Get.put(AppConfigController(), permanent: true);
   // Get.put(PorcupineWakewordService(), permanent: true);
   
-  // Data services MUST be initialized BEFORE controllers that depend on them
+  // Services MUST be initialized BEFORE controllers that depend on them
   await Get.putAsync(() async {
-    final service = BookDataService();
-    await service.onInit();
+    final service = BookService();
+    await service.init();
     return service;
   }, permanent: true);
-  
+
   await Get.putAsync(() async {
-    final service = VocabularyDataService();
-    await service.onInit();
+    final service = VocabularyService();
+    await service.init();
     return service;
   }, permanent: true);
-  
+
+  await Get.putAsync(() async {
+    final service = JournalService();
+    await service.init();
+    return service;
+  }, permanent: true);
+
+  await Get.putAsync(() async {
+    final service = StoryService();
+    await service.init();
+    return service;
+  }, permanent: true);
+
+  // Import/Export service (depends on all other services)
+  Get.put(BookImportExportService(), permanent: true);
+
   // Data access and intent handling (main isolate only)
   await Get.putAsync(() async {
     final service = UnifiedIntentHandlerService();

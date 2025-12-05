@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chicki_buddy/core/app_event_bus.dart';
-import 'package:chicki_buddy/services/data/book_data_service.dart';
-import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
+import 'package:chicki_buddy/services/book_service.dart';
+import 'package:chicki_buddy/services/vocabulary.service.dart';
 import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
+import 'package:chicki_buddy/ui/screens/journal_entries_screen.dart';
+import 'package:chicki_buddy/ui/screens/story_chapters_screen.dart';
 import 'package:chicki_buddy/ui/widgets/vocabulary/add_vocabulary_dialog.dart';
 import 'package:chicki_buddy/utils/gradient.dart';
 import 'package:flutter/material.dart';
@@ -21,12 +23,17 @@ class BookDetailsScreen extends StatefulWidget {
 }
 
 class _BookDetailsScreenState extends State<BookDetailsScreen> {
-  late BookDataService bookDataService;
-  late VocabularyDataService vocabDataService;
+  late BookService bookService;
+  late VocabularyService vocabService;
   StreamSubscription? _voiceActionSub;
+  bool _hasNavigated = false;
 
   List<Vocabulary> vocabs = [];
+  List<Vocabulary> filteredVocabs = [];
   bool isLoading = true;
+  String searchQuery = '';
+  String? selectedStatusFilter;
+  int? selectedDifficultyFilter;
 
   int get totalVocabs => vocabs.length;
   int get masteredCount => vocabs.where((v) => v.reviewStatus == 'mastered').length;
@@ -37,8 +44,14 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    bookDataService = Get.find<BookDataService>();
-    vocabDataService = Get.find<VocabularyDataService>();
+    bookService = Get.find<BookService>();
+    vocabService = Get.find<VocabularyService>();
+
+    // Route to appropriate screen based on book type
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navigateToBookType();
+    });
+
     _loadVocabularies();
 
     _voiceActionSub = eventBus.stream
@@ -46,13 +59,77 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         .listen((event) {});
   }
 
+  void _navigateToBookType() {
+    if (_hasNavigated) return;
+
+    final book = widget.book;
+
+    switch (book.type) {
+      case BookType.journal:
+        _hasNavigated = true;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => JournalEntriesScreen(book: book),
+          ),
+        );
+        break;
+      case BookType.story:
+        _hasNavigated = true;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => StoryChaptersScreen(book: book),
+          ),
+        );
+        break;
+      case BookType.flashBook:
+        // Stay on current screen (default vocabulary behavior)
+        break;
+    }
+  }
+
   Future<void> _loadVocabularies() async {
     setState(() => isLoading = true);
-    await vocabDataService.loadByBookId(widget.book.id);
+    final loadedVocabs = vocabService.getByBookIdSorted(widget.book.id);
     setState(() {
-      vocabs = vocabDataService.currentBookVocabs.toList();
+      vocabs = loadedVocabs;
+      _applyFilters();
       isLoading = false;
     });
+  }
+
+  void _applyFilters() {
+    filteredVocabs = vocabs.where((vocab) {
+      // Search filter
+      if (searchQuery.isNotEmpty) {
+        final query = searchQuery.toLowerCase();
+        final matchesWord = vocab.word.toLowerCase().contains(query);
+        final matchesMeaning = (vocab.meaning ?? '').toLowerCase().contains(query);
+        final matchesTopic = (vocab.topic ?? '').toLowerCase().contains(query);
+        if (!matchesWord && !matchesMeaning && !matchesTopic) {
+          return false;
+        }
+      }
+
+      // Status filter
+      if (selectedStatusFilter != null) {
+        if (selectedStatusFilter == 'new' &&
+            vocab.reviewStatus != null &&
+            vocab.reviewStatus != 'new') {
+          return false;
+        } else if (selectedStatusFilter != 'new' &&
+                   vocab.reviewStatus != selectedStatusFilter) {
+          return false;
+        }
+      }
+
+      // Difficulty filter
+      if (selectedDifficultyFilter != null &&
+          vocab.difficulty != selectedDifficultyFilter) {
+        return false;
+      }
+
+      return true;
+    }).toList();
   }
 
   @override
@@ -82,6 +159,134 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
       // Refresh vocab list
       await _loadVocabularies();
     }
+  }
+
+  void _showFilterMenu() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Filter Vocabulary',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+
+              // Status Filter
+              const Text('Review Status', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('All'),
+                    selected: selectedStatusFilter == null,
+                    onSelected: (selected) {
+                      setState(() {
+                        selectedStatusFilter = null;
+                        _applyFilters();
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ChoiceChip(
+                    label: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [Text('🔴 New')],
+                    ),
+                    selected: selectedStatusFilter == 'new',
+                    onSelected: (selected) {
+                      setState(() {
+                        selectedStatusFilter = selected ? 'new' : null;
+                        _applyFilters();
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ChoiceChip(
+                    label: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [Text('🟡 Learning')],
+                    ),
+                    selected: selectedStatusFilter == 'learning',
+                    onSelected: (selected) {
+                      setState(() {
+                        selectedStatusFilter = selected ? 'learning' : null;
+                        _applyFilters();
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ChoiceChip(
+                    label: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [Text('🟢 Mastered')],
+                    ),
+                    selected: selectedStatusFilter == 'mastered',
+                    onSelected: (selected) {
+                      setState(() {
+                        selectedStatusFilter = selected ? 'mastered' : null;
+                        _applyFilters();
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Difficulty Filter
+              const Text('Difficulty', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(6, (index) {
+                  if (index == 0) {
+                    return ChoiceChip(
+                      label: const Text('All'),
+                      selected: selectedDifficultyFilter == null,
+                      onSelected: (selected) {
+                        setState(() {
+                          selectedDifficultyFilter = null;
+                          _applyFilters();
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  }
+                  return ChoiceChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(index, (_) =>
+                        const Icon(Icons.star, size: 14, color: Colors.amber)
+                      ),
+                    ),
+                    selected: selectedDifficultyFilter == index,
+                    onSelected: (selected) {
+                      setState(() {
+                        selectedDifficultyFilter = selected ? index : null;
+                        _applyFilters();
+                      });
+                      Navigator.pop(context);
+                    },
+                  );
+                }),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showMoreMenu() {
@@ -299,26 +504,155 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                         _buildActionButtons(),
                         const SizedBox(height: 24),
 
-                        // Vocabulary list
+                        // Search and Filter
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                onChanged: (value) {
+                                  setState(() {
+                                    searchQuery = value;
+                                    _applyFilters();
+                                  });
+                                },
+                                decoration: InputDecoration(
+                                  hintText: 'Search vocabulary...',
+                                  prefixIcon: const Icon(Icons.search_rounded),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: (selectedStatusFilter != null ||
+                                        selectedDifficultyFilter != null)
+                                    ? Colors.blue.shade50
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: (selectedStatusFilter != null ||
+                                        selectedDifficultyFilter != null)
+                                    ? Border.all(color: Colors.blue.shade400, width: 2)
+                                    : null,
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.filter_list_rounded),
+                                onPressed: _showFilterMenu,
+                                tooltip: 'Filter',
+                                color: (selectedStatusFilter != null ||
+                                        selectedDifficultyFilter != null)
+                                    ? Colors.blue.shade700
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Active filters display
+                        if (selectedStatusFilter != null ||
+                            selectedDifficultyFilter != null ||
+                            searchQuery.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                if (searchQuery.isNotEmpty)
+                                  Chip(
+                                    label: Text('Search: "$searchQuery"'),
+                                    deleteIcon: const Icon(Icons.close, size: 18),
+                                    onDeleted: () {
+                                      setState(() {
+                                        searchQuery = '';
+                                        _applyFilters();
+                                      });
+                                    },
+                                  ),
+                                if (selectedStatusFilter != null)
+                                  Chip(
+                                    label: Text('Status: $selectedStatusFilter'),
+                                    deleteIcon: const Icon(Icons.close, size: 18),
+                                    onDeleted: () {
+                                      setState(() {
+                                        selectedStatusFilter = null;
+                                        _applyFilters();
+                                      });
+                                    },
+                                  ),
+                                if (selectedDifficultyFilter != null)
+                                  Chip(
+                                    label: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text('Difficulty: '),
+                                        ...List.generate(
+                                          selectedDifficultyFilter!,
+                                          (_) => const Icon(Icons.star, size: 14, color: Colors.amber),
+                                        ),
+                                      ],
+                                    ),
+                                    deleteIcon: const Icon(Icons.close, size: 18),
+                                    onDeleted: () {
+                                      setState(() {
+                                        selectedDifficultyFilter = null;
+                                        _applyFilters();
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ),
+
+                        // Vocabulary list header
                         Row(
                           children: [
                             const Icon(Icons.list_rounded, color: Colors.blue, size: 22),
                             const SizedBox(width: 8),
                             Text(
-                              'VOCABULARY LIST ($totalVocabs)',
+                              'VOCABULARY (${filteredVocabs.length})',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            const Spacer(),
-                            // TODO: Add sort/filter
                           ],
                         ),
                         const SizedBox(height: 12),
 
-                        if (vocabs.isEmpty)
+                        if (filteredVocabs.isEmpty && vocabs.isNotEmpty)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.search_off_rounded,
+                                      size: 64, color: Colors.grey.shade400),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No vocabulary matches your filters',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else if (vocabs.isEmpty)
                           Center(
                             child: Padding(
                               padding: const EdgeInsets.all(32),
@@ -339,7 +673,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                             ),
                           )
                         else
-                          ...vocabs.map((vocab) => _buildVocabCard(vocab)),
+                          ...filteredVocabs.map((vocab) => _buildVocabCard(vocab)),
                       ],
                     ),
                   ),
@@ -621,7 +955,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   Widget _buildVocabCard(Vocabulary vocab) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -633,75 +966,195 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Status emoji
-          Text(
-            _getStatusEmoji(vocab.reviewStatus),
-            style: const TextStyle(fontSize: 24),
-          ),
-          const SizedBox(width: 12),
-
-          // Word and meaning
-          Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            // TODO: Show vocab detail dialog or navigate to detail screen
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  vocab.word,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  vocab.meaning ?? "123",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 6),
+                // Header row with status and difficulty
                 Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      size: 12,
-                      color: Colors.grey.shade500,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Next review: ${_getNextReviewText(vocab)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                    // Status indicator with background
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(vocab.reviewStatus).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        _getStatusEmoji(vocab.reviewStatus),
+                        style: const TextStyle(fontSize: 20),
                       ),
                     ),
+                    const SizedBox(width: 12),
+
+                    // Word
+                    Expanded(
+                      child: Text(
+                        vocab.word,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+
+                    // Difficulty stars
+                    if (vocab.difficulty != null && vocab.difficulty! > 0)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(
+                          vocab.difficulty!,
+                          (index) => Icon(
+                            Icons.star,
+                            size: 16,
+                            color: Colors.amber.shade600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Meaning
+                Text(
+                  vocab.meaning ?? '',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey.shade800,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                // Example sentence
+                if (vocab.exampleSentence != null && vocab.exampleSentence!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.format_quote, size: 16, color: Colors.grey.shade500),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            vocab.exampleSentence!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 12),
+
+                // Bottom info row
+                Row(
+                  children: [
+                    // Topic tag
+                    if (vocab.topic != null && vocab.topic!.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          vocab.topic!,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
+                    const Spacer(),
+
+                    // Next review info
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _getNextReviewText(vocab),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Familiarity badge
+                    if (vocab.familiarity != null) ...[
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(vocab.reviewStatus).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _getStatusColor(vocab.reviewStatus).withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.trending_up_rounded,
+                              size: 12,
+                              color: _getStatusColor(vocab.reviewStatus),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${vocab.familiarity!.toInt()}%',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: _getStatusColor(vocab.reviewStatus),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
             ),
           ),
-
-          // Familiarity badge (if available)
-          if (vocab.familiarity != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: _getStatusColor(vocab.reviewStatus).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '${vocab.familiarity!.toInt()}%',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: _getStatusColor(vocab.reviewStatus),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

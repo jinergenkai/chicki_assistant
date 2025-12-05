@@ -1,4 +1,4 @@
-import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
+import 'package:chicki_buddy/services/vocabulary.service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -45,9 +45,9 @@ class _AddVocabularyDialogState extends State<AddVocabularyDialog> {
     setState(() => _isLoading = true);
 
     try {
-      final vocabDataService = Get.find<VocabularyDataService>();
+      final vocabService = Get.find<VocabularyService>();
 
-      await vocabDataService.addVocabToBook(
+      await vocabService.addVocabToBook(
         word: _wordController.text.trim(),
         meaning: _meaningController.text.trim(),
         bookId: widget.bookId,

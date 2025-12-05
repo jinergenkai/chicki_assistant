@@ -7,7 +7,6 @@ import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
 import 'package:chicki_buddy/ui/widgets/book_card.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card.dart';
 import 'package:chicki_buddy/ui/widgets/create_book_dialog.dart';
-import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
 import 'package:chicki_buddy/services/vocabulary.service.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +24,6 @@ class BooksScreen extends StatefulWidget {
 
 class _BooksScreenState extends State<BooksScreen> {
   final controller = Get.find<BooksController>(); // Use existing global instance
-  late VocabularyDataService vocabDataService;
   StreamSubscription? _navigationSub;
   String? _selectedCategory;
   List<String> _categories = [];
@@ -48,8 +46,6 @@ class _BooksScreenState extends State<BooksScreen> {
   @override
   void initState() {
     super.initState();
-
-    vocabDataService = Get.find<VocabularyDataService>();
 
     // Load categories
     _loadCategories();
@@ -114,9 +110,8 @@ class _BooksScreenState extends State<BooksScreen> {
   }
 
   Future<List<Vocabulary>> _getVocabsForBook(String bookId) async {
-    // Use cached vocabs if already loaded
-    final vocabService = VocabularyService();
-    await vocabService.init();
+    // Use GetX-registered service instead of creating new instance
+    final vocabService = Get.find<VocabularyService>();
     return vocabService.getByBookId(bookId);
   }
 

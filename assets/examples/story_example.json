@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "exportedAt": "2025-01-15T10:30:00.000Z",
+  "book": {
+    "id": "example_story_1",
+    "title": "The Little Dragon's Adventure",
+    "description": "A heartwarming tale about a young dragon discovering the world",
+    "price": 0.0,
+    "isCustom": true,
+    "author": "Chicky Buddy Stories",
+    "category": "Children",
+    "type": "story",
+    "version": "1.0",
+    "isPublic": false,
+    "source": "userCreated",
+    "coverImagePath": "assets/covers/little_dragon.png",
+    "createdAt": "2025-01-10T00:00:00.000Z",
+    "updatedAt": "2025-01-15T10:30:00.000Z"
+  },
+  "storyChapters": [
+    {
+      "chapterNumber": 1,
+      "title": "The Hatching",
+      "content": "High in the misty mountains, nestled among the clouds, lay a small cave. Inside this cave sat a peculiar egg - not just any egg, but a dragon egg that shimmered with all the colors of the rainbow.\n\nOne bright morning, as the first rays of sunlight touched the egg, tiny cracks began to appear. Slowly, carefully, a small snout poked through. Then came a paw, then another, and finally, with a triumphant chirp, a baby dragon tumbled out.\n\nThe little dragon was no bigger than a kitten, with scales that sparkled like jewels. Her name was Ember, and she was about to discover just how wonderful and surprising the world could be.\n\nAs Ember stretched her tiny wings for the first time, she looked around her cave home with wide, curious eyes. Everything was new, everything was exciting, and everything was waiting to be explored.",
+      "summary": "A baby dragon named Ember hatches from her egg and sees the world for the first time.",
+      "wordCount": 157,
+      "readingTime": 1,
+      "isCompleted": false,
+      "lastReadPosition": 0,
+      "progressPercent": 0.0,
+      "createdAt": "2025-01-10T10:00:00.000Z",
+      "updatedAt": "2025-01-10T10:00:00.000Z"
+    },
+    {
+      "chapterNumber": 2,
+      "title": "First Flight",
+      "content": "Ember spent her first few days exploring her cave. She discovered shiny rocks, mysterious shadows, and the echo of her own voice bouncing off the walls. But her mother, a magnificent dragon named Aurora, knew it was time for something more.\n\n\"Come, little one,\" Aurora called gently. \"Today you will learn to fly.\"\n\nEmber's eyes widened. Fly? Like the birds she had seen soaring past the cave entrance? Her wings fluttered with excitement and nervousness.\n\nAurora led her to the edge of the cave, where the ground dropped away into a breathtaking view of valleys and forests below. \"The secret to flying,\" Aurora explained, \"is not to think about falling. Just spread your wings and trust them.\"\n\nWith her mother's encouraging nod, Ember took a deep breath, spread her small wings wide, and leaped into the open air. For a heart-stopping moment, she tumbled through the sky. But then, her wings caught the wind, and suddenly - she was flying!\n\nThe world below looked like a beautiful painting, and Ember laughed with pure joy as she soared through the clouds.",
+      "summary": "Ember learns to fly with her mother's guidance and experiences the joy of flight for the first time.",
+      "wordCount": 213,
+      "readingTime": 2,
+      "isCompleted": false,
+      "lastReadPosition": 0,
+      "progressPercent": 0.0,
+      "createdAt": "2025-01-10T11:00:00.000Z",
+      "updatedAt": "2025-01-10T11:00:00.000Z"
+    },
+    {
+      "chapterNumber": 3,
+      "title": "A New Friend",
+      "content": "During one of her flying adventures, Ember noticed something unusual - a small figure waving from a meadow below. Curious as always, she spiraled down for a closer look.\n\nIt was a young girl with bright red hair and a friendly smile. \"Hello!\" the girl called. \"I'm Lily. Are you a real dragon?\"\n\nEmber landed gracefully (well, mostly gracefully - she still needed practice) and nodded. She had never met a human before, but Lily seemed nice.\n\n\"I've read about dragons in my books,\" Lily said excitedly, \"but I never thought I'd meet one! Would you like to be friends?\"\n\nEmber chirped happily. A friend! She had wondered if there might be other creatures who would want to play with her. Lily pulled out her lunch - sandwiches and fruit - and shared it with Ember, who had never tasted anything quite like strawberries before.\n\nAs they sat together in the sunny meadow, both the little dragon and the little girl knew they had found something special: a true friend.\n\nFrom that day on, Ember and Lily met often, sharing stories and adventures, proving that friendship knows no boundaries - not even between dragons and humans.",
+      "summary": "Ember meets a human girl named Lily, and they become best friends.",
+      "wordCount": 223,
+      "readingTime": 2,
+      "isCompleted": false,
+      "lastReadPosition": 0,
+      "progressPercent": 0.0,
+      "createdAt": "2025-01-10T12:00:00.000Z",
+      "updatedAt": "2025-01-10T12:00:00.000Z"
+    }
+  ]
+}

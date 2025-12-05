@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:chicki_buddy/services/data/book_data_service.dart';
+import 'package:chicki_buddy/services/book_service.dart';
+import 'package:chicki_buddy/models/book.dart';
 
 class CreateBookDialog extends StatefulWidget {
   const CreateBookDialog({super.key});
@@ -15,7 +16,8 @@ class _CreateBookDialogState extends State<CreateBookDialog> {
   final _descriptionController = TextEditingController();
   final _authorController = TextEditingController();
   final _categoryController = TextEditingController();
-  
+
+  BookType _selectedType = BookType.flashBook;
   bool _isCreating = false;
 
   @override
@@ -33,18 +35,22 @@ class _CreateBookDialogState extends State<CreateBookDialog> {
     setState(() => _isCreating = true);
 
     try {
-      final bookDataService = Get.find<BookDataService>();
-      
-      await bookDataService.createBook(
+      final bookService = Get.find<BookService>();
+
+      final book = await bookService.createNewBook(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        author: _authorController.text.trim().isEmpty 
-            ? null 
+        author: _authorController.text.trim().isEmpty
+            ? null
             : _authorController.text.trim(),
-        category: _categoryController.text.trim().isEmpty 
-            ? null 
+        category: _categoryController.text.trim().isEmpty
+            ? null
             : _categoryController.text.trim(),
       );
+
+      // Set book type
+      book.type = _selectedType;
+      await bookService.updateBook(book);
 
       if (mounted) {
         Navigator.of(context).pop(true); // Return true on success
@@ -133,6 +139,48 @@ class _CreateBookDialogState extends State<CreateBookDialog> {
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.grey.shade100,
                     ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Book Type Selector
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Book Type',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _buildTypeChip(
+                        type: BookType.flashBook,
+                        label: 'FlashBook',
+                        icon: Icons.school_rounded,
+                        description: 'Vocabulary learning',
+                      ),
+                      const SizedBox(width: 12),
+                      _buildTypeChip(
+                        type: BookType.journal,
+                        label: 'Journal',
+                        icon: Icons.book_rounded,
+                        description: 'Diary & notes',
+                      ),
+                      const SizedBox(width: 12),
+                      _buildTypeChip(
+                        type: BookType.story,
+                        label: 'Story',
+                        icon: Icons.menu_book_rounded,
+                        description: 'Reading stories',
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -282,6 +330,59 @@ class _CreateBookDialogState extends State<CreateBookDialog> {
                           ),
                   ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeChip({
+    required BookType type,
+    required String label,
+    required IconData icon,
+    required String description,
+  }) {
+    final isSelected = _selectedType == type;
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _selectedType = type),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.blue.shade50 : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? Colors.blue.shade600 : Colors.grey.shade300,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? Colors.blue.shade600 : Colors.grey.shade600,
+                size: 28,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected ? Colors.blue.shade800 : Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey.shade600,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

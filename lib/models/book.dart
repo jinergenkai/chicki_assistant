@@ -8,12 +8,25 @@ part 'book.g.dart';
 enum BookSource {
   @HiveField(0)
   statics, // From assets JSON
-  
+
   @HiveField(1)
   userCreated, // User created custom book
-  
+
   @HiveField(2)
   imported, // Downloaded/imported from friends
+}
+
+/// Type of the book
+@HiveType(typeId: 202)
+enum BookType {
+  @HiveField(0)
+  flashBook, // Vocabulary learning with flashcards
+
+  @HiveField(1)
+  journal, // Diary/Journal entries
+
+  @HiveField(2)
+  story, // Reading stories/articles
 }
 
 @HiveType(typeId: 200)
@@ -71,6 +84,13 @@ class Book extends HiveObject {
   @HiveField(16)
   String? originalOwnerId; // Track original creator (for imported books)
 
+  @HiveField(17, defaultValue: BookType.flashBook)
+  @JsonKey(defaultValue: BookType.flashBook)
+  BookType type; // Type of book (flashBook/journal/story)
+
+  @HiveField(18)
+  Map<String, dynamic>? typeConfig; // Type-specific configuration
+
   Book({
     required this.id,
     required this.title,
@@ -89,6 +109,8 @@ class Book extends HiveObject {
     this.jsonHash,
     BookSource? source,
     this.originalOwnerId,
+    this.type = BookType.flashBook, // Default to flashBook
+    this.typeConfig,
   }) : source = source ?? BookSource.userCreated; // Default to userCreated for backward compatibility
 
   factory Book.fromJson(Map<String, dynamic> json) => _$BookFromJson(json);

@@ -6,7 +6,7 @@ import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/book.dart';
-import '../services/data/book_data_service.dart';
+import '../services/book_service.dart';
 
 class BooksController extends GetxController {
   final RxList<Book> books = <Book>[].obs;
@@ -14,18 +14,18 @@ class BooksController extends GetxController {
   final RxString downloadingBookId = ''.obs;
   final RxDouble downloadProgress = 0.0.obs;
   final RxBool isLoading = false.obs;
-  
+
   // New: Observable for navigation requests from voice/UI intents
   final Rx<Book?> bookToNavigate = Rx<Book?>(null);
 
-  late BookDataService bookDataService;
+  late BookService bookService;
   
   StreamSubscription? _voiceActionSub;
 
   @override
   void onInit() {
     super.onInit();
-    bookDataService = Get.find<BookDataService>();
+    bookService = Get.find<BookService>();
     _setupEventListeners();
     loadBooks();
   }
@@ -85,16 +85,16 @@ class BooksController extends GetxController {
 
       // If books list is empty, load it first (for voice commands from non-books screen)
       if (books.isEmpty) {
-        logger.info('BooksController: Books list empty, loading via BookDataService...');
-        await bookDataService.loadBooks();
-        books.value = bookDataService.books;
+        logger.info('BooksController: Books list empty, loading via BookService...');
+        final loadedBooks = await bookService.loadAllBooks();
+        books.value = loadedBooks;
         logger.info('BooksController: Loaded ${books.length} books');
       }
 
       // Find book by ID or name
       Book? foundBook;
       if (bookId != null) {
-        foundBook = bookDataService.getBook(bookId);
+        foundBook = bookService.getBook(bookId);
         foundBook ??= books.firstWhereOrNull((b) => b.id == bookId);
       } else if (bookName != null) {
         foundBook = books.firstWhereOrNull(
@@ -122,14 +122,14 @@ class BooksController extends GetxController {
     }
   }
 
-  /// Load books using BookDataService (direct, no intent needed for UI)
+  /// Load books using BookService (direct, no intent needed for UI)
   Future<void> loadBooks() async {
     isLoading.value = true;
-    logger.info('BooksController: Loading books via BookDataService...');
-    
+    logger.info('BooksController: Loading books via BookService...');
+
     try {
-      await bookDataService.loadBooks();
-      books.value = bookDataService.books;
+      final loadedBooks = await bookService.loadAllBooks();
+      books.value = loadedBooks;
       isLoading.value = false;
       logger.success('BooksController: Loaded ${books.length} books');
     } catch (e) {

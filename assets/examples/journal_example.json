@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "exportedAt": "2025-01-15T10:30:00.000Z",
+  "book": {
+    "id": "example_journal_1",
+    "title": "My Daily Journal 2025",
+    "description": "Personal diary and reflections",
+    "price": 0.0,
+    "isCustom": true,
+    "author": "You",
+    "category": "Personal",
+    "type": "journal",
+    "version": "1.0",
+    "isPublic": false,
+    "source": "userCreated",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-15T10:30:00.000Z"
+  },
+  "journalEntries": [
+    {
+      "date": "2025-01-01T00:00:00.000Z",
+      "title": "New Year, New Beginnings",
+      "content": "Today marks the start of a new year and a new chapter in my life. I'm filled with hope and excitement for what's to come. My goals for this year include learning new skills, improving my health, and spending more quality time with loved ones.\n\nI want to be more mindful and present in each moment, rather than constantly worrying about the future or dwelling on the past. This journal will help me track my progress and reflect on my journey.",
+      "mood": "hopeful",
+      "tags": ["new-year", "goals", "reflection"],
+      "wordCount": 89,
+      "isFavorite": true,
+      "createdAt": "2025-01-01T20:00:00.000Z",
+      "updatedAt": "2025-01-01T20:00:00.000Z"
+    },
+    {
+      "date": "2025-01-05T00:00:00.000Z",
+      "title": "A Productive Day",
+      "content": "Woke up early and went for a morning run. The fresh air really helped clear my mind. Spent the morning working on a challenging project at work - finally made a breakthrough! \n\nIn the evening, I cooked a healthy dinner and read for an hour before bed. Feeling accomplished and grateful for such a balanced day.",
+      "mood": "accomplished",
+      "tags": ["productivity", "health", "gratitude"],
+      "wordCount": 63,
+      "isFavorite": false,
+      "createdAt": "2025-01-05T21:30:00.000Z",
+      "updatedAt": "2025-01-05T21:30:00.000Z"
+    },
+    {
+      "date": "2025-01-10T00:00:00.000Z",
+      "title": "Reflections on Friendship",
+      "content": "Had lunch with an old friend I haven't seen in months. It's amazing how some friendships pick up right where they left off, no matter how much time has passed.\n\nWe talked about our dreams, our struggles, and everything in between. Reminded me of the importance of nurturing meaningful relationships and not taking good friends for granted.",
+      "mood": "grateful",
+      "tags": ["friendship", "relationships", "gratitude"],
+      "attachments": ["photo_lunch_2025_01_10.jpg"],
+      "wordCount": 70,
+      "isFavorite": true,
+      "createdAt": "2025-01-10T19:00:00.000Z",
+      "updatedAt": "2025-01-10T19:00:00.000Z"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_progress_indicator
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_front_side.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card_back_side.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/srs_review_buttons.dart';
-import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
+import 'package:chicki_buddy/services/vocabulary.service.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get/get.dart';
@@ -27,7 +27,7 @@ class FlashCardScreen2 extends StatefulWidget {
 
 class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProviderStateMixin {
   late FlashCardController controller;
-  late VocabularyDataService vocabDataService;
+  late VocabularyService vocabService;
 
   late AnimationController _swipeController;
   late AnimationController _stackController;
@@ -45,7 +45,7 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
 
     // Initialize controller and service
     controller = Get.put(FlashCardController(book: widget.book), tag: 'flashcard_${widget.book.id}');
-    vocabDataService = Get.find<VocabularyDataService>();
+    vocabService = Get.find<VocabularyService>();
 
     // timeDilation = 1.0;
     _swipeController = AnimationController(
@@ -138,7 +138,7 @@ class _FlashCardScreen2State extends State<FlashCardScreen2> with TickerProvider
 
     try {
       // Review vocabulary with SRS algorithm
-      await vocabDataService.reviewVocab(currentVocab, quality);
+      await vocabService.reviewVocabulary(currentVocab, quality);
 
       // Show feedback toast
       String message;

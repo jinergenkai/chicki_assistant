@@ -36,13 +36,15 @@ class BookAdapter extends TypeAdapter<Book> {
           ? BookSource.userCreated
           : fields[15] as BookSource?,
       originalOwnerId: fields[16] as String?,
+      type: fields[17] == null ? BookType.flashBook : fields[17] as BookType,
+      typeConfig: (fields[18] as Map?)?.cast<String, dynamic>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Book obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -76,7 +78,11 @@ class BookAdapter extends TypeAdapter<Book> {
       ..writeByte(15)
       ..write(obj.source)
       ..writeByte(16)
-      ..write(obj.originalOwnerId);
+      ..write(obj.originalOwnerId)
+      ..writeByte(17)
+      ..write(obj.type)
+      ..writeByte(18)
+      ..write(obj.typeConfig);
   }
 
   @override
@@ -134,6 +140,50 @@ class BookSourceAdapter extends TypeAdapter<BookSource> {
           typeId == other.typeId;
 }
 
+class BookTypeAdapter extends TypeAdapter<BookType> {
+  @override
+  final int typeId = 202;
+
+  @override
+  BookType read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return BookType.flashBook;
+      case 1:
+        return BookType.journal;
+      case 2:
+        return BookType.story;
+      default:
+        return BookType.flashBook;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, BookType obj) {
+    switch (obj) {
+      case BookType.flashBook:
+        writer.writeByte(0);
+        break;
+      case BookType.journal:
+        writer.writeByte(1);
+        break;
+      case BookType.story:
+        writer.writeByte(2);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BookTypeAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
@@ -163,6 +213,9 @@ Book _$BookFromJson(Map<String, dynamic> json) => Book(
       source: $enumDecodeNullable(_$BookSourceEnumMap, json['source']) ??
           BookSource.userCreated,
       originalOwnerId: json['originalOwnerId'] as String?,
+      type: $enumDecodeNullable(_$BookTypeEnumMap, json['type']) ??
+          BookType.flashBook,
+      typeConfig: json['typeConfig'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
@@ -183,10 +236,18 @@ Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
       'jsonHash': instance.jsonHash,
       'source': _$BookSourceEnumMap[instance.source]!,
       'originalOwnerId': instance.originalOwnerId,
+      'type': _$BookTypeEnumMap[instance.type]!,
+      'typeConfig': instance.typeConfig,
     };
 
 const _$BookSourceEnumMap = {
   BookSource.statics: 'statics',
   BookSource.userCreated: 'userCreated',
   BookSource.imported: 'imported',
+};
+
+const _$BookTypeEnumMap = {
+  BookType.flashBook: 'flashBook',
+  BookType.journal: 'journal',
+  BookType.story: 'story',
 };

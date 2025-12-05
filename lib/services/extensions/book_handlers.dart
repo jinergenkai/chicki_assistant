@@ -3,17 +3,16 @@ import 'package:chicki_buddy/services/utils/text_matcher.dart';
 import 'package:chicki_buddy/core/logger.dart';
 import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:get/get.dart';
-import 'package:chicki_buddy/services/data/book_data_service.dart';
-import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
+import 'package:chicki_buddy/services/book_service.dart';
+import 'package:chicki_buddy/services/vocabulary.service.dart';
 
 /// Extension for book and topic related intent handlers
 extension BookHandlers on UnifiedIntentHandler {
   /// Handle list book intent
   Future<Map<String, dynamic>> handleListBook(IntentSource source) async {
-    // Use BookDataService instead of direct bookService
-    final bookDataService = Get.find<BookDataService>();
-    await bookDataService.loadBooks();
-    final books = bookDataService.books;
+    // Use BookService
+    final bookService = Get.find<BookService>();
+    final books = await bookService.loadAllBooks();
 
     // Store books list for number-based selection
     currentBooksList = books;
@@ -66,16 +65,16 @@ extension BookHandlers on UnifiedIntentHandler {
     String? actualBookName;
     dynamic selectedBook;
 
-    // Use BookDataService
-    final bookDataService = Get.find<BookDataService>();
-    final vocabDataService = Get.find<VocabularyDataService>();
-    
+    // Use BookService
+    final bookService = Get.find<BookService>();
+    final vocabService = Get.find<VocabularyService>();
+
     // === UI Source: Direct ID lookup (no fuzzy needed) ===
     if (source == IntentSource.ui) {
       logger.info('UI selection: trying direct bookId lookup for "$bookIdOrName"');
 
       // Try to find book by exact ID first
-      selectedBook = bookDataService.getBook(bookIdOrName);
+      selectedBook = bookService.getBook(bookIdOrName);
 
       if (selectedBook != null) {
         actualBookId = selectedBook.id;
@@ -90,8 +89,7 @@ extension BookHandlers on UnifiedIntentHandler {
     else {
       if (currentBooksList == null || currentBooksList!.isEmpty) {
         // Try to load books if not available
-        await bookDataService.loadBooks();
-        currentBooksList = bookDataService.books;
+        currentBooksList = await bookService.loadAllBooks();
       }
 
       if (currentBooksList == null || currentBooksList!.isEmpty) {
@@ -137,9 +135,8 @@ extension BookHandlers on UnifiedIntentHandler {
 
     currentBookId = actualBookId;
 
-    // Load vocabulary list for this book using VocabularyDataService
-    await vocabDataService.loadByBookId(actualBookId!);
-    currentVocabList = vocabDataService.currentBookVocabs;
+    // Load vocabulary list for this book using VocabularyService
+    currentVocabList = vocabService.getByBookIdSorted(actualBookId!);
     currentCardIndex = 0;
     isCardFlipped = false;
 

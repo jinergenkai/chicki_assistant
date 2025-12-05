@@ -1,25 +1,25 @@
 import 'package:chicki_buddy/services/unified_intent_handler.dart';
+import 'package:chicki_buddy/services/vocabulary.service.dart';
 import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:get/get.dart';
-import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
 
 /// Extension for flash card related intent handlers
 extension FlashCardHandlers on UnifiedIntentHandler {
   /// Handle next card intent
   Future<Map<String, dynamic>> handleNextCard(IntentSource source) async {
-    final vocabDataService = Get.find<VocabularyDataService>();
-    
-    if (!vocabDataService.nextCard()) {
-      return createErrorResponse('nextCard', 'No vocabulary loaded or at last card', source);
+    // Use currentVocabList from UnifiedIntentHandler state
+    if (currentVocabList == null || currentVocabList!.isEmpty) {
+      return createErrorResponse('nextCard', 'No vocabulary loaded', source);
     }
 
-    currentCardIndex = vocabDataService.currentCardIndex.value;
-    isCardFlipped = false;
-    final currentVocab = vocabDataService.currentVocab.value;
-    
-    if (currentVocab == null) {
-      return createErrorResponse('nextCard', 'No current vocabulary', source);
+    final index = currentCardIndex ?? 0;
+    if (index >= currentVocabList!.length - 1) {
+      return createErrorResponse('nextCard', 'Already at last card', source);
     }
+
+    currentCardIndex = index + 1;
+    isCardFlipped = false;
+    final currentVocab = currentVocabList![currentCardIndex!];
     
     // Emit event for voice action
     if (source == IntentSource.speech) {
@@ -56,19 +56,19 @@ extension FlashCardHandlers on UnifiedIntentHandler {
 
   /// Handle previous card intent
   Future<Map<String, dynamic>> handlePrevCard(IntentSource source) async {
-    final vocabDataService = Get.find<VocabularyDataService>();
-    
-    if (!vocabDataService.prevCard()) {
-      return createErrorResponse('prevCard', 'No vocabulary loaded or at first card', source);
+    // Use currentVocabList from UnifiedIntentHandler state
+    if (currentVocabList == null || currentVocabList!.isEmpty) {
+      return createErrorResponse('prevCard', 'No vocabulary loaded', source);
     }
 
-    currentCardIndex = vocabDataService.currentCardIndex.value;
-    isCardFlipped = false;
-    final currentVocab = vocabDataService.currentVocab.value;
-    
-    if (currentVocab == null) {
-      return createErrorResponse('prevCard', 'No current vocabulary', source);
+    final index = currentCardIndex ?? 0;
+    if (index <= 0) {
+      return createErrorResponse('prevCard', 'Already at first card', source);
     }
+
+    currentCardIndex = index - 1;
+    isCardFlipped = false;
+    final currentVocab = currentVocabList![currentCardIndex!];
     
     // Emit event for voice action
     if (source == IntentSource.speech) {
@@ -105,12 +105,12 @@ extension FlashCardHandlers on UnifiedIntentHandler {
 
   /// Handle flip card intent
   Future<Map<String, dynamic>> handleFlipCard(IntentSource source) async {
-    final vocabDataService = Get.find<VocabularyDataService>();
-    final currentVocab = vocabDataService.currentVocab.value;
-    
-    if (currentVocab == null) {
+    if (currentVocabList == null || currentVocabList!.isEmpty) {
       return createErrorResponse('flipCard', 'No vocabulary loaded', source);
     }
+
+    final index = currentCardIndex ?? 0;
+    final currentVocab = currentVocabList![index];
 
     isCardFlipped = !isCardFlipped;
     
@@ -151,12 +151,12 @@ extension FlashCardHandlers on UnifiedIntentHandler {
 
   /// Handle pronounce word intent
   Future<Map<String, dynamic>> handlePronounceWord(IntentSource source) async {
-    final vocabDataService = Get.find<VocabularyDataService>();
-    final currentVocab = vocabDataService.currentVocab.value;
-    
-    if (currentVocab == null) {
+    if (currentVocabList == null || currentVocabList!.isEmpty) {
       return createErrorResponse('pronounceWord', 'No vocabulary loaded', source);
     }
+
+    final index = currentCardIndex ?? 0;
+    final currentVocab = currentVocabList![index];
 
     // TODO: Integrate with TTS service to pronounce the word
     return {
@@ -178,12 +178,12 @@ extension FlashCardHandlers on UnifiedIntentHandler {
 
   /// Handle example sentence intent
   Future<Map<String, dynamic>> handleExampleSentence(IntentSource source) async {
-    final vocabDataService = Get.find<VocabularyDataService>();
-    final currentVocab = vocabDataService.currentVocab.value;
-    
-    if (currentVocab == null) {
+    if (currentVocabList == null || currentVocabList!.isEmpty) {
       return createErrorResponse('exampleSentence', 'No vocabulary loaded', source);
     }
+
+    final index = currentCardIndex ?? 0;
+    final currentVocab = currentVocabList![index];
     final example = currentVocab.exampleSentence ?? 'No example sentence available';
 
     if (source == IntentSource.speech) {
@@ -206,12 +206,12 @@ extension FlashCardHandlers on UnifiedIntentHandler {
 
   /// Handle translate word intent
   Future<Map<String, dynamic>> handleTranslateWord(IntentSource source) async {
-    final vocabDataService = Get.find<VocabularyDataService>();
-    final currentVocab = vocabDataService.currentVocab.value;
-    
-    if (currentVocab == null) {
+    if (currentVocabList == null || currentVocabList!.isEmpty) {
       return createErrorResponse('translateWord', 'No vocabulary loaded', source);
     }
+
+    final index = currentCardIndex ?? 0;
+    final currentVocab = currentVocabList![index];
     final meaning = currentVocab.meaning ?? 'No translation available';
 
     if (source == IntentSource.speech) {
@@ -234,12 +234,12 @@ extension FlashCardHandlers on UnifiedIntentHandler {
 
   /// Handle spell word intent
   Future<Map<String, dynamic>> handleSpellWord(IntentSource source) async {
-    final vocabDataService = Get.find<VocabularyDataService>();
-    final currentVocab = vocabDataService.currentVocab.value;
-    
-    if (currentVocab == null) {
+    if (currentVocabList == null || currentVocabList!.isEmpty) {
       return createErrorResponse('spellWord', 'No vocabulary loaded', source);
     }
+
+    final index = currentCardIndex ?? 0;
+    final currentVocab = currentVocabList![index];
     final letters = currentVocab.word.split('').join(', ');
 
     if (source == IntentSource.speech) {
@@ -262,12 +262,12 @@ extension FlashCardHandlers on UnifiedIntentHandler {
 
   /// Handle bookmark word intent
   Future<Map<String, dynamic>> handleBookmarkWord(IntentSource source) async {
-    final vocabDataService = Get.find<VocabularyDataService>();
-    final currentVocab = vocabDataService.currentVocab.value;
-    
-    if (currentVocab == null) {
+    if (currentVocabList == null || currentVocabList!.isEmpty) {
       return createErrorResponse('bookmarkWord', 'No vocabulary loaded', source);
     }
+
+    final index = currentCardIndex ?? 0;
+    final currentVocab = currentVocabList![index];
 
     // Toggle bookmark (add 'bookmarked' tag)
     final tags = currentVocab.tags ?? [];
@@ -280,7 +280,8 @@ extension FlashCardHandlers on UnifiedIntentHandler {
     }
     currentVocab.tags = tags;
 
-    await vocabDataService.updateVocab(currentVocab);
+    final vocabService = Get.find<VocabularyService>();
+    await vocabService.upsertVocabulary(currentVocab);
     
     // Emit event for voice action
     if (source == IntentSource.speech) {

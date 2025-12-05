@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:chicki_buddy/core/logger.dart';
 import 'package:chicki_buddy/core/app_event_bus.dart';
-import 'package:chicki_buddy/services/data/vocabulary_data_service.dart';
-import 'package:chicki_buddy/services/data/book_data_service.dart';
+import 'package:chicki_buddy/services/vocabulary.service.dart';
+import 'package:chicki_buddy/services/book_service.dart';
 import 'package:chicki_buddy/models/book.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:get/get.dart';
@@ -15,8 +15,8 @@ class FlashCardController extends GetxController {
   final Rx<String?> errorMessage = Rx<String?>(null);
 
   final Book book;
-  late VocabularyDataService _vocabularyDataService;
-  late BookDataService _bookDataService;
+  late VocabularyService _vocabularyService;
+  late BookService _bookService;
   StreamSubscription? _voiceActionSub;
 
   FlashCardController({required this.book});
@@ -24,9 +24,9 @@ class FlashCardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _vocabularyDataService = Get.find<VocabularyDataService>();
-    _bookDataService = Get.find<BookDataService>();
-    
+    _vocabularyService = Get.find<VocabularyService>();
+    _bookService = Get.find<BookService>();
+
     _setupEventListeners();
     _markBookAsOpened(); // Track recent books
     loadVocabulary();
@@ -35,7 +35,7 @@ class FlashCardController extends GetxController {
   /// Mark book as opened for recent books tracking
   Future<void> _markBookAsOpened() async {
     try {
-      await _bookDataService.selectBook(book.id);
+      await _bookService.markBookOpened(book.id);
       logger.info('FlashCardController: Marked book ${book.id} as opened');
     } catch (e) {
       logger.warning('FlashCardController: Failed to mark book as opened: $e');
@@ -106,8 +106,8 @@ class FlashCardController extends GetxController {
     logger.info('FlashCardController: Loading vocabulary for book ${book.id}');
 
     try {
-      await _vocabularyDataService.loadByBookId(book.id);
-      vocabList.value = _vocabularyDataService.currentBookVocabs.toList();
+      final vocabs = _vocabularyService.getByBookIdSorted(book.id);
+      vocabList.value = vocabs;
       currentIndex.value = 0;
       isFlipped.value = false;
       isLoading.value = false;
@@ -159,17 +159,17 @@ class FlashCardController extends GetxController {
   /// Toggle bookmark for current card (UI action, no intent needed)
   Future<void> toggleBookmark() async {
     if (vocabList.isEmpty) return;
-    
+
     final currentVocab = vocabList[currentIndex.value];
     final tags = currentVocab.tags ?? [];
-    
+
     if (tags.contains('bookmarked')) {
       tags.remove('bookmarked');
     } else {
       tags.add('bookmarked');
     }
-    
-    await _vocabularyDataService.updateVocab(currentVocab);
+
+    await _vocabularyService.upsertVocabulary(currentVocab);
     logger.info('FlashCardController: Bookmark toggled for vocab ${currentVocab.word}');
   }
 
