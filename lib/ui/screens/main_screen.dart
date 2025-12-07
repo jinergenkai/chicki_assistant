@@ -2,6 +2,7 @@ import 'package:chicki_buddy/ui/screens/assistant_settings_screen.dart';
 import 'package:chicki_buddy/ui/screens/books_screen.dart';
 import 'package:chicki_buddy/ui/screens/chicky_screen.dart';
 import 'package:chicki_buddy/ui/screens/debug_screen.dart';
+import 'package:chicki_buddy/ui/screens/home_screen.dart';
 import 'package:chicki_buddy/ui/screens/user_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
@@ -23,9 +24,10 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
   double _lastScrollOffset = 0;
 
   final List<Widget> _screens = const [
+    HomeScreen(),
     ChickyScreen(),
     // AssistantSettingsScreen(),
-    DebugScreen(),
+    // DebugScreen(),
     BooksScreen(),
     UserScreen(),
   ];
@@ -120,7 +122,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
             widthFactor: 0.68,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final double tabWidth = (constraints.maxWidth) / 4;
+              final double tabWidth = (constraints.maxWidth) / 5;
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
@@ -158,25 +160,25 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _MoonNavBarItem(
-                          icon: LucideIcons.bot,
+                          icon: LucideIcons.home,
                           selected: _currentIndex == 0,
                           onTap: () => _onNavBarTap(0),
                           width: tabWidth,
                         ),
                         _MoonNavBarItem(
-                          icon: LucideIcons.wrench,
+                          icon: LucideIcons.bot,
                           selected: _currentIndex == 1,
                           onTap: () => _onNavBarTap(1),
                           width: tabWidth,
                         ),
                         _MoonNavBarItem(
-                          icon: LucideIcons.shoppingBag,
+                          icon: LucideIcons.wrench,
                           selected: _currentIndex == 2,
                           onTap: () => _onNavBarTap(2),
                           width: tabWidth,
                         ),
                         _MoonNavBarItem(
-                          icon: LucideIcons.user2,
+                          icon: LucideIcons.shoppingBag,
                           selected: _currentIndex == 3,
                           onTap: () => _onNavBarTap(3),
                           width: tabWidth,

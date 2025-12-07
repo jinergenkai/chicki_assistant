@@ -6,7 +6,7 @@ import 'package:chicki_buddy/ui/screens/book_details_screen.dart';
 import 'package:chicki_buddy/ui/screens/flash_card_screen2.dart';
 import 'package:chicki_buddy/ui/widgets/book_card.dart';
 import 'package:chicki_buddy/ui/widgets/flash_card/flash_card.dart';
-import 'package:chicki_buddy/ui/widgets/create_book_dialog.dart';
+import 'package:chicki_buddy/ui/screens/create_book_screen.dart';
 import 'package:chicki_buddy/services/vocabulary.service.dart';
 import 'package:chicki_buddy/models/vocabulary.dart';
 import 'package:flutter/material.dart';
@@ -125,9 +125,8 @@ class _BooksScreenState extends State<BooksScreen> {
   }
 
   Future<void> _showCreateBookDialog() async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => const CreateBookDialog(),
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const CreateBookScreen()),
     );
 
     if (result == true) {
@@ -396,23 +395,17 @@ class _BooksScreenState extends State<BooksScreen> {
                                   onTap: () => clickOpenBook(book),
                                   child: Hero(
                                     tag: 'book_${book.id}',
-                                    child: Obx(() {
-                                      final stats = bookStats[book.id];
-                                      return BookCard(
+                                    child: 
+                                      BookCard(
                                       id: book.id,
                                       title: book.title,
                                       desc: book.description,
-                                      isDownloaded: controller.downloadedBooks.contains(book.id),
-                                      isDownloading: controller.downloadingBookId.value == book.id,
-                                      progress: controller.downloadProgress.value,
-                                      onDownload: () => controller.downloadBook(book.id),
-                                      onRemove: () => controller.removeBook(book.id),
-                                      totalVocabs: stats?['total'],
-                                      masteredVocabs: stats?['mastered'],
+                                      totalVocabs: bookStats[book.id]?['total'],
+                                      masteredVocabs: bookStats[book.id]?['mastered'],
                                       lastOpenedAt: book.lastOpenedAt,
-                                      category: book.category,
-                                    );
-                                    }),
+                                      type: book.type,
+                                      coverId: book.coverId,
+                                    ),
                                   ),
                                 ),
                               );

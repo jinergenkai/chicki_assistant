@@ -238,13 +238,27 @@ class _UserScreenState extends State<UserScreen> with TickerProviderStateMixin {
                                             ),
                                           ],
                                         ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(32),
-                                          child: Image.asset(
-                                            'assets/avatar/dog.png',
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
+                                        child: Obx(() {
+                                          final avatarId = appConfig.userAvatar.value;
+                                          final avatarPath = avatarId.isNotEmpty
+                                              ? 'assets/avatar/$avatarId.png'
+                                              : 'assets/avatar/dog.png';
+                                          
+                                          return ClipRRect(
+                                            borderRadius: BorderRadius.circular(32),
+                                            child: Image.asset(
+                                              avatarPath,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                // Fallback to dog avatar if selected avatar not found
+                                                return Image.asset(
+                                                  'assets/avatar/dog.png',
+                                                  fit: BoxFit.cover,
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        }),
                                       ),
                                     ),
                                   ),
@@ -255,14 +269,17 @@ class _UserScreenState extends State<UserScreen> with TickerProviderStateMixin {
                                   opacity: _nameFadeAnim,
                                   child: SlideTransition(
                                     position: _nameSlideAnim,
-                                    child: const Text(
-                                      'Manh Hung',
-                                      style: TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: -0.5,
-                                      ),
-                                    ),
+                                    child: Obx(() {
+                                      final userName = appConfig.userName.value;
+                                      return Text(
+                                        userName.isNotEmpty ? userName : 'User',
+                                        style: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      );
+                                    }),
                                   ),
                                 ),
                               ],

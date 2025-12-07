@@ -91,6 +91,9 @@ class Book extends HiveObject {
   @HiveField(18)
   Map<String, dynamic>? typeConfig; // Type-specific configuration
 
+  @HiveField(19)
+  String? coverId; // ID used for generating the cover gradient
+
   Book({
     required this.id,
     required this.title,
@@ -111,6 +114,7 @@ class Book extends HiveObject {
     this.originalOwnerId,
     this.type = BookType.flashBook, // Default to flashBook
     this.typeConfig,
+    this.coverId,
   }) : source = source ?? BookSource.userCreated; // Default to userCreated for backward compatibility
 
   factory Book.fromJson(Map<String, dynamic> json) => _$BookFromJson(json);

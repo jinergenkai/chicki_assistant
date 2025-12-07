@@ -38,13 +38,14 @@ class BookAdapter extends TypeAdapter<Book> {
       originalOwnerId: fields[16] as String?,
       type: fields[17] == null ? BookType.flashBook : fields[17] as BookType,
       typeConfig: (fields[18] as Map?)?.cast<String, dynamic>(),
+      coverId: fields[19] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Book obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(20)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -82,7 +83,9 @@ class BookAdapter extends TypeAdapter<Book> {
       ..writeByte(17)
       ..write(obj.type)
       ..writeByte(18)
-      ..write(obj.typeConfig);
+      ..write(obj.typeConfig)
+      ..writeByte(19)
+      ..write(obj.coverId);
   }
 
   @override
@@ -216,6 +219,7 @@ Book _$BookFromJson(Map<String, dynamic> json) => Book(
       type: $enumDecodeNullable(_$BookTypeEnumMap, json['type']) ??
           BookType.flashBook,
       typeConfig: json['typeConfig'] as Map<String, dynamic>?,
+      coverId: json['coverId'] as String?,
     );
 
 Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
@@ -238,6 +242,7 @@ Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
       'originalOwnerId': instance.originalOwnerId,
       'type': _$BookTypeEnumMap[instance.type]!,
       'typeConfig': instance.typeConfig,
+      'coverId': instance.coverId,
     };
 
 const _$BookSourceEnumMap = {

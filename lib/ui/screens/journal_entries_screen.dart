@@ -1,13 +1,21 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:chicki_buddy/core/app_event_bus.dart';
 import 'package:chicki_buddy/services/book_service.dart';
 import 'package:chicki_buddy/services/journal_service.dart';
+import 'package:chicki_buddy/services/attachment_service.dart';
+import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:chicki_buddy/ui/screens/journal_entry_detail_screen.dart';
 import 'package:chicki_buddy/ui/screens/add_journal_entry_screen.dart';
+import 'package:chicki_buddy/ui/screens/journal_analytics_screen.dart';
+import 'package:chicki_buddy/ui/widgets/journal/calendar_month_view.dart';
 import 'package:chicki_buddy/utils/gradient.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:iconify_flutter/icons/ri.dart';
+import 'package:iconify_flutter/icons/zondicons.dart';
 import 'package:intl/intl.dart';
 import '../../models/book.dart';
 import '../../models/journal_entry.dart';
@@ -23,6 +31,7 @@ class JournalEntriesScreen extends StatefulWidget {
 class _JournalEntriesScreenState extends State<JournalEntriesScreen> {
   late BookService bookService;
   late JournalService journalService;
+  final AttachmentService _attachmentService = AttachmentService();
   StreamSubscription? _voiceActionSub;
 
   List<JournalEntry> entries = [];
@@ -30,6 +39,7 @@ class _JournalEntriesScreenState extends State<JournalEntriesScreen> {
   bool isLoading = true;
   String searchQuery = '';
   String? selectedMoodFilter;
+  DateTime? selectedDate;
   bool sortAscending = false; // Default: newest first
 
   // Statistics
@@ -87,8 +97,72 @@ class _JournalEntriesScreenState extends State<JournalEntriesScreen> {
         return false;
       }
 
+      // Date filter
+      if (selectedDate != null) {
+        final entryDate = DateTime(entry.date.year, entry.date.month, entry.date.day);
+        final filterDate = DateTime(selectedDate!.year, selectedDate!.month, selectedDate!.day);
+        if (entryDate != filterDate) {
+          return false;
+        }
+      }
+
       return true;
     }).toList();
+  }
+
+  void _showCalendar() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.only(top: 80),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: CalendarMonthView(
+                    entries: entries,
+                    selectedDate: selectedDate,
+                    onDateSelected: (date) {
+                      setState(() {
+                        selectedDate = date;
+                        _applyFilters();
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAnalytics() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => JournalAnalyticsScreen(bookId: widget.book.id),
+      ),
+    );
   }
 
   @override
@@ -230,7 +304,15 @@ class _JournalEntriesScreenState extends State<JournalEntriesScreen> {
               title: const Text('Calendar View'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Implement calendar view
+                _showCalendar();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.analytics_outlined),
+              title: const Text('Analytics'),
+              onTap: () {
+                Navigator.pop(context);
+                _showAnalytics();
               },
             ),
             const Divider(),
@@ -298,7 +380,7 @@ class _JournalEntriesScreenState extends State<JournalEntriesScreen> {
       case 'happy':
       case 'joyful':
       case 'excited':
-        return '😊';
+        return '(˶ᵔ ᵕ ᵔ˶)';
       case 'sad':
       case 'down':
       case 'depressed':
@@ -374,68 +456,71 @@ class _JournalEntriesScreenState extends State<JournalEntriesScreen> {
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      body: Column(
-        children: [
-          // Minimalist Header
-          Hero(
-            tag: 'book_${book.id}',
-            child: Material(
-              color: Colors.transparent,
-              child: RandomGradient(
-                book.id,
-                seed: "bookCardGradient",
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 50, 16, 20),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          book.title,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: -0.3,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : filteredEntries.isEmpty
+              ? Column(
+                  children: [
+                    // Simple header without gradient
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 50, 16, 20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.more_vert, color: Colors.white),
-                        onPressed: _showMoreMenu,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.arrow_back_ios_new_rounded,
+                                color: Colors.grey.shade800, size: 20),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              book.title,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey.shade900,
+                                letterSpacing: -0.3,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.more_vert, color: Colors.grey.shade800),
+                            onPressed: _showMoreMenu,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Content
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredEntries.isEmpty
-                    ? Center(
+                    ),
+                    Expanded(
+                      child: Center(
                         child: Padding(
                           padding: const EdgeInsets.all(32),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                entries.isEmpty ? Icons.auto_stories_outlined : Icons.search_off_rounded,
+                                entries.isEmpty
+                                    ? Icons.auto_stories_outlined
+                                    : Icons.search_off_rounded,
                                 size: 64,
                                 color: Colors.grey.shade400,
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                entries.isEmpty ? 'Bắt đầu hành trình của bạn' : 'Không tìm thấy entries',
+                                entries.isEmpty
+                                    ? 'Start your first journal'
+                                    : 'No entries found',
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.grey.shade600,
@@ -445,120 +530,121 @@ class _JournalEntriesScreenState extends State<JournalEntriesScreen> {
                             ],
                           ),
                         ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: entriesByDate.length,
-                        itemBuilder: (context, index) {
-                          String dateKey = entriesByDate.keys.elementAt(index);
-                          List<JournalEntry> dayEntries = entriesByDate[dateKey]!;
-                          DateTime date = dayEntries.first.date;
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Modern Date Header
-                              Padding(
-                                padding: EdgeInsets.only(bottom: 16, top: (index == 0 ? 0 : 28)),
-                                child: Row(
-                                  children: [
-                                    // Date Card (Day + Month)
-                                    Container(
-                                      width: 60,
-                                      height: 60,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.08),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            _formatDayNumber(date),
-                                            style: TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.grey.shade900,
-                                              height: 1,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            _formatMonthShort(date),
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.grey.shade600,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-
-                                    // Weekday + Relative Time
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            _formatWeekday(date),
-                                            style: TextStyle(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.grey.shade900,
-                                              letterSpacing: -0.3,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            _formatRelativeDate(date),
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: Colors.grey.shade600,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // Entries for this date
-                              ...dayEntries.map((entry) => _buildEntryCard(entry)),
-                            ],
-                          );
-                        },
                       ),
-          ),
-        ],
-      ),
+                    ),
+                  ],
+                )
+              : CustomScrollView(
+                  slivers: [
+                    // Clean modern AppBar
+                    SliverAppBar(
+                      pinned: true,
+                      elevation: 0,
+                      toolbarHeight: 70,
+                      backgroundColor: Colors.grey.shade50,
+                      surfaceTintColor: Colors.transparent, // Disable material 3 tint
+                      centerTitle: false,
+                      titleSpacing: 0,
+                      leadingWidth: 70,
+                      leading: Padding(
+                        padding: const EdgeInsets.only(left: 20),
+                        child: CircleAvatar(
+                          backgroundColor: Colors.white,
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back_rounded, color: Colors.black87),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ),
+                      ),
+                      title: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          book.title,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      actions: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 20),
+                          child: CircleAvatar(
+                            backgroundColor: Colors.white,
+                            child: IconButton(
+                              icon: const Icon(Icons.more_horiz_rounded, color: Colors.black87),
+                              onPressed: _showMoreMenu,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Spacing between topbar and content
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 12),
+                    ),
+
+                    // Sticky date headers with entries
+                    ...entriesByDate.entries.map((dateEntry) {
+                      final dateKey = dateEntry.key;
+                      final dayEntries = dateEntry.value;
+                      final date = dayEntries.first.date;
+
+                      return SliverMainAxisGroup(
+                        slivers: [
+                          // Sticky date header
+                          SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _StickyDateHeaderDelegate(
+                              date: date,
+                              formatDayNumber: _formatDayNumber,
+                              formatMonthShort: _formatMonthShort,
+                              formatWeekday: _formatWeekday,
+                              formatRelativeDate: _formatRelativeDate,
+                            ),
+                          ),
+                          // Entries for this date
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) => _buildEntryCard(dayEntries[index]),
+                                childCount: dayEntries.length,
+                              ),
+                            ),
+                          ),
+                          // Spacing after entries
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 16),
+                          ),
+                        ],
+                      );
+                    }),
+
+                    // Bottom padding for FAB
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 80),
+                    ),
+                  ],
+                ),
       floatingActionButton: Container(
+        height: 60,
+        width: 60,
         decoration: BoxDecoration(
+          shape: BoxShape.circle,
           gradient: LinearGradient(
+            colors: [Colors.blue.shade500, Colors.blue.shade700],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.blue.shade400,
-              Colors.blue.shade600,
-            ],
           ),
-          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.blue.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Colors.blue.shade300.withOpacity(0.5),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -566,7 +652,9 @@ class _JournalEntriesScreenState extends State<JournalEntriesScreen> {
           onPressed: _showAddEntryDialog,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          child: const Icon(Icons.add_rounded, size: 28, color: Colors.white),
+          highlightElevation: 0,
+          shape: const CircleBorder(),
+          child: const Iconify(Ri.quill_pen_line, color: Colors.white, size: 32),
         ),
       ),
     );
@@ -765,23 +853,26 @@ class _JournalEntriesScreenState extends State<JournalEntriesScreen> {
   }
 
   Widget _buildEntryCard(JournalEntry entry) {
+    final appConfig = Get.find<AppConfigController>();
+    final photoPaths = _attachmentService.getPhotoPaths(entry.attachments);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           onTap: () async {
             await Navigator.of(context).push(
               MaterialPageRoute(
@@ -794,193 +885,269 @@ class _JournalEntriesScreenState extends State<JournalEntriesScreen> {
             _loadEntries();
           },
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header: Avatar + Title + Time
+                // Header with Avatar
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Avatar (User circle)
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 24,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(32),
-                        child: Image.asset(
-                          'assets/avatar/dog.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
+                    // User Avatar
+                    Obx(() {
+                       final avatarId = appConfig.userAvatar.value;
+                       final avatarPath = avatarId.isNotEmpty
+                           ? 'assets/avatar/$avatarId.png'
+                           : 'assets/avatar/dog.png';
+                       
+                       return CircleAvatar(
+                         radius: 18,
+                         backgroundColor: Colors.transparent,
+                         child: ClipOval(
+                           child: Image.asset(
+                             avatarPath,
+                             width: 36,
+                             height: 36,
+                             fit: BoxFit.cover,
+                             errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/avatar/dog.png',
+                                  width: 36,
+                                  height: 36,
+                                  fit: BoxFit.cover,
+                                );
+                             },
+                           ),
+                         ),
+                       );
+                    }),
                     const SizedBox(width: 12),
-
-                    // Title + Time
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             entry.title,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: Colors.grey.shade900,
-                              letterSpacing: -0.2,
+                              height: 1.2,
+                              color: Colors.black87,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatTime(entry.createdAt),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          Row(
+                            children: [
+                              Text(
+                                _formatTime(entry.createdAt),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (entry.mood != null) ...[
+                                 const SizedBox(width: 8),
+                                 Container(width: 4, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle)),
+                                 const SizedBox(width: 8),
+                                 Text(_getMoodEmoji(entry.mood), style: const TextStyle(fontSize: 14)),
+                              ]
+                            ],
+                          )
                         ],
                       ),
                     ),
-
-                    // Favorite star
-                    if (entry.isFavorite)
-                      Icon(
-                        Icons.star_rounded,
-                        color: Colors.amber.shade600,
-                        size: 20,
-                      ),
                   ],
                 ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
 
                 // Content preview
                 Text(
                   entry.content,
-                  maxLines: 2,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
+                    fontSize: 15,
+                    color: Colors.grey.shade800,
                     height: 1.5,
-                    letterSpacing: 0.1,
                   ),
                 ),
 
-                // Tags and metadata row
-                if (entry.tags != null && entry.tags!.isNotEmpty || entry.wordCount != null || entry.mood != null) ...[
+                // Photo Preview (Horizontal Scroll)
+                if (photoPaths.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      // Mood badge
-                      if (entry.mood != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
+                  SizedBox(
+                    height: 120,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: photoPaths.length,
+                      separatorBuilder: (_,__) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(photoPaths[index]),
+                            height: 120,
+                            width: 120,
+                            fit: BoxFit.cover,
                           ),
-                          decoration: BoxDecoration(
-                            color: _getMoodColor(entry.mood).withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: _getMoodColor(entry.mood).withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _getMoodEmoji(entry.mood),
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                entry.mood!,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: _getMoodColor(entry.mood),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      // Word count
-                      if (entry.wordCount != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.text_fields_rounded,
-                                size: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${entry.wordCount} words',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade700,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      // Tags
-                      if (entry.tags != null && entry.tags!.isNotEmpty)
-                        ...entry.tags!.take(3).map((tag) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                '#$tag',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.blue.shade700,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            )),
-                    ],
+                        );
+                      },
+                    ),
                   ),
                 ],
+
+                // Tags (Badge Style)
+                if (entry.tags != null && entry.tags!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: entry.tags!.map((tag) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_getTagIcon(tag), size: 14, color: Colors.grey.shade500),
+                          const SizedBox(width: 6),
+                          Text(
+                            tag,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade600
+                            ),
+                          )
+                        ],
+                      ),
+                    )).toList(),
+                  ),
+                ]
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  IconData _getTagIcon(String tag) {
+    switch (tag.toLowerCase()) {
+      case 'work': return Icons.work_rounded;
+      case 'family': return Icons.family_restroom_rounded;
+      case 'friends': return Icons.groups_rounded;
+      case 'school': return Icons.school_rounded;
+      case 'travel': return Icons.flight_takeoff_rounded;
+      case 'food': return Icons.restaurant_rounded;
+      case 'exercise': return Icons.fitness_center_rounded;
+      case 'hobbies': return Icons.palette_rounded;
+      case 'shopping': return Icons.shopping_bag_rounded;
+      case 'music': return Icons.music_note_rounded;
+      case 'weather': return Icons.wb_sunny_rounded;
+      case 'relaxing': return Icons.spa_rounded;
+      default: return Icons.label_outline_rounded;
+    }
+  }
+}
+
+// Sticky Date Header Delegate
+class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final DateTime date;
+  final String Function(DateTime) formatDayNumber;
+  final String Function(DateTime) formatMonthShort;
+  final String Function(DateTime) formatWeekday;
+  final String Function(DateTime) formatRelativeDate;
+
+  _StickyDateHeaderDelegate({
+    required this.date,
+    required this.formatDayNumber,
+    required this.formatMonthShort,
+    required this.formatWeekday,
+    required this.formatRelativeDate,
+  });
+
+  @override
+  double get minExtent => 52;
+
+  @override
+  double get maxExtent => 52;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        border: Border(
+          bottom: BorderSide(
+            color: overlapsContent ? Colors.grey.shade200 : Colors.transparent,
+            width: 0.5,
+          ),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: Row(
+        children: [
+          // Minimal date badge
+          Text(
+            formatDayNumber(date),
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+              letterSpacing: -0.5,
+              height: 1,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            formatMonthShort(date),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 1,
+            height: 20,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              formatWeekday(date),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+          Text(
+            formatRelativeDate(date),
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_StickyDateHeaderDelegate oldDelegate) {
+    return date != oldDelegate.date;
   }
 }

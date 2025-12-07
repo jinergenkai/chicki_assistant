@@ -49,7 +49,6 @@ class _AddJournalEntryDialogState extends State<AddJournalEntryDialog> {
   void initState() {
     super.initState();
     if (widget.entry != null) {
-      // Editing existing entry
       _titleController.text = widget.entry!.title;
       _contentController.text = widget.entry!.content;
       _selectedDate = widget.entry!.date;
@@ -57,8 +56,8 @@ class _AddJournalEntryDialogState extends State<AddJournalEntryDialog> {
       _tags = List<String>.from(widget.entry!.tags ?? []);
       _isFavorite = widget.entry!.isFavorite;
     } else {
-      // Creating new entry
       _selectedDate = DateTime.now();
+      _selectedMood = 'happy'; // Default mood
     }
   }
 
@@ -112,14 +111,13 @@ class _AddJournalEntryDialogState extends State<AddJournalEntryDialog> {
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-
+    FocusScope.of(context).unfocus(); // Dismiss keyboard
     setState(() => _isLoading = true);
 
     try {
       final journalService = Get.find<JournalService>();
 
       if (widget.entry != null) {
-        // Update existing entry
         widget.entry!.title = _titleController.text.trim();
         widget.entry!.content = _contentController.text.trim();
         widget.entry!.date = _selectedDate;
@@ -128,28 +126,7 @@ class _AddJournalEntryDialogState extends State<AddJournalEntryDialog> {
         widget.entry!.isFavorite = _isFavorite;
         widget.entry!.updateWordCount();
         await journalService.updateEntry(widget.entry!);
-
-        if (mounted) {
-          Navigator.of(context).pop(true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 12),
-                  const Expanded(child: Text('Entry updated successfully!')),
-                ],
-              ),
-              backgroundColor: Colors.green.shade600,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
       } else {
-        // Create new entry
         await journalService.createEntry(
           bookId: widget.bookId,
           date: _selectedDate,
@@ -158,43 +135,28 @@ class _AddJournalEntryDialogState extends State<AddJournalEntryDialog> {
           mood: _selectedMood,
           tags: _tags.isNotEmpty ? _tags : null,
         );
-
-        if (mounted) {
-          Navigator.of(context).pop(true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Entry "${_titleController.text.trim()}" created!',
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.green.shade600,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
       }
 
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("Journal saved successfully!"),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
       widget.onSaved?.call();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
+            content: Text(e.toString()),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -208,392 +170,267 @@ class _AddJournalEntryDialogState extends State<AddJournalEntryDialog> {
     final isEditing = widget.entry != null;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            )
+          ],
+        ),
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    Text(
+                      isEditing ? 'Edit Entry' : 'New Story',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade900,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.grey.shade100,
+                        foregroundColor: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      isEditing ? Icons.edit_rounded : Icons.add_circle_outline,
-                      color: Colors.blue.shade700,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      isEditing ? 'Edit Journal Entry' : 'New Journal Entry',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
 
-            // Form Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Date Picker
-                      InkWell(
-                        onTap: _selectDate,
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
+              Flexible(
+                child: SingleChildScrollView(
+                   padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Date & Favorite Row
+                        Row(
+                          children: [
+                            TextButton.icon(
+                              onPressed: _selectDate,
+                              icon: Icon(Icons.calendar_today_rounded, size: 18, color: Colors.blue.shade600),
+                              label: Text(
+                                DateFormat('MMM dd, yyyy').format(_selectedDate),
+                                style: TextStyle(
+                                  color: Colors.blue.shade700,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: TextButton.styleFrom(
+                                backgroundColor: Colors.blue.shade50,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: () => setState(() => _isFavorite = !_isFavorite),
+                              icon: Icon(
+                                _isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
+                                color: _isFavorite ? Colors.amber.shade400 : Colors.grey.shade400,
+                                size: 28,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Title
+                        TextFormField(
+                           controller: _titleController,
+                           style: const TextStyle(
+                             fontSize: 18,
+                             fontWeight: FontWeight.bold
+                           ),
+                           decoration: InputDecoration(
+                             hintText: "Title your story...",
+                             hintStyle: TextStyle(
+                               color: Colors.grey.shade400,
+                               fontSize: 18,
+                               fontWeight: FontWeight.bold
+                             ),
+                             border: InputBorder.none,
+                             contentPadding: EdgeInsets.zero,
+                           ),
+                           textCapitalization: TextCapitalization.sentences,
+                           validator: (v) => v?.isEmpty == true ? 'Required' : null,
+                        ),
+                        const Divider(height: 32),
+
+                        // Mood Horizontal List
+                        Text(
+                          "How you felt",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 50,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _availableMoods.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 8),
+                            itemBuilder: (context, index) {
+                              final mood = _availableMoods[index];
+                              final isSelected = _selectedMood == mood['name'];
+                              
+                              return GestureDetector(
+                                onTap: () => setState(() => _selectedMood = mood['name']),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? (mood['color'] as Color).withOpacity(0.1) : Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected ? (mood['color'] as Color) : Colors.transparent,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(mood['emoji'], style: const TextStyle(fontSize: 18)),
+                                      if (isSelected) ...[
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          mood['name'],
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: mood['color'],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Content
+                        Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.calendar_today_rounded,
-                                  color: Colors.blue.shade600),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Date',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      DateFormat('EEEE, MMMM dd, yyyy')
-                                          .format(_selectedDate),
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(Icons.arrow_drop_down,
-                                  color: Colors.grey.shade600),
-                            ],
+                          child: TextFormField(
+                            controller: _contentController,
+                            maxLines: 6,
+                            style: const TextStyle(height: 1.5),
+                            decoration: const InputDecoration(
+                              hintText: "Write about your experience...",
+                              border: InputBorder.none,
+                            ),
+                            validator: (v) => v?.isEmpty == true ? 'Required' : null,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Title Field
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: InputDecoration(
-                          labelText: 'Title *',
-                          hintText: 'e.g., A Great Day',
-                          prefixIcon: const Icon(Icons.title_rounded),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a title';
-                          }
-                          return null;
-                        },
-                        autofocus: !isEditing,
-                        textInputAction: TextInputAction.next,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Content Field
-                      TextFormField(
-                        controller: _contentController,
-                        decoration: InputDecoration(
-                          labelText: 'Content *',
-                          hintText: 'Write about your day...',
-                          prefixIcon: const Padding(
-                            padding: EdgeInsets.only(bottom: 80),
-                            child: Icon(Icons.notes_rounded),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                          alignLabelWithHint: true,
-                        ),
-                        maxLines: 8,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Please write something';
-                          }
-                          return null;
-                        },
-                        textInputAction: TextInputAction.newline,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Mood Selector
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.mood_rounded,
-                                  size: 20, color: Colors.grey.shade700),
-                              const SizedBox(width: 8),
-                              Text(
-                                'How are you feeling?',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
+                         const SizedBox(height: 24),
+                        
+                        // Tags
+                         TextField(
+                           controller: _tagController,
+                           decoration: InputDecoration(
+                             hintText: "Add tags (e.g., #happy)...",
+                             prefixIcon: Icon(Icons.tag_rounded, color: Colors.grey.shade400, size: 20),
+                             border: OutlineInputBorder(
+                               borderRadius: BorderRadius.circular(12),
+                               borderSide: BorderSide(color: Colors.grey.shade200),
+                             ),
+                             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                           ),
+                           onSubmitted: (_) => _addTag(),
+                         ),
+                        if (_tags.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
-                            children: _availableMoods.map((mood) {
-                              final isSelected = _selectedMood == mood['name'];
-                              return ChoiceChip(
-                                label: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(mood['emoji'] as String,
-                                        style: const TextStyle(fontSize: 18)),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      mood['name'] as String,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: isSelected
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                selected: isSelected,
-                                onSelected: (selected) {
-                                  setState(() {
-                                    _selectedMood =
-                                        selected ? mood['name'] as String : null;
-                                  });
-                                },
-                                selectedColor:
-                                    (mood['color'] as Color).withOpacity(0.2),
-                                backgroundColor: Colors.grey.shade100,
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? mood['color'] as Color
-                                      : Colors.grey.shade300,
-                                  width: isSelected ? 2 : 1,
-                                ),
-                              );
-                            }).toList(),
+                            children: _tags.map((tag) => Chip(
+                              label: Text(tag, style: const TextStyle(fontSize: 12)),
+                               backgroundColor: Colors.blue.shade50,
+                               side: BorderSide.none,
+                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                               onDeleted: () => _removeTag(tag),
+                               deleteIconColor: Colors.blue.shade300,
+                            )).toList(),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Tags Input
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.label_rounded,
-                                  size: 20, color: Colors.grey.shade700),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Tags',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _tagController,
-                                  decoration: InputDecoration(
-                                    hintText: 'Add a tag...',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                  onSubmitted: (_) => _addTag(),
-                                  textInputAction: TextInputAction.done,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                onPressed: _addTag,
-                                icon: Icon(Icons.add_circle,
-                                    color: Colors.blue.shade600),
-                                tooltip: 'Add tag',
-                              ),
-                            ],
-                          ),
-                          if (_tags.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _tags.map((tag) {
-                                return Chip(
-                                  label: Text('#$tag'),
-                                  deleteIcon: const Icon(Icons.close, size: 16),
-                                  onDeleted: () => _removeTag(tag),
-                                  backgroundColor: Colors.blue.shade50,
-                                  side: BorderSide(
-                                      color: Colors.blue.shade200),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Favorite Toggle
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.amber.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _isFavorite
-                                  ? Icons.star_rounded
-                                  : Icons.star_border_rounded,
-                              color: Colors.amber.shade700,
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(
-                              child: Text(
-                                'Mark as favorite',
-                                style: TextStyle(fontWeight: FontWeight.w500),
-                              ),
-                            ),
-                            Switch(
-                              value: _isFavorite,
-                              onChanged: (value) {
-                                setState(() => _isFavorite = value);
-                              },
-                              activeColor: Colors.amber.shade600,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Action Buttons
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 16,
-                      ),
+                         const SizedBox(height: 24),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _handleSubmit,
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
+                ),
+              ),
+
+              // Footer Button
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: SizedBox(
+                   width: double.infinity,
+                   child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                           colors: [Colors.blue.shade400, Colors.blue.shade600],
+                           begin: Alignment.topLeft,
+                           end: Alignment.bottomRight
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                             color: Colors.blue.withOpacity(0.3),
+                             blurRadius: 10,
+                             offset: const Offset(0,4)
                           )
-                        : Icon(isEditing ? Icons.save_rounded : Icons.add_rounded),
-                    label: Text(_isLoading
-                        ? 'Saving...'
-                        : isEditing
-                            ? 'Save Changes'
-                            : 'Create Entry'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
+                        ]
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ],
+                     child: ElevatedButton(
+                        onPressed: _isLoading ? null : _handleSubmit,
+                        style: ElevatedButton.styleFrom(
+                           backgroundColor: Colors.transparent,
+                           shadowColor: Colors.transparent,
+                           padding: const EdgeInsets.symmetric(vertical: 16),
+                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: _isLoading 
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Text(
+                             isEditing ? "Save Changes" : "Create Entry",
+                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                     ),
+                   ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

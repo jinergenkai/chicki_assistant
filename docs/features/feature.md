@@ -31,3 +31,45 @@ sách nói nhưng auto
   5. OCR Image → unique feature, viral potential
   6. Sync System → enable cross-device
   7. Gamification → boost retention
+
+
+
+
+
+
+
+
+   A. Story (Đọc sách) 📚
+
+  - Add Chapter Dialog (tạo chapter mới)
+  - Story Reader Screen (đọc chapter với progress tracking)
+  - Reading progress auto-save
+  - Night mode, font size controls
+
+  B. Import/Export 📦
+
+  - Connect BookImportExportService to UI
+  - Import book dialog with preview
+  - Export confirmation
+  - File picker integration
+
+  C. Enhanced Journal ✨
+
+  - Calendar month view
+  - Photo attachments (như đã analyze)
+  - Voice notes
+  - Mood analytics/charts
+  - Search improvements
+
+  D. FlashBook Improvements 🎓
+
+  - Vocabulary detail view (tap card)
+  - Quick study mode
+  - Progress charts
+  - Better SRS visualization
+
+  E. Cross-Platform 🌐
+
+  - Cloud sync
+  - Multi-device support
+  - Backup/restore
