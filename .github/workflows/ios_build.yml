@@ -1,0 +1,30 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ "ios" ]
+  pull_request:
+    branches: [ "ios" ]
+
+jobs:
+  build_ios:
+    name: Build iOS (No Codesign)
+    runs-on: macos-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: Get Dependencies
+        run: flutter pub get
+        
+      - name: Build iOS (No Codesign)
+        run: flutter build ios --release --no-codesign
+        
+      # Note: Without a valid provisioning profile and certificate, 
+      # we can't easily produce a valid .ipa for distribution here.
+      # This step verifies the build succeeds.
