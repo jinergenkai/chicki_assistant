@@ -62,7 +62,7 @@ dependencies:
   device_info_plus: ^12.1.0
   package_info_plus: ^9.0.0
   android_id: ^0.4.0
-  json_serializable: ^6.9.0
+  json_serializable: ^6.8.0
   auto_size_text: ^3.0.0
   just_audio: ^0.10.5
   flutter_sound: ^9.29.13
