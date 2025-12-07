@@ -42,6 +42,9 @@ dependencies:
   # UI
   flutter_animate: ^4.5.0
 
+  # Media
+  image_picker: ^1.0.7
+
   # Android Foreground Service
   flutter_foreground_task: ^8.17.0
   google_fonts: ^6.1.0
@@ -65,6 +68,7 @@ dependencies:
   flutter_sound: ^9.29.13
   openai_realtime_dart: ^0.1.0+1
   rive: ^0.14.0-dev.6
+  iconify_flutter: ^0.0.7
   # media_kit: ^1.2.0
   # media_kit_libs_audio: ^1.0.6
   

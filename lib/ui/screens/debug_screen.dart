@@ -1,10 +1,13 @@
+import 'package:chicki_buddy/controllers/app_config.controller.dart';
 import 'package:chicki_buddy/ui/screens/books_screen.dart';
 import 'package:chicki_buddy/ui/screens/test_screen/realtime_test_screen.dart';
+import 'package:chicki_buddy/ui/screens/test_screen/reset_config.button.dart';
 import 'package:chicki_buddy/ui/screens/test_screen/voice_realtime_test_screen.dart';
 import 'package:chicki_buddy/ui/screens/test_screen/workflow_graph.screen.dart';
 import 'package:chicki_buddy/ui/screens/ui_design_showcase_screen.dart';
 import 'package:chicki_buddy/ui/widgets/moon_icon_button.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:moon_design/moon_design.dart';
 import 'package:get/get.dart';
 
@@ -64,12 +67,17 @@ class DebugScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        const SizedBox(height: 50,),
         MoonFilledButton(
           label: const Text('back to user screen'),
           onTap: () {
             Navigator.of(context).pop();
           },
         ),
+        const SizedBox(height: 8),
+        // Reset App Config Button
+        const ResetButton(),
+        const SizedBox(height: 8),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.all(16),

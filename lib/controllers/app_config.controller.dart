@@ -28,6 +28,11 @@ class AppConfigController extends GetxController {
   var themeMode = 'system'.obs;
   var language = ''.obs;
 
+  // User Profile
+  var isFirstTimeUser = true.obs;
+  var userName = ''.obs;
+  var userAvatar = ''.obs; // avatar style/badge
+  
   // Wakeword
   var enableWakewordBackground = false.obs;
 
@@ -81,6 +86,11 @@ class AppConfigController extends GetxController {
       themeMode.value = config['themeMode'] ?? 'system';
       language.value = config['language'] ?? '';
 
+      // User Profile
+      isFirstTimeUser.value = config['isFirstTimeUser'] ?? true;
+      userName.value = config['userName'] ?? '';
+      userAvatar.value = config['userAvatar'] ?? '';
+
       // Learning Data
       recentBookIds.value = List<String>.from(config['recentBookIds'] ?? []);
       bookOpenTimestamps.value = Map<String, int>.from(config['bookOpenTimestamps'] ?? {});
@@ -129,6 +139,11 @@ class AppConfigController extends GetxController {
       'themeMode': themeMode.value,
       'language': language.value,
 
+      // User Profile
+      'isFirstTimeUser': isFirstTimeUser.value,
+      'userName': userName.value,
+      'userAvatar': userAvatar.value,
+
       // Wakeword
       'enableWakewordBackground': enableWakewordBackground.value,
 
@@ -147,6 +162,16 @@ class AppConfigController extends GetxController {
       'totalXP': totalXP.value,
       'level': level.value,
     });
+  }
+
+  // Reset tất cả config về trạng thái ban đầu bằng cách xóa Hive box
+  Future<void> resetToDefault() async {
+    final box = await Hive.openBox(hiveBoxName);
+    await box.delete(hiveKey);
+    await box.close();
+    
+    // Reload config để lấy giá trị mặc định
+    await loadConfig();
   }
 
   // Khởi tạo controller và load config
@@ -170,6 +195,9 @@ class AppConfigController extends GetxController {
         'defaultLanguage': defaultLanguage.value,
         'themeMode': themeMode.value,
         'language': language.value,
+        'isFirstTimeUser': isFirstTimeUser.value,
+        'userName': userName.value,
+        'userAvatar': userAvatar.value,
         'enableWakewordBackground': enableWakewordBackground.value,
         // Learning data
         'recentBookIds': recentBookIds.toList(),
@@ -207,6 +235,9 @@ class AppConfigController extends GetxController {
     defaultLanguage.value = json['defaultLanguage'] ?? 'en-US';
     themeMode.value = json['themeMode'] ?? 'system';
     language.value = json['language'] ?? '';
+    isFirstTimeUser.value = json['isFirstTimeUser'] ?? true;
+    userName.value = json['userName'] ?? '';
+    userAvatar.value = json['userAvatar'] ?? '';
     enableWakewordBackground.value = json['enableWakewordBackground'] ?? false;
     // Learning data
     recentBookIds.value = List<String>.from(json['recentBookIds'] ?? []);
