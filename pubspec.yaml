@@ -54,7 +54,6 @@ dependencies:
   waveform_flutter: ^1.2.0
   dart_openai: ^5.1.0
   vertical_card_pager: ^1.6.3
-  tflite_flutter: ^0.11.0
   audioplayers: ^6.5.1
   path: ^1.9.1
   lucide_icons: ^0.257.0
@@ -69,6 +68,8 @@ dependencies:
   openai_realtime_dart: ^0.1.0+1
   rive: ^0.14.0-dev.6
   iconify_flutter: ^0.0.7
+  archive: ^4.0.7
+  # tflite_flutter: ^0.12.1
   # media_kit: ^1.2.0
   # media_kit_libs_audio: ^1.0.6
   
@@ -138,9 +139,7 @@ flutter:
     - assets/avatar/
 
   fonts:
-    - family: DMSans
+    - family: Quicksand
       fonts:
-        - asset: assets/fonts/DMSans.ttf
-    - family: inter
-      fonts:
-        - asset: assets/fonts/inter-vietnamese-500-normal.ttf
+        - asset: assets/fonts/Quicksand-Regular.ttf
+        - asset: assets/fonts/Quicksand-Bold.ttf
