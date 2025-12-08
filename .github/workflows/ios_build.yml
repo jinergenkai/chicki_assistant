@@ -26,7 +26,7 @@ jobs:
           mkdir -p assets/vits-piper-en_GB-jenny_dioco-medium
           curl -L -o assets/models/model.tflite https://github.com/jinergenkai/chicki_assistant/releases/download/model/model.tflite
           curl -L -o assets/vits.rar https://github.com/jinergenkai/chicki_assistant/releases/download/model/vits-piper-en_GB-jenny_dioco-medium.rar
-          unrar x assets/vits.rar assets/
+          unrar x -o+ assets/vits.rar assets/
           rm assets/vits.rar
 
       - name: Get Dependencies
