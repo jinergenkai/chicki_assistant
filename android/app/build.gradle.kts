@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.chicki_buddy"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = "27.0.12077973"  // Updated NDK version for plugin compatibility
 
     compileOptions {
