@@ -16,6 +16,7 @@ import 'test_screen/sherpa_tts_test_screen.dart';
 import 'test_screen/test_buddy.screen.dart';
 import 'test_screen/chicky_mascot.screen.dart';
 import 'test_screen/offscreen_test.screen.dart';
+import 'test_screen/download_model_screen.dart';
 
 class DebugScreen extends StatelessWidget {
   const DebugScreen({super.key});
@@ -57,9 +58,9 @@ class DebugScreen extends StatelessWidget {
       title: 'Workflow',
       screen: WorkflowGraphView(),
     ),
-        _DebugItem(
-      title: 'Book screen',
-      screen: BooksScreen(),
+    _DebugItem(
+      title: '📦 Download Models',
+      screen: DownloadModelScreen(),
     ),
   ];
 

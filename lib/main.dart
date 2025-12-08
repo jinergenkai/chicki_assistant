@@ -31,6 +31,7 @@ import 'package:chicki_buddy/services/journal_service.dart';
 import 'package:chicki_buddy/services/story_service.dart';
 import 'package:chicki_buddy/services/book_import_export_service.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:chicki_buddy/services/model_manager_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +54,7 @@ void main() async {
 
   // Inject AppConfigController and core services
   Get.put(AppConfigController(), permanent: true);
+  Get.put(ModelManagerService(), permanent: true); // Added ModelManagerService
   // Get.put(PorcupineWakewordService(), permanent: true);
   
   // Services MUST be initialized BEFORE controllers that depend on them
@@ -151,7 +153,7 @@ class MyApp extends StatelessWidget {
             colorScheme: ThemeData.light().colorScheme.copyWith(
                   primary: const Color(0xFF90CAF9),
                 ),
-            textTheme: GoogleFonts.dmSansTextTheme(ThemeData.light().textTheme),
+            textTheme: GoogleFonts.quicksandTextTheme(ThemeData.light().textTheme),
             extensions: <ThemeExtension<dynamic>>[
               MoonTheme(
                 tokens: MoonTokens.light.copyWith(
@@ -160,12 +162,12 @@ class MyApp extends StatelessWidget {
                   ),
                   typography: MoonTypography.typography.copyWith(
                     heading: MoonTypography.typography.heading.apply(
-                      fontFamily: GoogleFonts.dmSans().fontFamily,
+                      fontFamily: GoogleFonts.quicksand().fontFamily,
                       fontWeightDelta: -1,
                       fontVariations: [const FontVariation('wght', 500)],
                     ),
                     body: MoonTypography.typography.body.apply(
-                      fontFamily: GoogleFonts.dmSans().fontFamily,
+                      fontFamily: GoogleFonts.quicksand().fontFamily,
                     ),
                   ),
                 ),
@@ -174,19 +176,19 @@ class MyApp extends StatelessWidget {
           ),
           darkTheme: ThemeData.dark().copyWith(
             scaffoldBackgroundColor: const Color(0xFF1F1F1F),
-            textTheme: GoogleFonts.dmSansTextTheme(ThemeData.dark().textTheme),
+            textTheme: GoogleFonts.quicksandTextTheme(ThemeData.dark().textTheme),
             extensions: <ThemeExtension<dynamic>>[
               MoonTheme(
                 tokens: MoonTokens.dark.copyWith(
                   colors: mdsDarkColors,
                   typography: MoonTypography.typography.copyWith(
                     heading: MoonTypography.typography.heading.apply(
-                      fontFamily: GoogleFonts.dmSans().fontFamily,
+                      fontFamily: GoogleFonts.quicksand().fontFamily,
                       fontWeightDelta: -1,
                       fontVariations: [const FontVariation('wght', 500)],
                     ),
                     body: MoonTypography.typography.body.apply(
-                      fontFamily: GoogleFonts.dmSans().fontFamily,
+                      fontFamily: GoogleFonts.quicksand().fontFamily,
                     ),
                   ),
                 ),
