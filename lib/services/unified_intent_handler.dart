@@ -12,10 +12,8 @@ import 'extensions/vocabulary_handlers.dart';
 import 'extensions/conversation_handlers.dart';
 import 'extensions/general_handlers.dart';
 
-enum IntentSource { ui, speech }
-
-/// Unified handler for both UI clicks and speech intents
-/// Keeps WorkflowGraph for flexibility but simplifies the handling
+/// Unified handler for voice intents
+/// Simplified: Returns String (TTS text) directly
 class UnifiedIntentHandler {
   final WorkflowGraph workflowGraph;
   final BookService bookService;
@@ -65,14 +63,14 @@ class UnifiedIntentHandler {
     return workflowGraph.getAvailableIntents(_currentNodeId);
   }
 
-  /// Main handler for both UI and speech intents
-  Future<Map<String, dynamic>> handleIntent({
+  /// Main handler - Returns TTS text directly
+  /// Handlers emit events internally, no need to return complex maps
+  Future<String> handleIntent({
     required String intent,
     Map<String, dynamic>? slots,
-    required IntentSource source,
   }) async {
     try {
-      logger.info('Handling intent: $intent from ${source.name} with slots: $slots');
+      logger.info('Handling intent: $intent with slots: $slots');
 
       // System intents always allowed (context management)
       List<String> systemIntents = ['syncFlashCardContext', 'exitFlashCard'];
@@ -81,102 +79,53 @@ class UnifiedIntentHandler {
       if (!systemIntents.contains(intent)) {
         final availableIntents = getAvailableIntents();
         if (!availableIntents.contains(intent)) {
-          logger.warning('Intent $intent not available in current context $_currentNodeId. Available: $availableIntents');
-          return createErrorResponse(intent, 'Intent not available in current context', source);
+          logger.warning(
+              'Intent $intent not available in current context $_currentNodeId. Available: $availableIntents');
+          return 'Sorry, that command is not available right now';
         }
       }
 
       // Handle specific intents using extension methods
-      final response = switch (intent) {
-        'listBook' => await handleListBook(source),
-        'selectBook' => await handleSelectBook(slots?['bookId'] ?? slots?['bookName'], source),
-        'syncFlashCardContext' => await syncFlashCardContext(slots?['bookId'], source),
-        'exitFlashCard' => await exitFlashCardContext(source),
-        'nextCard' => await handleNextCard(source),
-        'prevCard' => await handlePrevCard(source),
-        'flipCard' => await handleFlipCard(source),
-        'pronounceWord' => await handlePronounceWord(source),
-        'repeatWord' => await handleRepeatWord(source),
-        'exampleSentence' => await handleExampleSentence(source),
-        'translateWord' => await handleTranslateWord(source),
-        'spellWord' => await handleSpellWord(source),
-        'bookmarkWord' => await handleBookmarkWord(source),
-        'reviewBookmarked' => await handleReviewBookmarked(source),
-        'nextVocab' => await handleNextVocab(source),
-        'readAloud' => await handleReadAloud(source),
-        'startConversation' => await handleStartConversation(source),
-        'stopConversation' => await handleStopConversation(source),
-        'exit' => await handleExit(source),
-        'help' => await handleHelp(source),
-        _ => createUnknownResponse(intent, slots, source),
+      final ttsText = switch (intent) {
+        'listBook' => await handleListBook(),
+        'selectBook' =>
+          await handleSelectBook(slots?['bookId'] ?? slots?['bookName']),
+        'syncFlashCardContext' => await syncFlashCardContext(slots?['bookId']),
+        'exitFlashCard' => await exitFlashCardContext(),
+        'nextCard' => await handleNextCard(),
+        'prevCard' => await handlePrevCard(),
+        'flipCard' => await handleFlipCard(),
+        'pronounceWord' => await handlePronounceWord(),
+        'repeatWord' => await handleRepeatWord(),
+        'exampleSentence' => await handleExampleSentence(),
+        'translateWord' => await handleTranslateWord(),
+        'spellWord' => await handleSpellWord(),
+        'bookmarkWord' => await handleBookmarkWord(),
+        'reviewBookmarked' => await handleReviewBookmarked(),
+        'nextVocab' => await handleNextVocab(),
+        'readAloud' => await handleReadAloud(),
+        'startConversation' => await handleStartConversation(),
+        'stopConversation' => await handleStopConversation(),
+        'exit' => await handleExit(),
+        'help' => await handleHelp(),
+        _ => 'Sorry, I don\'t understand that command',
       };
 
-      // Nếi là lỗi, unknown, hoặc system intent thì không update nextNode
-      systemIntents = ['syncFlashCardContext', 'exitFlashCard'];
-      if (response['action'] == 'error' ||
-          response['action'] == 'unknown' ||
-          systemIntents.contains(intent)) {
-        if (response['action'] == 'error' || response['action'] == 'unknown') {
-          logger.warning('No node update due to error or unknown intent: $intent');
+      // Update workflow state
+      if (!systemIntents.contains(intent) &&
+          ttsText != null &&
+          !ttsText.startsWith('Sorry')) {
+        final nextNode = workflowGraph.getNextNode(_currentNodeId, intent);
+        if (nextNode != null) {
+          _currentNodeId = nextNode.id;
+          logger.info('Moved to node: $_currentNodeId');
         }
-
-        // Check for forced node update (for system intents)
-        if (response.containsKey('_forceNodeUpdate')) {
-          final forcedNodeId = response['_forceNodeUpdate'] as String;
-          if (workflowGraph.nodes.containsKey(forcedNodeId)) {
-            _currentNodeId = forcedNodeId;
-            logger.info('Forced node update to: $_currentNodeId');
-          }
-          response.remove('_forceNodeUpdate'); // Clean up internal marker
-        }
-
-        return response;
       }
 
-      // Update workflow state bình thường
-      final nextNode = workflowGraph.getNextNode(_currentNodeId, intent);
-      if (nextNode != null) {
-        _currentNodeId = nextNode.id;
-        logger.info('Moved to node: $_currentNodeId');
-      }
-
-      return response;
+      return ttsText;
     } catch (e) {
       logger.error('Error handling intent $intent', e);
-      return createErrorResponse(intent, e.toString(), source);
-    }
-  }
-
-  // Helper methods (public for extensions to use)
-  Map<String, dynamic> createErrorResponse(String intent, String error, IntentSource source) {
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'Sorry, I cannot $intent right now. $error',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'error',
-        'data': {'intent': intent, 'error': error},
-        'requiresUI': false,
-      };
-    }
-  }
-
-  Map<String, dynamic> createUnknownResponse(String intent, Map<String, dynamic>? slots, IntentSource source) {
-    if (source == IntentSource.speech) {
-      return {
-        'action': 'speak',
-        'text': 'I don\'t understand that command',
-        'requiresUI': false,
-      };
-    } else {
-      return {
-        'action': 'unknown',
-        'data': {'intent': intent, 'slots': slots ?? {}},
-        'requiresUI': false,
-      };
+      return 'Sorry, something went wrong: $e';
     }
   }
 

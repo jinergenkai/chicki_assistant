@@ -21,7 +21,16 @@ import '../services/tts_service.dart';
 import '../services/local_llm_service.dart';
 import '../services/llm_service.dart';
 
-enum VoiceState { uninitialized, needsPermission, idle, listening, processing, speaking, detecting, error }
+enum VoiceState {
+  uninitialized,
+  needsPermission,
+  idle,
+  listening,
+  processing,
+  speaking,
+  detecting,
+  error
+}
 
 class VoiceForegroundTaskHandler extends TaskHandler {
   // Note: Cannot use Get.find() in isolate, instantiate directly if needed
@@ -29,10 +38,11 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   final TTSService _ttsService = TextToSpeechService();
   // final TTSService _ttsService = SherpaTtsService();
   // final LLMService _gptService = LocalLLMService();
-  final LLMIntentClassifierService _intentClassifier = LLMIntentClassifierService();
+  final LLMIntentClassifierService _intentClassifier =
+      LLMIntentClassifierService();
 
   final fgReceivePort = ReceivePort();
-  
+
   // Store pending intent response
   Completer<Map<String, dynamic>>? _pendingIntentResponse;
 
@@ -40,9 +50,6 @@ class VoiceForegroundTaskHandler extends TaskHandler {
 
   StreamSubscription? _wakewordSub;
   bool _isInitialized = false;
-  
-  // Test timer for offscreen capability verification
-  Timer? _testTimer;
 
   VoiceState state = VoiceState.uninitialized;
   String recognizedText = '';
@@ -59,9 +66,6 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     await initialize();
     _setupSTTListener();
     _setupRmsListener();
-    
-    // Start test timer for offscreen verification
-    // _startTestTimer();
   }
 
   Future<void> initHive() async {
@@ -85,26 +89,24 @@ class VoiceForegroundTaskHandler extends TaskHandler {
   Future<void> onReceiveData(Object data) async {
     if (data is! Map) return;
 
-    // Parse message using unified format
-    final message = IsolateMessage.fromMap(data as Map<String, dynamic>);
+    final rawMap = data as Map<String, dynamic>;
+
+    // Handle intent_response DIRECTLY (before IsolateMessage parsing)
+    // Because IsolateMessage doesn't have MessageType.intentResponse enum
+    if (rawMap['type'] == 'intent_response') {
+      logger.info('ForegroundTask: Received intent_response (direct)');
+      _handleIntentResponse(rawMap);
+      return;
+    }
+
+    // Parse other messages using unified format
+    final message = IsolateMessage.fromMap(rawMap);
     logger.info('ForegroundTask: Received message: ${message.type.name}');
 
     await _handleMessage(message);
   }
 
   Future<void> _handleMessage(IsolateMessage message) async {
-    // Handle test response from main isolate
-    if (message.data['type'] == 'test_response') {
-      _handleTestResponse(message.data);
-      return;
-    }
-    
-    // Handle intent response from main isolate (NEW)
-    if (message.data['type'] == 'intent_response') {
-      _handleIntentResponse(message.data);
-      return;
-    }
-    
     switch (message.type) {
       case MessageType.intent:
         await _handleIntentMessage(message);
@@ -123,16 +125,9 @@ class VoiceForegroundTaskHandler extends TaskHandler {
         break;
 
       default:
-        logger.warning('ForegroundTask: Unhandled message type: ${message.type.name}');
+        logger.warning(
+            'ForegroundTask: Unhandled message type: ${message.type.name}');
     }
-  }
-  
-  void _handleTestResponse(Map<String, dynamic> response) {
-    final data = response['data'];
-    logger.success('🟢 Foreground: Received test response from main isolate');
-    logger.info('   Message: ${data['message']}');
-    logger.info('   Total Requests: ${data['totalRequests']}');
-    logger.info('   Service Active: ${data['serviceActive']}');
   }
 
   Future<void> _handleIntentMessage(IsolateMessage message) async {
@@ -142,33 +137,33 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     if (intent == null) return;
 
     final slots = message.data['slots'] as Map<String, dynamic>? ?? {};
-    
+
     // Send to main isolate for processing
     await _sendIntentToMain(intent, slots);
   }
-  
+
   /// Handle intent response from main isolate
   void _handleIntentResponse(Map<String, dynamic> response) {
-    final result = response['result'] as Map<String, dynamic>;
+    final ttsText = response['ttsText'] as String?;
     logger.success('🟢 Foreground: Received intent response from main');
-    logger.info('   Action: ${result['action']}');
-    
+    logger.info('   TTS: $ttsText');
+    _ttsService.speak(ttsText ?? '');
+
     // Complete pending response if exists
-    if (_pendingIntentResponse != null && !_pendingIntentResponse!.isCompleted) {
-      _pendingIntentResponse!.complete(result);
+    if (_pendingIntentResponse != null &&
+        !_pendingIntentResponse!.isCompleted) {
+      _pendingIntentResponse!.complete({'text': ttsText});
       _pendingIntentResponse = null;
     }
-    
-    // Send result to main isolate (for UI updates)
-    _sendMessage(IsolateMessage.intentResult(result));
   }
-  
+
   /// Send intent to main isolate for processing
-  Future<Map<String, dynamic>> _sendIntentToMain(String intent, Map<String, dynamic> slots) async {
+  Future<Map<String, dynamic>> _sendIntentToMain(
+      String intent, Map<String, dynamic> slots) async {
     logger.info('📤 Foreground: Sending intent to main: $intent');
-    
+
     _pendingIntentResponse = Completer<Map<String, dynamic>>();
-    
+
     final request = {
       'type': 'intent_request',
       'intent': intent,
@@ -176,9 +171,9 @@ class VoiceForegroundTaskHandler extends TaskHandler {
       'source': 'speech',
       'timestamp': DateTime.now().toIso8601String(),
     };
-    
+
     FlutterForegroundTask.sendDataToMain(request);
-    
+
     // Wait for response with timeout
     try {
       final result = await _pendingIntentResponse!.future.timeout(
@@ -297,13 +292,15 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     _sttService.onTextRecognized.listen((text) async {
       // Always send micStopped when STT finishes (even on error/empty)
       _sendMessage(IsolateMessage.micLifecycle('stopped'));
-      logger.info('ForegroundTask: STT finished, sent micStopped to main isolate');
+      logger.info(
+          'ForegroundTask: STT finished, sent micStopped to main isolate');
 
       if (text.isEmpty) {
         // Empty text means STT error or no speech detected
         logger.warning('STT returned empty text (error or timeout)');
         state = VoiceState.idle;
-        NotificationManager.updateForState(state, additionalInfo: 'No speech detected');
+        NotificationManager.updateForState(state,
+            additionalInfo: 'No speech detected');
         _sendMessage(IsolateMessage.voiceState(state.name));
         return;
       }
@@ -322,28 +319,30 @@ class VoiceForegroundTaskHandler extends TaskHandler {
         final response = await _intentClassifier.classify(text);
         logger.success('LLM intent result: $response');
 
-          // Send intent to main isolate for processing (NEW ARCHITECTURE)
-          String textToSpeak = response['intent'];
-          String? intentName = response['intent'];
+        // Send intent to main isolate for processing (NEW ARCHITECTURE)
+        String textToSpeak = response['intent'];
+        String? intentName = response['intent'];
 
-          if (response['intent'] != null) {
-            final result = await _sendIntentToMain(
-              response['intent'] as String,
-              response['slots'] is Map ? Map<String, dynamic>.from(response['slots']) : {},
-            );
+        if (response['intent'] != null) {
+          final result = await _sendIntentToMain(
+            response['intent'] as String,
+            response['slots'] is Map
+                ? Map<String, dynamic>.from(response['slots'])
+                : {},
+          );
 
-            logger.success('Intent processed by main isolate');
-            
-            // Use TTS text if available, otherwise use intent name
-            if (result['action'] == 'speak' && result['text'] != null) {
-              textToSpeak = result['text'];
-            }
+          logger.success('Intent processed by main isolate');
+
+          // Use TTS text if available, otherwise use intent name
+          if (result['action'] == 'speak' && result['text'] != null) {
+            textToSpeak = result['text'];
           }
+        }
 
         state = VoiceState.speaking;
         NotificationManager.updateForState(state, additionalInfo: textToSpeak);
         _sendMessage(IsolateMessage.voiceState(state.name));
-        await _ttsService.speak(textToSpeak);
+        // await _ttsService.speak(textToSpeak);
 
         // Show result in notification
         if (intentName != null) {
@@ -357,7 +356,8 @@ class VoiceForegroundTaskHandler extends TaskHandler {
         logger.error('Error processing voice input', e);
         state = VoiceState.error;
         NotificationManager.updateForState(state, additionalInfo: e.toString());
-        _sendMessage(IsolateMessage.voiceState(state.name, error: e.toString()));
+        _sendMessage(
+            IsolateMessage.voiceState(state.name, error: e.toString()));
       }
     });
   }
@@ -401,7 +401,8 @@ class VoiceForegroundTaskHandler extends TaskHandler {
 
       // Send micStopped to resume wakeword
       _sendMessage(IsolateMessage.micLifecycle('stopped'));
-      logger.info('ForegroundTask: Error occurred, sent micStopped to resume wakeword');
+      logger.info(
+          'ForegroundTask: Error occurred, sent micStopped to resume wakeword');
 
       state = VoiceState.error;
       NotificationManager.updateForState(state, additionalInfo: e.toString());
@@ -458,28 +459,8 @@ class VoiceForegroundTaskHandler extends TaskHandler {
     await _handleCommandMessage(message);
   }
 
-  void _startTestTimer() {
-    logger.info('🔴 Foreground: Starting test timer (every 5 seconds)');
-    _testTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      _sendTestRequest();
-    });
-  }
-  
-  void _sendTestRequest() {
-    final request = {
-      'type': 'test_request',
-      'action': 'periodic_test',
-      'timestamp': DateTime.now().toIso8601String(),
-      'requestId': DateTime.now().millisecondsSinceEpoch,
-    };
-    
-    FlutterForegroundTask.sendDataToMain(request);
-    logger.info('🔴 Foreground: Sent test request #${DateTime.now().millisecondsSinceEpoch} to main isolate');
-  }
-
   @override
   Future<void> onDestroy(DateTime timestamp) async {
-    _testTimer?.cancel();
     await stopListening();
     await stopSpeaking();
     _wakewordSub?.cancel();

@@ -2,54 +2,106 @@
   "nodes": [
     {
       "id": "root",
-      "label": "Root",
-      "description": "Starting point of all actions",
-      "allowed_intents": ["listBook", "startConversation", "help", "exit"]
+      "label": "Home",
+      "description": "Starting point - select a book to begin learning",
+      "allowed_intents": [
+        "listBook",
+        "selectBook",
+        "startConversation"
+      ]
     },
     {
       "id": "book_context",
-      "label": "Book Context",
-      "description": "User is inside book-related actions",
-      "allowed_intents": ["selectBook","listBook", "startConversation", "exit", "help"]
+      "label": "Book Selection",
+      "description": "Browsing available books",
+      "allowed_intents": [
+        "selectBook",
+        "listBook",
+        "startConversation"
+      ]
     },
     {
       "id": "vocab_session",
-      "label": "Vocabulary Learning",
-      "description": "User is practicing flashcards or vocabulary.",
+      "label": "Flashcard Learning",
+      "description": "Active flashcard learning session",
       "allowed_intents": [
         "nextCard",
         "prevCard",
         "flipCard",
-        "pronounceWord",
-        "repeatWord",
-        "exampleSentence",
-        "translateWord",
-        "spellWord",
         "bookmarkWord",
-        "reviewBookmarked",
-        "help",
-        "startConversation",
-        "exit"
+        "startConversation"
       ]
     },
     {
       "id": "conversation_mode",
-      "label": "Conversation Mode",
-      "description": "Free chat with AI.",
-      "allowed_intents": ["stopConversation", "help", "exit"]
+      "label": "Conversation",
+      "description": "Free conversation with AI assistant",
+      "allowed_intents": [
+        "stopConversation"
+      ]
     }
   ],
   "edges": [
-    { "from": "root", "intent": "listBook", "to": "book_context" },
-    { "from": "root", "intent": "startConversation", "to": "conversation_mode" },
-    { "from": "book_context", "intent": "listBook", "to": "book_context" },
-    { "from": "book_context", "intent": "selectBook", "to": "vocab_session" },
-    { "from": "book_context", "intent": "exit", "to": "root" },
-    { "from": "book_context", "intent": "startConversation", "to": "conversation_mode" },
-    { "from": "vocab_session", "intent": "exit", "to": "book_context" },
-    { "from": "vocab_session", "intent": "startConversation", "to": "conversation_mode" },
-    { "from": "conversation_mode", "intent": "stopConversation", "to": "book_context" },
-    { "from": "conversation_mode", "intent": "help", "to": "conversation_mode" }
+    {
+      "from": "root",
+      "intent": "listBook",
+      "to": "book_context"
+    },
+    {
+      "from": "root",
+      "intent": "selectBook",
+      "to": "vocab_session"
+    },
+    {
+      "from": "root",
+      "intent": "startConversation",
+      "to": "conversation_mode"
+    },
+    {
+      "from": "book_context",
+      "intent": "selectBook",
+      "to": "vocab_session"
+    },
+    {
+      "from": "book_context",
+      "intent": "listBook",
+      "to": "book_context"
+    },
+    {
+      "from": "book_context",
+      "intent": "startConversation",
+      "to": "conversation_mode"
+    },
+    {
+      "from": "vocab_session",
+      "intent": "nextCard",
+      "to": "vocab_session"
+    },
+    {
+      "from": "vocab_session",
+      "intent": "prevCard",
+      "to": "vocab_session"
+    },
+    {
+      "from": "vocab_session",
+      "intent": "flipCard",
+      "to": "vocab_session"
+    },
+    {
+      "from": "vocab_session",
+      "intent": "bookmarkWord",
+      "to": "vocab_session"
+    },
+    {
+      "from": "vocab_session",
+      "intent": "startConversation",
+      "to": "conversation_mode"
+    },
+    {
+      "from": "conversation_mode",
+      "intent": "stopConversation",
+      "to": "root"
+    }
   ],
-  "universal_intents": ["help", "startConversation", "exit"]
+  "universal_intents": []
 }

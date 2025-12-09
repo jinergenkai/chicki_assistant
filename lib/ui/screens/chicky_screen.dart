@@ -41,12 +41,6 @@ class _ChickyScreenState extends State<ChickyScreen> {
         body: Stack(
           children: [
             Positioned.fill(
-              child: Image.asset(
-                'assets/overlay.jpg',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Positioned.fill(
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                 child: Container(
@@ -60,14 +54,21 @@ class _ChickyScreenState extends State<ChickyScreen> {
                 children: [
                   _AssistantBigText(),
                   MoonIconButton(
-                    icon: _voiceController.isForegroundServiceActive ? LucideIcons.stopCircle : LucideIcons.playCircle,
+                    icon: _voiceController.isForegroundServiceActive
+                        ? LucideIcons.stopCircle
+                        : LucideIcons.playCircle,
                     onTap: () => {
-                      if (_voiceController.isForegroundServiceActive) _voiceController.stopForegroundService() else _voiceController.startForegroundService(),
+                      if (_voiceController.isForegroundServiceActive)
+                        _voiceController.stopForegroundService()
+                      else
+                        _voiceController.startForegroundService(),
                       setState(() {}),
                     },
                   ),
                   MoonIconButton(
-                    icon: _bubbleController.isVisible.value ? LucideIcons.eyeOff : LucideIcons.eye,
+                    icon: _bubbleController.isVisible.value
+                        ? LucideIcons.eyeOff
+                        : LucideIcons.eye,
                     onTap: () {
                       if (_bubbleController.isVisible.value) {
                         _bubbleController.hideBubble();
@@ -89,7 +90,8 @@ class _ChickyScreenState extends State<ChickyScreen> {
               child:
                   // Voice State Indicator
                   Padding(
-                padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.2),
+                padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.2),
                 child: Obx(() {
                   final state = _voiceController.state.value;
                   return VoiceStateIndicator(state: state);
@@ -138,7 +140,9 @@ class _AssistantBigTextState extends State<_AssistantBigText> {
     List<String> lines = [];
     int i = 0;
     while (i < words.length) {
-      int take = (lines.length == 2) ? words.length - i : (words.length - i > 2 ? 2 : words.length - i);
+      int take = (lines.length == 2)
+          ? words.length - i
+          : (words.length - i > 2 ? 2 : words.length - i);
       lines.add(words.sublist(i, i + take).join(' '));
       i += take;
       if (lines.length == 3) break;

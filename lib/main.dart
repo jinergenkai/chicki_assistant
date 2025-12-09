@@ -30,6 +30,7 @@ import 'package:chicki_buddy/services/vocabulary.service.dart';
 import 'package:chicki_buddy/services/journal_service.dart';
 import 'package:chicki_buddy/services/story_service.dart';
 import 'package:chicki_buddy/services/book_import_export_service.dart';
+import 'package:chicki_buddy/services/main_intent_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:chicki_buddy/services/model_manager_service.dart';
 
@@ -55,8 +56,8 @@ void main() async {
   // Inject AppConfigController and core services
   Get.put(AppConfigController(), permanent: true);
   Get.put(ModelManagerService(), permanent: true); // Added ModelManagerService
-  // Get.put(PorcupineWakewordService(), permanent: true);
-  
+  Get.put(PorcupineWakewordService(), permanent: true);
+
   // Services MUST be initialized BEFORE controllers that depend on them
   await Get.putAsync(() async {
     final service = BookService();
@@ -91,12 +92,12 @@ void main() async {
     await service.onInit();
     return service;
   }, permanent: true);
-  
+
   // Controllers that depend on data services
   Get.put(VoiceController(), permanent: true);
   Get.put(BubbleController(), permanent: true);
   Get.put(BooksController(), permanent: true); // Global for voice commands
-  
+
   // Test services
   // Get.put(TestDataService(), permanent: true); // Test offscreen data access
 
@@ -153,7 +154,8 @@ class MyApp extends StatelessWidget {
             colorScheme: ThemeData.light().colorScheme.copyWith(
                   primary: const Color(0xFF90CAF9),
                 ),
-            textTheme: GoogleFonts.quicksandTextTheme(ThemeData.light().textTheme),
+            textTheme:
+                GoogleFonts.quicksandTextTheme(ThemeData.light().textTheme),
             extensions: <ThemeExtension<dynamic>>[
               MoonTheme(
                 tokens: MoonTokens.light.copyWith(
@@ -176,7 +178,8 @@ class MyApp extends StatelessWidget {
           ),
           darkTheme: ThemeData.dark().copyWith(
             scaffoldBackgroundColor: const Color(0xFF1F1F1F),
-            textTheme: GoogleFonts.quicksandTextTheme(ThemeData.dark().textTheme),
+            textTheme:
+                GoogleFonts.quicksandTextTheme(ThemeData.dark().textTheme),
             extensions: <ThemeExtension<dynamic>>[
               MoonTheme(
                 tokens: MoonTokens.dark.copyWith(
@@ -204,7 +207,9 @@ class MyApp extends StatelessWidget {
           routeInformationParser: appRouter.routeInformationParser,
           routeInformationProvider: appRouter.routeInformationProvider,
           debugShowCheckedModeBanner: false,
-          locale: Locale(appConfig.language.value.isNotEmpty ? appConfig.language.value : 'en'),
+          locale: Locale(appConfig.language.value.isNotEmpty
+              ? appConfig.language.value
+              : 'en'),
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,

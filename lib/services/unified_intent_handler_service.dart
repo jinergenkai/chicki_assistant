@@ -10,29 +10,25 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:get/get.dart';
 
 /// Permanent GetX Service that wraps UnifiedIntentHandler
-/// Lives in main isolate and handles both UI and voice intents
-/// Voice intents come from foreground isolate via FlutterForegroundTask
+/// Handles intent communication between foreground task and main isolate
 class UnifiedIntentHandlerService extends GetxService {
   late UnifiedIntentHandler _handler;
   late BookService bookService;
   late VocabularyService vocabularyService;
-  
+
   var isInitialized = false.obs;
   var currentNodeId = 'root'.obs;
-  var currentBookId = Rxn<String>();
-  var currentTopicId = Rxn<String>();
-  var currentCardIndex = Rxn<int>();
 
   @override
   Future<void> onInit() async {
     super.onInit();
     logger.info('UnifiedIntentHandlerService: Initializing...');
-    
+
     try {
       await _initializeServices();
       await _initializeIntentHandler();
       _startListeningToForeground();
-      
+
       isInitialized.value = true;
       logger.success('UnifiedIntentHandlerService: Initialized successfully');
     } catch (e) {
@@ -41,153 +37,110 @@ class UnifiedIntentHandlerService extends GetxService {
     }
   }
 
-  /// Initialize BookService and VocabularyService
   Future<void> _initializeServices() async {
     logger.info('UnifiedIntentHandlerService: Initializing data services...');
-    
-    bookService = BookService();
-    vocabularyService = VocabularyService();
-    
-    await bookService.init();
-    await vocabularyService.init();
-    
+
+    bookService = Get.find<BookService>();
+    vocabularyService = Get.find<VocabularyService>();
+
     logger.success('UnifiedIntentHandlerService: Data services initialized');
   }
 
-  /// Initialize UnifiedIntentHandler with workflow graph
   Future<void> _initializeIntentHandler() async {
     logger.info('UnifiedIntentHandlerService: Loading workflow graph...');
-    
+
     final jsonStr = await rootBundle.loadString('assets/data/graph.json');
     final graph = WorkflowGraph.fromJson(jsonDecode(jsonStr));
-    
+
     _handler = UnifiedIntentHandler(
       workflowGraph: graph,
       bookService: bookService,
       vocabularyService: vocabularyService,
     );
-    
+
     logger.success('UnifiedIntentHandlerService: Workflow graph loaded');
   }
 
-  /// Start listening to intent requests from foreground isolate
   void _startListeningToForeground() {
-    logger.info('UnifiedIntentHandlerService: Started listening to foreground intents');
+    logger.info(
+        'UnifiedIntentHandlerService: Started listening to foreground intents');
     FlutterForegroundTask.addTaskDataCallback(_handleForegroundMessage);
   }
 
-  /// Handle messages from foreground isolate
   void _handleForegroundMessage(dynamic data) {
     if (data is! Map) return;
-    
+
     final message = data as Map<String, dynamic>;
-    
-    // Handle intent requests from foreground (voice)
+
+    // Only handle intent requests - ignore status updates (voiceState, micLifecycle, etc.)
     if (message['type'] == 'intent_request') {
+      logger.info('🎯 Main: Handling intent request');
       _handleForegroundIntent(message);
     }
   }
 
-  /// Handle intent request from foreground isolate
   Future<void> _handleForegroundIntent(Map<String, dynamic> request) async {
+    logger.info('🔵 Main: _handleForegroundIntent CALLED');
+    logger.info('   Request: $request');
+
     try {
       final intent = request['intent'] as String;
       final slots = request['slots'] as Map<String, dynamic>? ?? {};
-      final source = request['source'] == 'speech' 
-          ? IntentSource.speech 
-          : IntentSource.ui;
-      
-      logger.info('🔵 Main: Received intent from foreground: $intent');
-      logger.info('   Slots: $slots, Source: ${source.name}');
-      
-      // Process intent using UnifiedIntentHandler
-      final result = await handleIntent(
+
+      logger.info('🔵 Main: Processing intent: $intent');
+      logger.info('   Slots: $slots');
+
+      // Process intent using UnifiedIntentHandler (returns String now)
+      logger.info('🔄 Main: About to call handler.handleIntent...');
+
+      final ttsText = await _handler.handleIntent(
         intent: intent,
         slots: slots,
-        source: source,
       );
-      
-      logger.success('✅ Main: Intent processed successfully');
-      logger.info('   Result action: ${result['action']}');
-      
-      // Send response back to foreground
+
+      logger.success('✅ Main: handler.handleIntent completed');
+      logger.info('   Returned TTS: $ttsText');
+
+      // Update observable state
+      currentNodeId.value = _handler.currentNodeId;
+      logger.info('   Updated currentNodeId: ${currentNodeId.value}');
+
+      // Send TTS text back to foreground
       final response = {
         'type': 'intent_response',
-        'intent': intent,
-        'result': result,
+        'ttsText': ttsText,
         'timestamp': DateTime.now().toIso8601String(),
       };
-      
+
+      logger.info('📤 Main: Preparing to send response...');
+      logger.info('   Response data: $response');
+
+      logger.info('📤 Main: Calling FlutterForegroundTask.sendDataToTask...');
       FlutterForegroundTask.sendDataToTask(response);
-      logger.info('📤 Main: Response sent to foreground');
-      
-    } catch (e) {
-      logger.error('❌ Main: Error handling foreground intent', e);
-      
+
+      logger
+          .success('📤 Main: FlutterForegroundTask.sendDataToTask completed!');
+      logger.success('📤 Main: Response sent successfully');
+    } catch (e, stackTrace) {
+      logger.error('❌ Main: ERROR in _handleForegroundIntent', e);
+      logger.error('   Stack trace: $stackTrace');
+
       // Send error response
       final errorResponse = {
         'type': 'intent_response',
-        'intent': request['intent'],
-        'result': {
-          'action': 'error',
-          'error': e.toString(),
-        },
+        'ttsText': 'Sorry, something went wrong: $e',
       };
-      
-      FlutterForegroundTask.sendDataToTask(errorResponse);
-    }
-  }
 
-  /// Main entry point for handling intents (both UI and voice)
-  /// UI controllers call this directly
-  /// Voice intents come via _handleForegroundIntent
-  Future<Map<String, dynamic>> handleIntent({
-    required String intent,
-    Map<String, dynamic>? slots,
-    required IntentSource source,
-  }) async {
-    if (!isInitialized.value) {
-      logger.warning('UnifiedIntentHandlerService: Not initialized yet');
-      return {
-        'action': 'error',
-        'error': 'Service not initialized',
-      };
+      logger.info('📤 Main: Sending error response');
+      try {
+        FlutterForegroundTask.sendDataToTask(errorResponse);
+        logger.info('📤 Main: Error response sent');
+      } catch (sendError) {
+        logger.error('❌ Main: Failed to send error response!', sendError);
+      }
     }
 
-    try {
-      // Delegate to UnifiedIntentHandler
-      final result = await _handler.handleIntent(
-        intent: intent,
-        slots: slots,
-        source: source,
-      );
-      
-      // Update observable state
-      _updateState();
-      
-      return result;
-    } catch (e) {
-      logger.error('UnifiedIntentHandlerService: Error handling intent', e);
-      return {
-        'action': 'error',
-        'error': e.toString(),
-      };
-    }
-  }
-
-  /// Update reactive state from handler
-  void _updateState() {
-    currentNodeId.value = _handler.currentNodeId;
-    currentBookId.value = _handler.currentBookId;
-    currentTopicId.value = _handler.currentTopicId;
-    currentCardIndex.value = _handler.currentCardIndex;
-  }
-
-  /// Reset context to root
-  void resetContext([String? nodeId]) {
-    _handler.resetContext(nodeId);
-    _updateState();
-    logger.info('UnifiedIntentHandlerService: Context reset to ${currentNodeId.value}');
+    logger.info('🔵 Main: _handleForegroundIntent FINISHED');
   }
 
   /// Get available intents for current context
@@ -198,24 +151,6 @@ class UnifiedIntentHandlerService extends GetxService {
   /// Get current handler state (for debugging)
   Map<String, dynamic> getCurrentState() {
     return _handler.getCurrentState();
-  }
-
-  /// Sync flash card context (from UI)
-  Future<void> syncFlashCardContext(String bookId) async {
-    await handleIntent(
-      intent: 'syncFlashCardContext',
-      slots: {'bookId': bookId},
-      source: IntentSource.ui,
-    );
-  }
-
-  /// Exit flash card context
-  Future<void> exitFlashCardContext() async {
-    await handleIntent(
-      intent: 'exitFlashCard',
-      slots: {},
-      source: IntentSource.ui,
-    );
   }
 
   @override

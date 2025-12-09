@@ -46,7 +46,7 @@ class DioClient {
         onError: (DioException error, handler) async {
           // Nếu lỗi 401 thì thử lấy JWT guest mới và retry
           logger.warning('Request error: ${error.response?.statusCode} ${error.message}');
-          if (error.response?.statusCode == 401) {
+          if (error.response?.statusCode == 401 || error.response?.statusCode == 404) {
             final jwt = await fetchGuestJwt();
             if (jwt != null) {
               await setJwt(jwt);

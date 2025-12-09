@@ -6,13 +6,15 @@ import 'dart:convert';
 class LLMIntentClassifierService extends IntentClassifierService {
   final LlmApi _llmApi = LlmApi();
 
-  // Các intent và slot mẫu
+  // Core intents: flashcard control + book selection + conversation
   static const _intentList = [
-    'listBook',
-    'selectBook',
-    'listTopic',
-    'selectTopic',
-    'startConversation',
+    'listBook', // List available books
+    'selectBook', // Open a book for flashcard learning
+    'nextCard', // Navigate to next card
+    'prevCard', // Navigate to previous card
+    'flipCard', // Flip current card to see meaning/details
+    'bookmarkWord', // Bookmark current word
+    'startConversation', // Start conversation mode
   ];
 
   @override
@@ -28,7 +30,9 @@ class LLMIntentClassifierService extends IntentClassifierService {
         final slots = result['slots'];
         return {
           'intent': result['intent'] ?? 'unknown',
-          'slots': (slots is Map) ? Map<String, dynamic>.from(slots) : <String, dynamic>{},
+          'slots': (slots is Map)
+              ? Map<String, dynamic>.from(slots)
+              : <String, dynamic>{},
           'raw': response,
         };
       }
@@ -48,21 +52,43 @@ class LLMIntentClassifierService extends IntentClassifierService {
   }
 
   String _buildPrompt(String text) {
-    // Prompt chuẩn cho LLM intent classification
+    // Prompt chuẩn cho LLM intent classification - Flashcard focused
     return '''
-You are an intent analysis system. The following are the valid intents:
-- listBook: list available books
-- selectBook: select a specific book, slot: bookName
-- listTopic: list available topics
-- selectTopic: select a specific topic, slot: topicName
-- startConversation: start a conversation
-- stopConversation: stop a conversation
+You are a flashcard learning assistant. Recognize the following voice commands:
 
-Task: Analyze the following sentence and return the result in JSON format, including the intent and any relevant slots (if applicable).
+**Book Management:**
+- listBook: Show list of available books
+  Examples: "Show books", "List my books", "What books do I have?"
+- selectBook: Open a specific book for learning. Slot: bookName (string)
+  Examples: "Open English book", "Study vocabulary book", "Open TOEIC basics"
+
+**Card Navigation (when in flashcard screen):**
+- nextCard: Move to next flashcard
+  Examples: "Next card", "Next one", "Go to next", "Show next"
+- prevCard: Move to previous flashcard
+  Examples: "Previous card", "Go back", "Last card", "Back one"
+
+**Card Interaction (when in flashcard screen):**
+- flipCard: Flip card to see details/meaning
+  Examples: "Flip", "Show meaning", "Flip card", "Turn it over"
+- bookmarkWord: Bookmark current word for later review
+  Examples: "Bookmark", "Save this word", "Mark this", "Remember this"
+
+**Conversation:**
+- startConversation: Start free conversation with AI assistant
+  Examples: "Let's chat", "Start conversation", "Talk to me", "I want to talk"
+
+**Important:** Return ONLY the intent name and slots (if any) in JSON format.
 
 Example:
-Input: "I want to read Harry Potter"
-Output: {"intent": "selectBook", "slots": {"bookName": "Harry Potter"}}
+Input: "Next card"
+Output: {"intent": "nextCard", "slots": {}}
+
+Input: "Open TOEIC book"
+Output: {"intent": "selectBook", "slots": {"bookName": "TOEIC"}}
+
+Input: "Show my books"
+Output: {"intent": "listBook", "slots": {}}
 ''';
   }
 }

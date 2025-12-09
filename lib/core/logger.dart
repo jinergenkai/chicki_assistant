@@ -7,7 +7,7 @@ class LoggerService {
 
   static final Logger _logger = Logger(
     printer: PrettyPrinter(
-      methodCount: 0,
+      methodCount: 2,
       colors: true,
       printEmojis: true,
     ),
